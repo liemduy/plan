@@ -2925,7 +2925,7 @@
                 return;
             }
             if (plannerCloudUser && plannerSupabase && plannerCloudConfig.autoSyncEnabled === false) {
-                badge.textContent = 'Manual cloud';
+                badge.textContent = 'Manual';
                 badge.className = 'text-[11px] text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 rounded-full px-2.5 py-1';
                 return;
             }
@@ -2965,7 +2965,7 @@
             btn.classList.toggle('is-busy', !!plannerCloudSyncing);
             btn.disabled = !plannerCloudHydrated || plannerCloudSyncing;
             if (label) {
-                label.textContent = plannerCloudSyncing ? 'Working...' : 'Save cloud';
+                label.textContent = plannerCloudSyncing ? 'Working...' : 'Save';
             }
         }
 
