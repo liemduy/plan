@@ -1,0 +1,2985 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Liem's Planner</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- SortableJS for Drag & Drop -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            -webkit-tap-highlight-color: transparent;
+            display: flex;
+            justify-content: center;
+        }
+
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .phone-container {
+            width: 100%;
+            max-width: 430px;
+            min-height: 100vh;
+            background-color: #000000;
+            position: relative;
+            box-shadow: 0 0 40px rgba(0,0,0,0.5);
+            overflow-x: hidden;
+        }
+
+        .bg-health-gradient {
+            background: linear-gradient(180deg, #6b2810 0%, #2a1005 40%, #000000 100%);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 350px;
+            z-index: 0;
+        }
+
+        .health-card {
+            background-color: #1C1C1E;
+            border-radius: 20px;
+        }
+
+        .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom, 24px);
+        }
+
+        .collapsible-content {
+            display: grid;
+            grid-template-rows: 1fr;
+            transition: grid-template-rows 0.3s ease-out;
+        }
+        
+        .collapsible-content.collapsed {
+            grid-template-rows: 0fr;
+        }
+
+        .collapsible-inner {
+            overflow: hidden;
+        }
+
+        @keyframes highlightFlash {
+            0% { background-color: rgba(10, 132, 255, 0.4); }
+            100% { background-color: transparent; }
+        }
+        .flash-highlight {
+            animation: highlightFlash 1.5s ease-out;
+            border-radius: 8px;
+        }
+
+        .done-bg {
+            background-color: rgba(48, 209, 88, 0.15) !important;
+        }
+        .done-text {
+            text-decoration: line-through;
+            color: #9ca3af !important; 
+        }
+        
+        .sortable-ghost { opacity: 0.3; background-color: #2C2C2E !important; border-radius: 8px; }
+        .sortable-drag { cursor: grabbing !important; }
+        
+        input[type="time"]::-webkit-calendar-picker-indicator {
+            display: none;
+            -webkit-appearance: none;
+        }
+
+        .execution-block .pillar-warning-icon {
+            display: none !important;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="phone-container pb-24">
+        <div class="bg-health-gradient"></div>
+
+        <main id="main-content" class="relative z-10">
+            <header class="px-5 pt-14 pb-2">
+                <p class="text-gray-400 text-[13px] font-medium tracking-wide mb-1">Liem's Planner</p>
+                <h1 id="dynamic-page-title" class="text-[34px] font-bold tracking-tight">Targets</h1>
+            </header>
+
+            <div class="px-5 pb-2">
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="manualSavePlannerState()" class="text-[12px] font-semibold text-white bg-[#0A84FF]/90 px-3 py-1.5 rounded-full hover:bg-[#0A84FF] transition-colors">Save</button>
+                    <button onclick="toggleCloudPanel()" class="text-[12px] font-semibold text-[#0A84FF] bg-[#0A84FF]/10 px-3 py-1.5 rounded-full hover:bg-[#0A84FF]/20 transition-colors">Cloud</button>
+                    <button onclick="exportPlannerBackup()" class="text-[12px] font-semibold text-gray-200 bg-white/10 px-3 py-1.5 rounded-full hover:bg-white/15 transition-colors">Export</button>
+                    <label class="text-[12px] font-semibold text-gray-200 bg-white/10 px-3 py-1.5 rounded-full hover:bg-white/15 transition-colors cursor-pointer">
+                        Import
+                        <input id="planner-import-input" type="file" accept="application/json" class="hidden" onchange="importPlannerBackup(event)">
+                    </label>
+                    <span id="planner-status-badge" class="text-[11px] text-gray-400 bg-white/5 border border-gray-800 rounded-full px-2.5 py-1">Local only</span>
+                </div>
+
+                <div id="cloud-panel" class="hidden mt-3 health-card p-4">
+                    <div class="flex items-center justify-between gap-3 mb-3">
+                        <div>
+                            <div class="text-white font-semibold text-[14px]">Cloud sync</div>
+                            <div class="text-gray-500 text-[12px]">Dùng Supabase để lưu planner của bạn trên cloud.</div>
+                        </div>
+                        <button onclick="toggleCloudPanel()" class="w-7 h-7 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-gray-400 transition-colors">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <input id="supabase-url-input" type="text" class="w-full bg-white/5 border border-gray-800 rounded-xl px-3 py-2 text-[13px] text-white placeholder-gray-500 outline-none" placeholder="Supabase URL">
+                        <input id="supabase-anon-input" type="text" class="w-full bg-white/5 border border-gray-800 rounded-xl px-3 py-2 text-[13px] text-white placeholder-gray-500 outline-none" placeholder="Supabase anon key">
+                        <div class="flex gap-2">
+                            <input id="cloud-email-input" type="email" class="flex-1 bg-white/5 border border-gray-800 rounded-xl px-3 py-2 text-[13px] text-white placeholder-gray-500 outline-none" placeholder="Email để nhận magic link">
+                            <button onclick="saveCloudConfig()" class="text-[12px] font-semibold text-white bg-[#BF5AF2]/90 px-3 py-2 rounded-xl hover:bg-[#BF5AF2] transition-colors shrink-0">Lưu key</button>
+                        </div>
+                        <div class="flex flex-wrap gap-2 mt-1">
+                            <button onclick="sendCloudMagicLink()" class="text-[12px] font-semibold text-white bg-[#0A84FF]/90 px-3 py-2 rounded-xl hover:bg-[#0A84FF] transition-colors">Đăng nhập email</button>
+                            <button onclick="loadPlannerStateFromCloud()" class="text-[12px] font-semibold text-gray-200 bg-white/10 px-3 py-2 rounded-xl hover:bg-white/15 transition-colors">Load cloud</button>
+                            <button onclick="savePlannerStateToCloud()" class="text-[12px] font-semibold text-gray-200 bg-white/10 px-3 py-2 rounded-xl hover:bg-white/15 transition-colors">Save cloud</button>
+                            <button onclick="signOutCloud()" class="text-[12px] font-semibold text-red-300 bg-red-500/10 px-3 py-2 rounded-xl hover:bg-red-500/20 transition-colors">Đăng xuất</button>
+                        </div>
+                        <div id="cloud-user-status" class="text-[12px] text-gray-500 mt-1">Chưa kết nối cloud.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TRANG 1: TARGETS -->
+            <section id="page-targets" class="page-section block">
+                <div class="px-5 mt-4">
+                    
+                    <div class="health-card p-4 mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <div class="flex items-center gap-1.5 text-[#FF5A00] flex-1">
+                                <i data-lucide="flame" class="w-5 h-5 fill-current shrink-0"></i>
+                                <input type="text" value="Vision" 
+                                       class="font-bold text-[15px] tracking-wide uppercase bg-transparent border-none outline-none text-[#FF5A00] w-full placeholder-[#FF5A00]/50 focus:bg-[#FF5A00]/10 rounded px-1 -ml-1 transition-colors"
+                                       placeholder="Tiêu đề...">
+                            </div>
+                            <button id="toggle-vision-btn" class="w-7 h-7 flex items-center justify-center rounded-full bg-gray-600/30 text-gray-300 hover:bg-gray-600/50 transition-colors shrink-0" onclick="toggleVision()">
+                                <i data-lucide="chevron-up" id="vision-icon" class="w-4 h-4 transition-transform duration-300"></i>
+                            </button>
+                        </div>
+                        <div id="vision-wrapper" class="collapsible-content">
+                            <div class="collapsible-inner w-full pt-2">
+                                <textarea 
+                                    class="w-full bg-transparent text-white text-[18px] font-medium leading-relaxed outline-none border-none resize-none placeholder-gray-600 p-0 m-0"
+                                    rows="3" 
+                                    placeholder="Trong 6 tháng tới tôi sẽ...."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="blocks-container">
+                        <!-- Block: Overall -->
+                        <div class="target-group-block mb-6" id="overall-block">
+                            <div class="mb-2 flex justify-between items-center gap-2">
+                                <button class="text-gray-500 hover:text-green-500 transition-colors shrink-0 done-btn mr-1" onclick="toggleDone(this, 'block')">
+                                    <i data-lucide="circle" class="w-6 h-6 done-icon"></i>
+                                </button>
+                                <input type="text" value="Overall" 
+                                       class="text-[22px] font-bold tracking-tight bg-transparent border-none outline-none flex-1 min-w-0 text-white placeholder-gray-600 focus:bg-white/5 rounded px-1 -ml-1 transition-colors"
+                                       placeholder="Tên nhóm...">
+                                <div class="flex items-center gap-2 shrink-0 whitespace-nowrap">
+                                    <button onclick="addPillar(this)" class="text-[12px] font-semibold text-[#0A84FF] bg-[#0A84FF]/10 px-2.5 py-1 rounded-full hover:bg-[#0A84FF]/20 transition-colors shrink-0">+ Pillar</button>
+                                    <button data-toggle-state="0" class="w-7 h-7 flex items-center justify-center rounded-full bg-gray-600/30 text-gray-300 hover:bg-gray-600/50 transition-colors shrink-0" onclick="toggleBlock(this)">
+                                        <i data-lucide="chevron-up" class="w-4 h-4 transition-transform duration-300 block-icon"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="collapsible-content block-collapsible">
+                                <div class="collapsible-inner pt-1">
+                                    <div class="health-card p-4 block-content transition-colors duration-300">
+                                        <div class="pillars-container sortable-pillars">
+                                            <!-- Pillar 1 -->
+                                            <div class="pillar-block mb-4 last:mb-0 p-2 -mx-2 rounded-xl transition-colors duration-300">
+                                                <div class="flex justify-between items-center mb-2">
+                                                    <div class="flex items-center gap-1.5 text-[#FF5A00] flex-1">
+                                                        <i data-lucide="grip-vertical" class="w-4 h-4 text-gray-700 cursor-grab hover:text-gray-400 shrink-0 drag-handle-pillar"></i>
+                                                        <button class="text-gray-500 hover:text-green-500 transition-colors shrink-0 done-btn mr-0.5" onclick="toggleDone(this, 'pillar')">
+                                                            <i data-lucide="circle" class="w-5 h-5 done-icon"></i>
+                                                        </button>
+                                                        <i data-lucide="layers" class="w-5 h-5 fill-current shrink-0"></i>
+                                                        <input type="text" value="Pillar 1" 
+                                                               class="font-bold text-[15px] tracking-wide uppercase bg-transparent border-none outline-none text-[#FF5A00] w-full placeholder-[#FF5A00]/50 focus:bg-[#FF5A00]/10 rounded px-1 -ml-1 transition-colors"
+                                                               placeholder="Tên Pillar...">
+                                                        <i data-lucide="triangle-alert" class="w-4 h-4 text-red-500 hidden pillar-warning-icon shrink-0"></i>
+                                                    </div>
+                                                    <div class="flex items-center gap-1">
+                                                        <button onclick="addTargetToPillar(this)" class="text-[11px] font-semibold text-[#0A84FF] bg-[#0A84FF]/10 px-2 py-0.5 rounded-full hover:bg-[#0A84FF]/20 transition-colors shrink-0">+ Target</button>
+                                                        <button class="w-7 h-7 flex items-center justify-center rounded-full bg-gray-600/30 text-gray-300 hover:bg-gray-600/50 transition-colors shrink-0" onclick="togglePillar(this)">
+                                                            <i data-lucide="chevron-up" class="w-4 h-4 transition-transform duration-300 pillar-icon"></i>
+                                                        </button>
+                                                        <button class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-500/20 text-gray-500 hover:text-red-500 transition-colors shrink-0" onclick="requestDelete(this, 'pillar')">
+                                                            <i data-lucide="x" class="w-4 h-4"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div class="collapsible-content pillar-content">
+                                                    <div class="collapsible-inner targets-list sortable-targets space-y-1">
+                                                        <div class="target-item flex flex-col mt-1 px-1 -mx-1 rounded-lg transition-colors duration-300">
+                                                            <div class="flex items-start gap-2 relative">
+                                                                <i data-lucide="grip-vertical" class="w-4 h-4 text-gray-700 mt-1.5 cursor-grab hover:text-gray-400 shrink-0 drag-handle-target"></i>
+                                                                <button class="mt-1 flex items-center justify-center text-gray-500 hover:text-green-500 transition-colors shrink-0 done-btn" onclick="toggleDone(this, 'target')">
+                                                                    <i data-lucide="circle" class="w-4 h-4 done-icon"></i>
+                                                                </button>
+                                                                <input type="text" data-root-id="root-init-1" class="root-target-input bg-transparent border-none outline-none text-white w-full placeholder-gray-600 focus:bg-white/5 rounded px-1 py-1 transition-colors" placeholder="+ target" onkeydown="handleTargetEnter(event, this)" oninput="syncRootTargets()">
+                                                                <button class="root-support-count hidden text-[11px] font-bold text-[#BF5AF2] bg-[#BF5AF2]/10 px-1.5 py-0.5 rounded-md mt-1 shrink-0 transition-colors hover:bg-[#BF5AF2]/20" onclick="toggleRootTree(this)">(0)</button>
+                                                            </div>
+                                                            <div class="root-support-tree pl-8 mt-1 hidden flex-col gap-1 mb-1"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Đường phân cách tinh tế -->
+                        <div class="border-t border-dashed border-gray-700/50 my-8 mx-4" id="divider-line"></div>
+
+                        <!-- Khung bọc riêng cho các khối Execution để kéo thả -->
+                        <div id="execution-blocks-wrapper" class="sortable-blocks">
+                            <!-- Các block execution sẽ thêm vào đây -->
+                        </div>
+
+                    </div>
+
+                    <button onclick="addBlock()" class="w-full text-center text-gray-500 font-medium py-3 px-2 hover:bg-white/5 rounded-xl transition-colors border border-dashed border-gray-800 flex items-center justify-center gap-2 mb-8 mt-4">
+                        <i data-lucide="plus-square" class="w-5 h-5"></i> Add Block
+                    </button>
+
+                </div>
+            </section>
+
+            <!-- TRANG 2: TODAY'S PLAN -->
+            <section id="page-plan" class="page-section hidden">
+                <div class="px-5 mt-4">
+                    <div class="target-group-block mb-6 relative">
+                        <div class="mb-4 flex justify-between items-center gap-2">
+                            <h2 id="today-date-display" class="text-[22px] font-bold tracking-tight text-white flex-1 min-w-0">Hôm nay</h2>
+                            <div class="relative flex items-center shrink-0 gap-2">
+                                <button onclick="refreshTodayPlan()" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-600/30 text-gray-300 hover:bg-[#0A84FF] transition-colors" title="Đồng bộ lại">
+                                    <i data-lucide="refresh-cw" class="w-4 h-4 text-white"></i>
+                                </button>
+                                <div class="relative flex items-center shrink-0">
+                                    <input type="date" id="today-date-picker" class="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-10" onchange="updateTodayDate(this)">
+                                    <button class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-600/30 text-gray-300 hover:bg-gray-600/50 transition-colors">
+                                        <i data-lucide="calendar" class="w-4 h-4 text-white"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="health-card p-4 block-content transition-colors duration-300 min-h-[160px] flex flex-col relative overflow-hidden">
+                            <div id="start-today-container" class="absolute inset-0 z-20 flex items-center justify-center bg-[#1C1C1E]">
+                                <button onclick="startToday()" class="bg-[#0A84FF] text-white font-bold text-[15px] py-3.5 px-8 rounded-full shadow-lg hover:bg-blue-600 transition-colors flex items-center gap-2">
+                                    <i data-lucide="rocket" class="w-5 h-5"></i> Start Today
+                                </button>
+                            </div>
+
+                            <div id="today-content-container" class="hidden flex-col w-full h-full">
+                                <div id="today-pillars-container" class="pillars-container sortable-pillars w-full">
+                                    <!-- Render qua JS -->
+                                </div>
+                                <button onclick="addTodayExtraPillar()" class="w-full text-left text-gray-500 font-medium py-2 px-1 hover:bg-white/5 rounded-lg transition-colors flex items-center gap-2 mt-4">
+                                    <i data-lucide="plus-circle" class="w-5 h-5"></i> add Extra
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TRANG 3: REVIEW -->
+            <section id="page-review" class="page-section hidden">
+                <div class="px-5 mt-4">
+                    
+                    <div id="review-empty-state" class="flex flex-col items-center justify-center h-[60vh] gap-5">
+                        <div class="w-20 h-20 rounded-full bg-gray-800/30 border-2 border-gray-700/50 flex items-center justify-center text-[#BF5AF2]">
+                            <i data-lucide="calendar-search" class="w-10 h-10"></i>
+                        </div>
+                        <div class="text-center">
+                            <h2 class="text-lg font-bold text-white mb-1">Báo cáo tiến độ</h2>
+                            <p class="text-gray-500 text-[13px]">Chọn khoảng thời gian để tổng hợp và review.</p>
+                        </div>
+                        <button onclick="openReviewDateModal()" class="bg-[#BF5AF2] text-white font-bold text-[14px] py-3 px-8 rounded-full shadow-lg hover:bg-purple-600 transition-colors flex items-center gap-2">
+                            <i data-lucide="calendar" class="w-4 h-4"></i> Chọn khoảng thời gian
+                        </button>
+                    </div>
+
+                    <div id="review-config-state" class="hidden flex-col gap-6 pb-24">
+                        
+                        <div class="target-group-block">
+                            <div class="mb-2 flex justify-between items-center gap-2">
+                                <div class="text-[22px] font-bold tracking-tight text-white flex-1 min-w-0" id="review-time-range-display">
+                                    -- / -- / ----
+                                </div>
+                                <button onclick="openReviewDateModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-600/30 text-gray-300 hover:bg-[#BF5AF2] transition-colors shrink-0">
+                                    <i data-lucide="calendar" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="health-card p-4">
+                            <div>
+                                <div class="flex justify-between items-center cursor-pointer mb-2" onclick="toggleReviewSection('rev-view-mode', this)">
+                                    <h3 class="text-[15px] font-bold text-[#FF5A00] uppercase tracking-wide flex items-center gap-2">
+                                        <i data-lucide="layers" class="w-4 h-4"></i> View Mode
+                                    </h3>
+                                    <i data-lucide="chevron-up" class="w-4 h-4 text-gray-500 transition-transform duration-300 section-icon"></i>
+                                </div>
+                                <div id="rev-view-mode" class="collapsible-content">
+                                    <div class="collapsible-inner pb-2">
+                                        <p class="text-[12px] text-gray-500 mb-3 italic">Kéo thả để sắp xếp ưu tiên gom nhóm. Bỏ tick để loại trừ.</p>
+                                        <div id="review-hierarchy-list" class="flex flex-col gap-2 sortable-review-hierarchy">
+                                            <div class="flex items-center gap-3 bg-[#2C2C2E] p-2.5 rounded-lg border border-gray-700/50" data-hier-id="opt-overall">
+                                                <i data-lucide="grip-vertical" class="w-4 h-4 text-gray-500 cursor-grab hover:text-white shrink-0 review-drag-handle"></i>
+                                                <input type="checkbox" class="w-4 h-4 rounded border-gray-600 text-[#0A84FF] focus:ring-[#0A84FF] bg-transparent" checked>
+                                                <span class="text-[14px] font-medium flex-1">Overall Target</span>
+                                            </div>
+                                            <div class="flex items-center gap-3 bg-[#2C2C2E] p-2.5 rounded-lg border border-gray-700/50" data-hier-id="opt-exec">
+                                                <i data-lucide="grip-vertical" class="w-4 h-4 text-gray-500 cursor-grab hover:text-white shrink-0 review-drag-handle"></i>
+                                                <input type="checkbox" class="w-4 h-4 rounded border-gray-600 text-[#0A84FF] focus:ring-[#0A84FF] bg-transparent" checked>
+                                                <span class="text-[14px] font-medium flex-1">Execution Target</span>
+                                            </div>
+                                            <div class="flex items-center gap-3 bg-[#2C2C2E] p-2.5 rounded-lg border border-gray-700/50" data-hier-id="opt-pillar">
+                                                <i data-lucide="grip-vertical" class="w-4 h-4 text-gray-500 cursor-grab hover:text-white shrink-0 review-drag-handle"></i>
+                                                <input type="checkbox" class="w-4 h-4 rounded border-gray-600 text-[#0A84FF] focus:ring-[#0A84FF] bg-transparent" checked>
+                                                <span class="text-[14px] font-medium flex-1">Pillars</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="border-t border-gray-700/50 my-3"></div>
+
+                            <div>
+                                <div class="flex justify-between items-center cursor-pointer mb-2" onclick="toggleReviewSection('rev-display-opt', this)">
+                                    <h3 class="text-[15px] font-bold text-[#BF5AF2] uppercase tracking-wide flex items-center gap-2">
+                                        <i data-lucide="eye" class="w-4 h-4"></i> Tùy chọn hiển thị
+                                    </h3>
+                                    <i data-lucide="chevron-up" class="w-4 h-4 text-gray-500 transition-transform duration-300 section-icon"></i>
+                                </div>
+                                <div id="rev-display-opt" class="collapsible-content">
+                                    <div class="collapsible-inner pt-1">
+                                        <div class="flex items-center gap-4 flex-wrap pb-1 text-[12px]">
+                                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                                <input type="checkbox" id="rev-opt-day" checked class="w-3.5 h-3.5 rounded border-gray-600 text-[#BF5AF2] focus:ring-[#BF5AF2] bg-transparent transition-colors">
+                                                <span class="font-medium">Day</span>
+                                            </label>
+                                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                                <input type="checkbox" id="rev-opt-output" checked class="w-3.5 h-3.5 rounded border-gray-600 text-[#BF5AF2] focus:ring-[#BF5AF2] bg-transparent transition-colors">
+                                                <span class="font-medium">Output</span>
+                                            </label>
+                                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                                <input type="checkbox" id="rev-opt-note" checked class="w-3.5 h-3.5 rounded border-gray-600 text-[#BF5AF2] focus:ring-[#BF5AF2] bg-transparent transition-colors">
+                                                <span class="font-medium">Note</span>
+                                            </label>
+                                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                                <input type="checkbox" id="rev-opt-done" checked class="w-3.5 h-3.5 rounded border-gray-600 text-green-500 focus:ring-green-500 bg-transparent transition-colors">
+                                                <span class="font-medium text-green-500">Done</span>
+                                            </label>
+                                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                                <input type="checkbox" id="rev-opt-notdone" checked class="w-3.5 h-3.5 rounded border-gray-600 text-red-500 focus:ring-red-500 bg-transparent transition-colors">
+                                                <span class="font-medium text-red-500">Not done</span>
+                                            </label>
+                                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                                <input type="checkbox" id="rev-opt-extra" checked class="w-3.5 h-3.5 rounded border-gray-600 text-[#BF5AF2] focus:ring-[#BF5AF2] bg-transparent transition-colors">
+                                                <span class="font-medium text-[#BF5AF2]">Extra</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                        </div>
+
+                        <button onclick="generateReviewReport()" class="w-full bg-[#1C1C1E] border border-gray-700 text-[#0A84FF] font-bold text-[16px] py-3.5 rounded-xl shadow-lg hover:bg-gray-800 transition-colors flex items-center justify-center gap-2">
+                            <i data-lucide="sparkles" class="w-5 h-5"></i> View Report
+                        </button>
+
+                        <div id="report-output-container" class="hidden mt-2 bg-[#1C1C1E] rounded-2xl p-4 min-h-[150px] border border-gray-800">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TRANG 4: SCHEDULE -->
+            <section id="page-schedule" class="page-section hidden">
+                <div class="px-5 mt-4">
+                    
+                    <div id="schedule-empty-state" class="flex flex-col items-center justify-center h-[60vh] gap-5">
+                        <div class="w-20 h-20 rounded-full bg-gray-800/30 border-2 border-gray-700/50 flex items-center justify-center text-[#0A84FF]">
+                            <i data-lucide="clock" class="w-10 h-10"></i>
+                        </div>
+                        <div class="text-center">
+                            <h2 class="text-lg font-bold text-white mb-1">Lịch trình hôm nay</h2>
+                            <p class="text-gray-500 text-[13px]">Lên lịch chi tiết cho các hành động trong Today's Plan.</p>
+                        </div>
+                        <button onclick="startScheduleSetup()" class="bg-[#0A84FF] text-white font-bold text-[14px] py-3 px-8 rounded-full shadow-lg hover:bg-blue-600 transition-colors flex items-center gap-2">
+                            <i data-lucide="calendar-plus" class="w-4 h-4"></i> Create your Schedule now
+                        </button>
+                    </div>
+
+                    <div id="schedule-setup-state" class="hidden flex-col gap-4 pb-24">
+                        <div class="target-group-block">
+                            <div class="mb-4 flex justify-between items-center">
+                                <h2 class="text-[22px] font-bold tracking-tight text-white">Phân loại hành động</h2>
+                            </div>
+                            <p class="text-[13px] text-gray-400 mb-4">Phân bổ các hành động hôm nay vào lịch cố định hoặc thời gian rảnh.</p>
+                            <div id="schedule-setup-list" class="flex flex-col gap-3">
+                                <!-- Render qua JS -->
+                            </div>
+                        </div>
+                        <button onclick="generateScheduleView()" class="w-full bg-[#1C1C1E] border border-gray-700 text-[#0A84FF] font-bold text-[16px] py-3.5 rounded-xl shadow-lg hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 mt-2">
+                            <i data-lucide="check-circle" class="w-5 h-5"></i> Xong
+                        </button>
+                    </div>
+
+                    <div id="schedule-view-state" class="hidden flex-col gap-6 pb-24">
+                        
+                        <!-- Fixed Schedule Block -->
+                        <div class="target-group-block">
+                            <div class="mb-4 flex justify-between items-center">
+                                <h2 class="text-[22px] font-bold tracking-tight text-[#FF5A00] flex items-center gap-2">
+                                    <i data-lucide="clock-4" class="w-5 h-5"></i> Fixed Schedule
+                                </h2>
+                            </div>
+                            <div id="fixed-schedule-list" class="flex flex-col gap-3 min-h-[60px] p-2 -mx-2 bg-[#1C1C1E]/30 rounded-xl border border-dashed border-gray-800 sortable-schedule">
+                            </div>
+                        </div>
+
+                        <!-- When Free Block -->
+                        <div class="target-group-block">
+                            <div class="mb-4 flex justify-between items-center">
+                                <h2 class="text-[22px] font-bold tracking-tight text-[#0A84FF] flex items-center gap-2">
+                                    <i data-lucide="coffee" class="w-5 h-5"></i> When Free
+                                </h2>
+                            </div>
+                            <div id="free-schedule-list" class="flex flex-col gap-3 min-h-[60px] p-2 -mx-2 bg-[#1C1C1E]/30 rounded-xl border border-dashed border-gray-800 sortable-schedule">
+                            </div>
+                        </div>
+                        
+                        <button onclick="resetSchedule()" class="w-full text-center text-gray-500 font-medium py-3 px-2 hover:bg-white/5 rounded-xl transition-colors border border-dashed border-gray-800 flex items-center justify-center gap-2 mt-4">
+                            <i data-lucide="refresh-ccw" class="w-5 h-5"></i> Tạo lại lịch trình
+                        </button>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+
+        <nav class="absolute bottom-0 left-0 w-full bg-[#1C1C1E]/90 backdrop-blur-lg border-t border-gray-800 pb-safe pt-2 px-2 z-50">
+            <ul class="flex justify-around items-center">
+                <li class="flex-1"><button onclick="switchTab('targets', 'Targets')" id="tab-targets" class="tab-btn w-full flex flex-col items-center gap-1 text-[#0A84FF]"><i data-lucide="target" class="w-6 h-6"></i><span class="text-[10px] font-medium">Targets</span></button></li>
+                <li class="flex-1"><button onclick="switchTab('plan', 'Today\'s Plan')" id="tab-plan" class="tab-btn w-full flex flex-col items-center gap-1 text-gray-500 hover:text-gray-300 transition-colors"><i data-lucide="list-todo" class="w-6 h-6"></i><span class="text-[10px] font-medium">Today's Plan</span></button></li>
+                <li class="flex-1"><button onclick="switchTab('review', 'Review')" id="tab-review" class="tab-btn w-full flex flex-col items-center gap-1 text-gray-500 hover:text-gray-300 transition-colors"><i data-lucide="rotate-ccw" class="w-6 h-6"></i><span class="text-[10px] font-medium">Review</span></button></li>
+                <li class="flex-1"><button onclick="switchTab('schedule', 'Schedule')" id="tab-schedule" class="tab-btn w-full flex flex-col items-center gap-1 text-gray-500 hover:text-gray-300 transition-colors"><i data-lucide="calendar" class="w-6 h-6"></i><span class="text-[10px] font-medium">Schedule</span></button></li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- Dropdowns & Modals -->
+    <div id="support-dropdown" class="fixed hidden z-[100] w-[240px] bg-[#2C2C2E] border border-gray-700 rounded-xl shadow-2xl py-1 text-[14px] overflow-hidden"></div>
+
+    <div id="today-support-dropdown" class="fixed hidden z-[100] w-[280px] bg-[#2C2C2E] border border-gray-700 rounded-xl shadow-2xl flex flex-col max-h-[300px] text-[14px] overflow-hidden">
+        <div class="p-2 border-b border-gray-700/50">
+            <input type="text" id="today-support-search" class="w-full bg-[#1C1C1E] text-white rounded-lg px-3 py-1.5 outline-none text-[13px] placeholder-gray-500" placeholder="Tìm mục tiêu (Execution)..." oninput="renderTodaySupportDropdown()">
+        </div>
+        <div id="today-support-list" class="overflow-y-auto flex-1 py-1"></div>
+    </div>
+
+    <div id="delete-modal" class="fixed inset-0 z-[100] bg-black/60 hidden flex items-center justify-center backdrop-blur-sm opacity-0 transition-opacity duration-300">
+        <div class="bg-[#1C1C1E] p-5 rounded-3xl w-[80%] max-w-[320px] shadow-2xl transform scale-95 transition-transform duration-300 border border-gray-800" id="delete-modal-content">
+            <h3 class="text-[19px] font-bold text-white mb-2 text-center">Xoá phần này</h3>
+            <p class="text-[14px] text-gray-400 mb-6 text-center leading-snug">Bạn có chắc chắn muốn xoá? Các mục bên trong cũng sẽ bị xoá.</p>
+            <div class="flex gap-3">
+                <button onclick="closeModal()" class="flex-1 py-3 rounded-xl bg-[#2C2C2E] text-white font-semibold hover:bg-gray-600 transition-colors">Hủy</button>
+                <button onclick="confirmDelete()" class="flex-1 py-3 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors">Xoá</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="sync-modal" class="fixed inset-0 z-[100] bg-black/60 hidden flex items-center justify-center backdrop-blur-sm opacity-0 transition-opacity duration-300">
+        <div class="bg-[#1C1C1E] p-5 rounded-3xl w-[85%] max-w-[340px] shadow-2xl transform scale-95 transition-transform duration-300 border border-gray-800" id="sync-modal-content">
+            <h3 class="text-[19px] font-bold text-white mb-2 text-center text-[#FF5A00]">Cảnh báo Đồng Bộ</h3>
+            <p class="text-[14px] text-gray-400 mb-6 text-center leading-snug">Một số Pillar gốc đã bị xoá hoặc được đánh dấu Hoàn thành (Done) bên mục Targets.<br/><br/>Bạn muốn <b>Xoá</b> chúng khỏi kế hoạch hôm nay, hay <b>Giữ lại</b> (đóng băng)?</p>
+            <div class="flex gap-3">
+                <button onclick="confirmSyncLock()" class="flex-1 py-3 rounded-xl bg-[#2C2C2E] text-white font-semibold hover:bg-gray-600 transition-colors text-[13px]">Giữ (Đóng băng)</button>
+                <button onclick="confirmSyncDelete()" class="flex-1 py-3 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors text-[13px]">Xoá ngay</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Chọn Ngày cho Review -->
+    <div id="review-date-modal" class="fixed inset-0 z-[100] bg-black/60 hidden flex items-center justify-center backdrop-blur-sm opacity-0 transition-opacity duration-300">
+        <div class="bg-[#1C1C1E] p-5 rounded-3xl w-[85%] max-w-[340px] shadow-2xl transform scale-95 transition-transform duration-300 border border-gray-800" id="review-date-modal-content">
+            <h3 class="text-[19px] font-bold text-white mb-4 text-center">Khoảng thời gian Review</h3>
+            <div class="flex flex-col gap-4 mb-6">
+                <div class="flex flex-col gap-1">
+                    <label class="text-[12px] text-gray-400 pl-1 font-medium">Từ ngày:</label>
+                    <input type="date" id="rev-start-date" class="w-full bg-[#2C2C2E] text-white rounded-xl px-4 py-3 outline-none border border-gray-700/50 focus:border-[#BF5AF2] transition-colors">
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-[12px] text-gray-400 pl-1 font-medium">Đến ngày:</label>
+                    <input type="date" id="rev-end-date" class="w-full bg-[#2C2C2E] text-white rounded-xl px-4 py-3 outline-none border border-gray-700/50 focus:border-[#BF5AF2] transition-colors">
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closeReviewDateModal()" class="flex-1 py-3 rounded-xl bg-[#2C2C2E] text-white font-semibold hover:bg-gray-600 transition-colors text-[14px]">Hủy</button>
+                <button onclick="applyReviewDateRange()" class="flex-1 py-3 rounded-xl bg-[#BF5AF2] text-white font-semibold hover:bg-purple-600 transition-colors text-[14px]">Áp dụng</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="module">
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+        window.__plannerCreateSupabaseClient = createClient;
+        window.dispatchEvent(new Event('planner:supabase-ready'));
+    </script>
+
+    <script>
+        lucide.createIcons();
+
+        // ==========================================
+        // HỆ THỐNG KÉO THẢ (DRAG & DROP) BẰNG SORTABLE.JS
+        // ==========================================
+        function initAllSortables() {
+            const execWrapper = document.getElementById('execution-blocks-wrapper');
+            if (execWrapper && !execWrapper.sortableObj) {
+                execWrapper.sortableObj = new Sortable(execWrapper, {
+                    handle: '.block-drag-handle',
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    onEnd: syncRootTargets
+                });
+            }
+
+            document.querySelectorAll('.sortable-pillars').forEach(container => {
+                if (!container.sortableObj) {
+                    container.sortableObj = new Sortable(container, {
+                        group: 'pillars',
+                        handle: '.drag-handle-pillar',
+                        animation: 150,
+                        fallbackOnBody: true,
+                        swapThreshold: 0.65,
+                        ghostClass: 'sortable-ghost',
+                        onEnd: syncRootTargets
+                    });
+                }
+            });
+
+            document.querySelectorAll('.sortable-targets').forEach(container => {
+                if (!container.sortableObj) {
+                    container.sortableObj = new Sortable(container, {
+                        group: 'targets',
+                        handle: '.drag-handle-target',
+                        animation: 150,
+                        fallbackOnBody: true,
+                        swapThreshold: 0.65,
+                        ghostClass: 'sortable-ghost',
+                        onEnd: syncRootTargets
+                    });
+                }
+            });
+
+            const reviewHierarchy = document.getElementById('review-hierarchy-list');
+            if (reviewHierarchy && !reviewHierarchy.sortableObj) {
+                reviewHierarchy.sortableObj = new Sortable(reviewHierarchy, {
+                    handle: '.review-drag-handle',
+                    animation: 150,
+                    ghostClass: 'sortable-ghost'
+                });
+            }
+
+            document.querySelectorAll('.sortable-schedule').forEach(container => {
+                if (!container.sortableObj) {
+                    container.sortableObj = new Sortable(container, {
+                        group: 'schedule',
+                        handle: '.schedule-drag-handle',
+                        animation: 150,
+                        ghostClass: 'sortable-ghost',
+                        onAdd: handleScheduleDrop
+                    });
+                }
+            });
+        }
+        
+        document.addEventListener('DOMContentLoaded', initAllSortables);
+
+        // ==========================================
+        // LOGIC CHUYỂN TRẠNG THÁI "DONE" VÀ ĐỒNG BỘ HAI CHIỀU
+        // ==========================================
+        function setDoneState(btn, type, newState, propagateDown = false, propagateUp = false, skipCrossSync = false) {
+            if (!btn) return;
+            if (btn.dataset.isSyncing === 'true') return;
+
+            const icon = btn.querySelector('.done-icon');
+            if (!icon) return;
+            const isCurrentlyDone = icon.getAttribute('data-lucide') === 'check-circle-2';
+            if (isCurrentlyDone === newState) return;
+
+            let container = null;
+            let inputs = [];
+
+            if (type === 'target') {
+                container = btn.closest('.target-item, .target-item-exec, .today-task-item, .schedule-task-item');
+                if(container) {
+                    inputs = Array.from(container.querySelectorAll('input[type="text"]:not([readonly])'));
+                    const spans = Array.from(container.querySelectorAll('.schedule-task-text'));
+                    inputs = inputs.concat(spans);
+                }
+            } else if (type === 'pillar') {
+                container = btn.closest('.pillar-block, .today-pillar-block');
+            } else if (type === 'block') {
+                container = btn.closest('.target-group-block').querySelector('.block-content');
+            }
+
+            if (newState) {
+                icon.setAttribute('data-lucide', 'check-circle-2');
+                btn.classList.add('text-green-500'); btn.classList.remove('text-gray-500');
+                if (container) container.classList.add('done-bg');
+                inputs.forEach(i => i.classList.add('done-text'));
+            } else {
+                icon.setAttribute('data-lucide', 'circle');
+                btn.classList.remove('text-green-500'); btn.classList.add('text-gray-500');
+                if (container) container.classList.remove('done-bg');
+                inputs.forEach(i => i.classList.remove('done-text'));
+            }
+            lucide.createIcons({ root: btn });
+
+            if (propagateDown) {
+                if (type === 'block') {
+                    const blockContainer = btn.closest('.target-group-block');
+                    const childPillarBtns = blockContainer.querySelectorAll('.pillar-block > div.mb-2 .done-btn, .today-pillar-block > div.mb-2 .done-btn');
+                    childPillarBtns.forEach(childBtn => setDoneState(childBtn, 'pillar', newState, true, false));
+                } else if (type === 'pillar') {
+                    const pillarContainer = btn.closest('.pillar-block, .today-pillar-block');
+                    const childTargetBtns = pillarContainer.querySelectorAll('.targets-list .target-item .done-btn, .targets-list .target-item-exec .done-btn, .targets-list .today-task-item .done-btn');
+                    childTargetBtns.forEach(childBtn => setDoneState(childBtn, 'target', newState, false, false));
+                }
+            }
+
+            if (propagateUp) {
+                if (type === 'target') {
+                    const parentPillar = btn.closest('.pillar-block, .today-pillar-block');
+                    if (parentPillar) {
+                        const targetBtns = Array.from(parentPillar.querySelectorAll('.targets-list .target-item .done-btn, .targets-list .target-item-exec .done-btn, .targets-list .today-task-item .done-btn'));
+                        const validTargetBtns = targetBtns.filter(b => {
+                            const inp = b.closest('.target-item, .target-item-exec, .today-task-item').querySelector('input[type="text"]');
+                            return inp && inp.value.trim() !== '';
+                        });
+                        if (validTargetBtns.length > 0) {
+                            const allDone = validTargetBtns.every(b => b.querySelector('.done-icon').getAttribute('data-lucide') === 'check-circle-2');
+                            const pillarBtn = parentPillar.querySelector('div.mb-2 .done-btn');
+                            if (pillarBtn) setDoneState(pillarBtn, 'pillar', allDone, false, true);
+                        } else {
+                            const pillarBtn = parentPillar.querySelector('div.mb-2 .done-btn');
+                            if (pillarBtn) setDoneState(pillarBtn, 'pillar', false, false, true);
+                        }
+                    }
+                } else if (type === 'pillar') {
+                    const parentBlock = btn.closest('.target-group-block');
+                    if (parentBlock && parentBlock.id !== 'overall-block') {
+                        const pillarBtns = Array.from(parentBlock.querySelectorAll('.pillar-block > div.mb-2 .done-btn, .today-pillar-block > div.mb-2 .done-btn'));
+                        if (pillarBtns.length > 0) {
+                            const allDone = pillarBtns.every(b => b.querySelector('.done-icon').getAttribute('data-lucide') === 'check-circle-2');
+                            const blockBtn = parentBlock.querySelector('div.mb-2 .done-btn');
+                            if (blockBtn) setDoneState(blockBtn, 'block', allDone, false, false);
+                        }
+                    }
+                }
+            }
+
+            if (!skipCrossSync && type === 'target' && container) {
+                const isScheduleItem = container.classList.contains('schedule-task-item');
+                const isTodayItem = container.classList.contains('today-task-item');
+
+                if (isTodayItem && container.id) {
+                    const twin = document.querySelector(`.schedule-task-item[data-linked-id="${container.id}"]`);
+                    if (twin) {
+                        const twinBtn = twin.querySelector('.done-btn');
+                        setDoneState(twinBtn, 'target', newState, false, false, true);
+                    }
+                } else if (isScheduleItem) {
+                    const linkedId = container.getAttribute('data-linked-id');
+                    if (linkedId) {
+                        const twin = document.getElementById(linkedId);
+                        if (twin) {
+                            const twinBtn = twin.querySelector('.done-btn');
+                            setDoneState(twinBtn, 'target', newState, false, true, true); 
+                        }
+                    }
+                }
+            }
+
+            syncPillarLocks();
+            if (type === 'target') syncRootTargets();
+        }
+
+        function syncPillarLocks() {
+            const overallPillars = document.querySelectorAll('#overall-block .pillar-block');
+            const donePillarIndices = [];
+            overallPillars.forEach(p => {
+                const isDone = p.querySelector('.mb-2 .done-icon').getAttribute('data-lucide') === 'check-circle-2';
+                if (isDone) donePillarIndices.push(p.getAttribute('data-pillar-index'));
+                
+                const emptyInputs = Array.from(p.querySelectorAll('.root-target-input')).filter(inp => inp.value.trim() === '');
+                if (isDone) {
+                    p.classList.add('locked-pillar');
+                    emptyInputs.forEach(inp => {
+                        inp.disabled = true; inp.placeholder = "Pillar đã Done"; inp.classList.add('opacity-30', 'cursor-not-allowed');
+                    });
+                } else {
+                    p.classList.remove('locked-pillar');
+                    p.querySelectorAll('.root-target-input').forEach(inp => {
+                        inp.disabled = false; inp.placeholder = "+ target"; inp.classList.remove('opacity-30', 'cursor-not-allowed');
+                    });
+                }
+            });
+
+            const execPillars = document.querySelectorAll('.execution-block .pillar-block');
+            execPillars.forEach(p => {
+                const idx = p.getAttribute('data-pillar-index');
+                const isSelfDone = p.querySelector('.mb-2 .done-icon').getAttribute('data-lucide') === 'check-circle-2';
+                const isOverallDone = idx !== null && donePillarIndices.includes(idx);
+                
+                if (isOverallDone || isSelfDone) {
+                    p.classList.add('locked-pillar');
+                    const emptyInputs = Array.from(p.querySelectorAll('.exec-target-input')).filter(inp => inp.value.trim() === '');
+                    emptyInputs.forEach(inp => {
+                        inp.disabled = true; inp.placeholder = isOverallDone ? "Pillar gốc đã Done" : "Pillar đã Done"; inp.classList.add('opacity-30', 'cursor-not-allowed');
+                    });
+                } else {
+                    p.classList.remove('locked-pillar');
+                    p.querySelectorAll('.exec-target-input').forEach(inp => {
+                        inp.disabled = false; inp.placeholder = "+ target"; inp.classList.remove('opacity-30', 'cursor-not-allowed');
+                    });
+                }
+            });
+        }
+
+        function toggleDone(btn, type) {
+            const icon = btn.querySelector('.done-icon');
+            const state = icon.getAttribute('data-lucide') !== 'check-circle-2';
+            setDoneState(btn, type, state, true, true);
+        }
+
+        let itemToDelete = null;
+        function requestDelete(btn, type) {
+            itemToDelete = btn.closest(type === 'block' ? '.target-group-block' : '.pillar-block');
+            const modal = document.getElementById('delete-modal');
+            const modalContent = document.getElementById('delete-modal-content');
+            modalContent.querySelector('h3').innerText = type === 'block' ? 'Xoá Block này' : 'Xoá Pillar này';
+            modalContent.querySelector('p').innerText = type === 'block' ? 'Bạn có chắc chắn muốn xoá Block này? Các Pillar và target bên trong cũng sẽ bị xoá.' : 'Bạn có chắc chắn muốn xoá Pillar này? Các target bên trong cũng sẽ bị xoá.';
+            modal.classList.remove('hidden'); void modal.offsetWidth;
+            modal.classList.remove('opacity-0'); modalContent.classList.remove('scale-95');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('delete-modal');
+            modal.classList.add('opacity-0'); document.getElementById('delete-modal-content').classList.add('scale-95');
+            setTimeout(() => { modal.classList.add('hidden'); itemToDelete = null; }, 300);
+        }
+
+        function confirmDelete() {
+            if (itemToDelete) {
+                itemToDelete.style.transition = 'opacity 0.2s, height 0.2s';
+                itemToDelete.style.opacity = '0';
+                setTimeout(() => { itemToDelete.remove(); syncRootTargets(); }, 200);
+                closeModal();
+            }
+        }
+
+        function switchTab(tabId, titleName) {
+            document.querySelectorAll('.page-section').forEach(section => {
+                section.classList.remove('block'); section.classList.add('hidden');
+            });
+            document.getElementById(`page-${tabId}`).classList.remove('hidden');
+            document.getElementById(`page-${tabId}`).classList.add('block');
+
+            document.querySelectorAll('.tab-btn').forEach(tab => {
+                tab.classList.remove('text-[#0A84FF]'); tab.classList.add('text-gray-500');
+            });
+            document.getElementById(`tab-${tabId}`).classList.remove('text-gray-500');
+            document.getElementById(`tab-${tabId}`).classList.add('text-[#0A84FF]');
+            document.getElementById('dynamic-page-title').innerText = titleName;
+            
+            if (tabId === 'plan') initTodayDate();
+            window.scrollTo(0, 0);
+        }
+
+        function toggleVision() {
+            const wrapper = document.getElementById('vision-wrapper');
+            const icon = document.getElementById('vision-icon');
+            wrapper.classList.toggle('collapsed');
+            icon.style.transform = wrapper.classList.contains('collapsed') ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+
+        function createRootTargetItemHTML(rootId = null) {
+            const uniqueId = rootId || ('root-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5));
+            return `
+                <div class="target-item flex flex-col mt-1 px-1 -mx-1 rounded-lg transition-colors duration-300">
+                    <div class="flex items-start gap-2 relative">
+                        <i data-lucide="grip-vertical" class="w-4 h-4 text-gray-700 mt-1.5 cursor-grab hover:text-gray-400 shrink-0 drag-handle-target"></i>
+                        <button class="mt-1 flex items-center justify-center text-gray-500 hover:text-green-500 transition-colors shrink-0 done-btn" onclick="toggleDone(this, 'target')"><i data-lucide="circle" class="w-4 h-4 done-icon"></i></button>
+                        <input type="text" data-root-id="${uniqueId}" class="root-target-input bg-transparent border-none outline-none text-white w-full placeholder-gray-600 focus:bg-white/5 rounded px-1 py-1 transition-colors" placeholder="+ target" onkeydown="handleTargetEnter(event, this)" oninput="syncRootTargets()">
+                        <button class="root-support-count hidden text-[11px] font-bold text-[#BF5AF2] bg-[#BF5AF2]/10 px-1.5 py-0.5 rounded-md mt-1 shrink-0 transition-colors hover:bg-[#BF5AF2]/20" onclick="toggleRootTree(this)">(0)</button>
+                    </div>
+                    <div class="root-support-tree pl-8 mt-1 hidden flex-col gap-1 mb-1"></div>
+                </div>
+            `;
+        }
+
+        function createExecTargetItemHTML() {
+            const uniqueExecId = 'exec-target-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
+            return `
+                <div class="target-item-exec flex flex-col mt-1 group px-1 -mx-1 rounded-lg transition-colors duration-300" id="${uniqueExecId}">
+                    <div class="flex items-start gap-2 relative">
+                        <i data-lucide="grip-vertical" class="w-4 h-4 text-gray-700 mt-1.5 cursor-grab hover:text-gray-400 shrink-0 drag-handle-target"></i>
+                        <button class="mt-1 flex items-center justify-center text-gray-500 hover:text-green-500 transition-colors shrink-0 done-btn" onclick="toggleDone(this, 'target')"><i data-lucide="circle" class="w-4 h-4 done-icon"></i></button>
+                        <input type="text" class="exec-target-input bg-transparent border-none outline-none text-white w-full placeholder-gray-600 focus:bg-white/5 rounded px-1 py-1 transition-colors" placeholder="+ target" onkeydown="handleExecTargetEnter(event, this)" onblur="handleExecTargetBlur(this)" oninput="syncRootTargets()">
+                        <button class="exec-support-count hidden text-[11px] font-bold text-[#0A84FF] bg-[#0A84FF]/10 px-1.5 py-0.5 rounded-md mt-1 shrink-0 transition-colors hover:bg-[#0A84FF]/20" onclick="toggleSupportList(this)">(0)</button>
+                    </div>
+                    <div class="support-list pl-8 mt-1 flex flex-col gap-1"></div>
+                </div>
+            `;
+        }
+
+        function addTargetToPillar(btn) {
+            const pillar = btn.closest('.pillar-block');
+            if (!pillar || pillar.classList.contains('locked-pillar')) return;
+
+            const content = pillar.querySelector('.pillar-content');
+            const icon = pillar.querySelector('.pillar-icon');
+            if (content && content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                if (icon) icon.style.transform = 'rotate(0deg)';
+            }
+
+            const list = pillar.querySelector('.targets-list');
+            if (!list) return;
+
+            const isRoot = !!pillar.closest('#overall-block') && !pillar.closest('.execution-block');
+            const existingSelector = isRoot ? '.root-target-input' : '.exec-target-input';
+            const lastInput = list.lastElementChild?.querySelector(existingSelector);
+            if (lastInput && lastInput.value.trim() === '') {
+                lastInput.focus();
+                return;
+            }
+
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = isRoot ? createRootTargetItemHTML() : createExecTargetItemHTML();
+            const newItem = tempDiv.firstElementChild;
+            list.appendChild(newItem);
+            lucide.createIcons({ root: newItem });
+            initAllSortables();
+            const input = newItem.querySelector(existingSelector);
+            if (input) input.focus();
+            if (!isRoot) syncRootTargets();
+        }
+
+        function handleTargetEnter(event, inputElement) {
+            if (event.isComposing || event.keyCode === 229) return;
+            const parentPillar = inputElement.closest('.pillar-block');
+            if (parentPillar && parentPillar.classList.contains('locked-pillar') && event.key === 'Enter') {
+                event.preventDefault(); return;
+            }
+
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = createRootTargetItemHTML();
+                const newItem = tempDiv.firstElementChild;
+                inputElement.closest('.target-item').insertAdjacentElement('afterend', newItem);
+                lucide.createIcons({ root: newItem });
+                newItem.querySelector('input').focus();
+            } 
+            else if (event.key === 'Backspace' && inputElement.value === '') {
+                const currentItem = inputElement.closest('.target-item');
+                const list = currentItem.parentElement;
+                if (list.children.length > 1) {
+                    event.preventDefault();
+                    const previousItem = currentItem.previousElementSibling;
+                    currentItem.remove(); syncRootTargets();
+                    if (previousItem) {
+                        const prevInput = previousItem.querySelector('input');
+                        prevInput.focus();
+                        setTimeout(() => prevInput.selectionStart = prevInput.selectionEnd = prevInput.value.length, 0);
+                    }
+                }
+            }
+        }
+
+        function handleExecTargetBlur(inputElement) {
+            setTimeout(() => {
+                if (!document.body.contains(inputElement)) return;
+                const execItem = inputElement.closest('.target-item-exec');
+                if (!execItem) return;
+                const isExtra = execItem.closest('.pillar-block').getAttribute('data-is-extra') === 'true';
+                if (!isExtra && inputElement.value.trim() !== '' && execItem.querySelectorAll('.support-line').length === 0) {
+                    addSupportLine(execItem);
+                }
+            }, 150);
+        }
+
+        function handleExecTargetEnter(event, inputElement) {
+            if (event.isComposing || event.keyCode === 229) return;
+            const parentPillar = inputElement.closest('.pillar-block');
+            if (parentPillar && parentPillar.classList.contains('locked-pillar') && event.key === 'Enter') {
+                event.preventDefault(); return;
+            }
+
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const execItem = inputElement.closest('.target-item-exec');
+                const isExtra = execItem.closest('.pillar-block').getAttribute('data-is-extra') === 'true';
+                const val = inputElement.value.trim();
+                
+                if (val !== '' && !isExtra) {
+                    if (execItem.querySelectorAll('.support-line').length === 0) addSupportLine(execItem);
+                    const hasValidSupport = Array.from(execItem.querySelectorAll('.support-btn')).some(btn => btn.hasAttribute('data-selected-id'));
+                    if (!hasValidSupport) {
+                        const supportBtn = execItem.querySelector('.support-btn');
+                        if (supportBtn) {
+                            supportBtn.classList.add('ring-2', 'ring-red-500');
+                            setTimeout(() => supportBtn.classList.remove('ring-2', 'ring-red-500'), 800);
+                        }
+                        return;
+                    }
+                }
+                
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = createExecTargetItemHTML();
+                const newItem = tempDiv.firstElementChild;
+                execItem.insertAdjacentElement('afterend', newItem);
+                lucide.createIcons({ root: newItem });
+                newItem.querySelector('input').focus();
+            } 
+            else if (event.key === 'Backspace' && inputElement.value === '') {
+                const execItem = inputElement.closest('.target-item-exec');
+                const list = execItem.parentElement;
+                if (list.children.length > 1) {
+                    event.preventDefault();
+                    const previousItem = execItem.previousElementSibling;
+                    execItem.remove(); syncRootTargets();
+                    if (previousItem) {
+                        const prevInput = previousItem.querySelector('input.exec-target-input');
+                        prevInput.focus(); setTimeout(() => prevInput.selectionStart = prevInput.selectionEnd = prevInput.value.length, 0);
+                    }
+                }
+            }
+        }
+
+        function addSupportLine(execItem) {
+            const supportList = execItem.querySelector('.support-list');
+            supportList.classList.remove('hidden');
+            const line = document.createElement('div');
+            line.className = 'support-line flex items-center gap-1.5 text-[13px]';
+            line.innerHTML = `
+                <i data-lucide="corner-down-right" class="w-3.5 h-3.5 text-gray-500 shrink-0"></i>
+                <span class="text-gray-600 font-medium italic text-[12px]">support:</span>
+                <button class="support-btn px-2 py-0.5 rounded-md bg-white/5 hover:bg-white/10 transition-colors text-gray-400 text-left truncate max-w-[150px]" onclick="openSupportDropdown(event, this)">Chọn mục tiêu...</button>
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button class="w-5 h-5 flex items-center justify-center rounded-full hover:bg-white/10 text-gray-500 transition-colors" onclick="addSupportLine(this.closest('.target-item-exec'))" title="Thêm liên kết support"><i data-lucide="plus" class="w-3 h-3"></i></button>
+                    <button class="w-5 h-5 flex items-center justify-center rounded-full hover:bg-red-500/20 text-gray-500 hover:text-red-500 transition-colors" onclick="const execItem = this.closest('.target-item-exec'); this.closest('.support-line').remove(); updateExecSupportCount(execItem)" title="Xoá"><i data-lucide="x" class="w-3 h-3"></i></button>
+                </div>
+            `;
+            supportList.appendChild(line);
+            lucide.createIcons({ root: line });
+            updateExecSupportCount(execItem);
+        }
+
+        function updateExecSupportCount(execItem) {
+            if (!execItem) return;
+            const countBtn = execItem.querySelector('.exec-support-count');
+            const validCount = Array.from(execItem.querySelectorAll('.support-btn')).filter(btn => btn.hasAttribute('data-selected-id')).length;
+            if (validCount > 0) {
+                countBtn.innerText = `(${validCount})`; countBtn.classList.remove('hidden');
+            } else { countBtn.classList.add('hidden'); }
+            syncRootTargets();
+        }
+
+        function toggleSupportList(btn) { btn.closest('.target-item-exec').querySelector('.support-list').classList.toggle('hidden'); }
+        function toggleRootTree(btn) { const tree = btn.closest('.target-item').querySelector('.root-support-tree'); tree.classList.toggle('hidden'); tree.classList.toggle('flex'); }
+
+        let currentSupportBtn = null;
+        function openSupportDropdown(event, btn) {
+            currentSupportBtn = btn;
+            const dropdown = document.getElementById('support-dropdown');
+            const pillarBlock = btn.closest('.pillar-block');
+            const pillarIndex = pillarBlock.getAttribute('data-pillar-index');
+            
+            if (pillarIndex === null) {
+                dropdown.innerHTML = '<div class="px-3 py-3 text-gray-500 text-xs italic text-center">Không tìm thấy mục tiêu gốc</div>';
+            } else {
+                const overallPillar = document.getElementById('overall-block').querySelector(`.pillar-block[data-pillar-index="${pillarIndex}"]`);
+                if (overallPillar) {
+                    const inputs = overallPillar.querySelectorAll('.root-target-input');
+                    const selectedIds = Array.from(btn.closest('.support-list').querySelectorAll('.support-btn')).filter(b => b !== btn && b.hasAttribute('data-selected-id')).map(b => b.getAttribute('data-selected-id'));
+                    const availableTargets = Array.from(inputs).map(inp => {
+                        const targetItem = inp.closest('.target-item');
+                        return { id: inp.getAttribute('data-root-id'), val: inp.value.trim(), isDone: targetItem.querySelector('.done-icon') ? targetItem.querySelector('.done-icon').getAttribute('data-lucide') === 'check-circle-2' : false };
+                    }).filter(t => t.val !== '' && !t.isDone && !selectedIds.includes(t.id));
+                    
+                    if (availableTargets.length === 0) dropdown.innerHTML = '<div class="px-3 py-3 text-gray-500 text-xs italic text-center">Không còn mục tiêu nào để chọn</div>';
+                    else dropdown.innerHTML = availableTargets.map(t => {
+                        const safeT = t.val.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+                        return `<button class="w-full text-left px-3 py-2.5 text-white hover:bg-[#0A84FF] transition-colors truncate border-b border-gray-700/50 last:border-0" onclick="selectSupportTarget('${t.id}', '${safeT}')">${t.val}</button>`;
+                    }).join('');
+                } else dropdown.innerHTML = '<div class="px-3 py-3 text-gray-500 text-xs italic text-center">Lỗi: Không tìm thấy Pillar gốc</div>';
+            }
+
+            const rect = btn.getBoundingClientRect();
+            dropdown.style.top = `${rect.bottom + 6}px`;
+            let leftPos = rect.left; if (leftPos + 240 > window.innerWidth) leftPos = window.innerWidth - 250; 
+            dropdown.style.left = `${leftPos}px`;
+            dropdown.classList.remove('hidden');
+            setTimeout(() => document.addEventListener('click', closeSupportDropdown), 0);
+        }
+
+        function closeSupportDropdown(e) {
+            const dropdown = document.getElementById('support-dropdown');
+            if (e && dropdown.contains(e.target)) return;
+            dropdown.classList.add('hidden'); document.removeEventListener('click', closeSupportDropdown);
+        }
+
+        function selectSupportTarget(id, val) {
+            if (currentSupportBtn) {
+                currentSupportBtn.innerText = val; currentSupportBtn.setAttribute('data-selected-id', id);
+                currentSupportBtn.classList.add('text-[#0A84FF]', 'bg-[#0A84FF]/10', 'font-medium');
+                currentSupportBtn.classList.remove('text-gray-400', 'bg-white/5');
+                updateExecSupportCount(currentSupportBtn.closest('.target-item-exec'));
+            }
+            closeSupportDropdown();
+        }
+
+        function syncRootTargets() {
+            const rootItems = document.querySelectorAll('#overall-block .target-item');
+            rootItems.forEach(item => {
+                const tree = item.querySelector('.root-support-tree'); if(tree) tree.innerHTML = '';
+                const countBtn = item.querySelector('.root-support-count');
+                if(countBtn) { countBtn.innerText = '(0)'; countBtn.dataset.count = 0; countBtn.classList.add('hidden'); }
+            });
+
+            document.querySelectorAll('.target-item-exec').forEach(execItem => {
+                if (!execItem.id) execItem.id = 'exec-target-' + Math.random().toString(36).substr(2, 9);
+                const execVal = execItem.querySelector('.exec-target-input').value.trim() || 'Mục tiêu trống';
+                const blockName = execItem.closest('.target-group-block')?.querySelector('input[type="text"]')?.value || 'Execution';
+                
+                execItem.querySelectorAll('.support-btn[data-selected-id]').forEach(btn => {
+                    const rootId = btn.getAttribute('data-selected-id');
+                    const matchingRootInput = document.querySelector(`#overall-block .root-target-input[data-root-id="${rootId}"]`);
+                    if (matchingRootInput) {
+                        const rootItem = matchingRootInput.closest('.target-item');
+                        const tree = rootItem.querySelector('.root-support-tree');
+                        const countBtn = rootItem.querySelector('.root-support-count');
+                        const treeItem = document.createElement('div');
+                        treeItem.className = 'flex items-start gap-1.5 text-[12px] text-gray-400 hover:text-white cursor-pointer py-1 transition-colors';
+                        treeItem.onclick = () => {
+                            const targetEl = document.getElementById(execItem.id);
+                            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            targetEl.classList.add('flash-highlight'); setTimeout(() => targetEl.classList.remove('flash-highlight'), 1500);
+                        };
+                        treeItem.innerHTML = `<i data-lucide="corner-down-right" class="w-3.5 h-3.5 text-gray-600 shrink-0 mt-0.5"></i><span class="leading-tight">${execVal} <span class="text-gray-600 text-[10px] font-medium tracking-wide uppercase ml-1">- in ${blockName}</span></span>`;
+                        tree.appendChild(treeItem); lucide.createIcons({ root: treeItem });
+                        let currentCount = parseInt(countBtn.dataset.count) || 0;
+                        currentCount++; countBtn.dataset.count = currentCount; 
+                    }
+                });
+            });
+
+            const overallPillars = document.querySelectorAll('#overall-block .pillar-block');
+            overallPillars.forEach(pillar => {
+                let pillarHasWarning = false;
+                pillar.querySelectorAll('.target-item').forEach(item => {
+                    const input = item.querySelector('.root-target-input');
+                    const countBtn = item.querySelector('.root-support-count');
+                    const count = parseInt(countBtn.dataset.count) || 0;
+                    
+                    if (input.value.trim() !== '') {
+                        if (count === 0) {
+                            input.classList.add('text-red-400');
+                            input.classList.remove('text-white');
+                            countBtn.innerHTML = '<i data-lucide="triangle-alert" class="w-3 h-3 mr-0.5"></i>(0)';
+                            countBtn.className = 'root-support-count flex items-center justify-center text-[11px] font-bold text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded-md mt-1 shrink-0 transition-colors hover:bg-red-500/20';
+                            countBtn.classList.remove('hidden');
+                            pillarHasWarning = true;
+                        } else {
+                            input.classList.remove('text-red-400');
+                            input.classList.add('text-white');
+                            countBtn.innerHTML = `(${count})`;
+                            countBtn.className = 'root-support-count text-[11px] font-bold text-[#BF5AF2] bg-[#BF5AF2]/10 px-1.5 py-0.5 rounded-md mt-1 shrink-0 transition-colors hover:bg-[#BF5AF2]/20';
+                            countBtn.classList.remove('hidden');
+                        }
+                    } else {
+                        input.classList.remove('text-red-400');
+                        input.classList.add('text-white');
+                        countBtn.classList.add('hidden');
+                    }
+                });
+                
+                const warningIcon = pillar.querySelector('.pillar-warning-icon');
+                if (warningIcon) {
+                    if (pillarHasWarning) warningIcon.classList.remove('hidden');
+                    else warningIcon.classList.add('hidden');
+                }
+            });
+            
+            lucide.createIcons({ root: document.getElementById('overall-block') });
+        }
+
+        let pillarCount = 1;
+
+        function createPillarHTML() {
+            pillarCount++;
+            const uniqueId = 'root-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
+            return `
+                <div class="pillar-block mb-4 last:mb-0 p-2 -mx-2 rounded-xl transition-colors duration-300">
+                    <div class="flex justify-between items-center mb-2">
+                        <div class="flex items-center gap-1.5 text-[#FF5A00] flex-1">
+                            <i data-lucide="grip-vertical" class="w-4 h-4 text-gray-700 cursor-grab hover:text-gray-400 shrink-0 drag-handle-pillar"></i>
+                            <button class="text-gray-500 hover:text-green-500 transition-colors shrink-0 done-btn mr-0.5" onclick="toggleDone(this, 'pillar')"><i data-lucide="circle" class="w-5 h-5 done-icon"></i></button>
+                            <i data-lucide="layers" class="w-5 h-5 fill-current shrink-0"></i>
+                            <input type="text" value="Pillar ${pillarCount}" class="font-bold text-[15px] tracking-wide uppercase bg-transparent border-none outline-none text-[#FF5A00] w-full placeholder-[#FF5A00]/50 focus:bg-[#FF5A00]/10 rounded px-1 -ml-1 transition-colors" placeholder="Tên Pillar...">
+                            <i data-lucide="triangle-alert" class="w-4 h-4 text-red-500 hidden pillar-warning-icon shrink-0"></i>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button onclick="addTargetToPillar(this)" class="text-[11px] font-semibold text-[#0A84FF] bg-[#0A84FF]/10 px-2 py-0.5 rounded-full hover:bg-[#0A84FF]/20 transition-colors shrink-0">+ Target</button>
+                            <button class="w-7 h-7 flex items-center justify-center rounded-full bg-gray-600/30 text-gray-300 hover:bg-gray-600/50 transition-colors shrink-0" onclick="togglePillar(this)"><i data-lucide="chevron-up" class="w-4 h-4 transition-transform duration-300 pillar-icon"></i></button>
+                            <button class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-500/20 text-gray-500 hover:text-red-500 transition-colors shrink-0" onclick="requestDelete(this, 'pillar')"><i data-lucide="x" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                    <div class="collapsible-content pillar-content">
+                        <div class="collapsible-inner targets-list sortable-targets space-y-1">
+                            <div class="target-item flex flex-col mt-1 px-1 -mx-1 rounded-lg transition-colors duration-300">
+                                <div class="flex items-start gap-2 relative">
+                                    <i data-lucide="grip-vertical" class="w-4 h-4 text-gray-700 mt-1.5 cursor-grab hover:text-gray-400 shrink-0 drag-handle-target"></i>
+                                    <button class="mt-1 flex items-center justify-center text-gray-500 hover:text-green-500 transition-colors shrink-0 done-btn" onclick="toggleDone(this, 'target')"><i data-lucide="circle" class="w-4 h-4 done-icon"></i></button>
+                                    <input type="text" data-root-id="${uniqueId}" class="root-target-input bg-transparent border-none outline-none text-white w-full placeholder-gray-600 focus:bg-white/5 rounded px-1 py-1 transition-colors" placeholder="+ target" onkeydown="handleTargetEnter(event, this)" oninput="syncRootTargets()">
+                                    <button class="root-support-count hidden text-[11px] font-bold text-[#BF5AF2] bg-[#BF5AF2]/10 px-1.5 py-0.5 rounded-md mt-1 shrink-0 transition-colors hover:bg-[#BF5AF2]/20" onclick="toggleRootTree(this)">(0)</button>
+                                </div>
+                                <div class="root-support-tree pl-8 mt-1 hidden flex-col gap-1 mb-1"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function togglePillar(btn) {
+            const content = btn.closest('.pillar-block').querySelector('.pillar-content');
+            const icon = btn.querySelector('.pillar-icon');
+            content.classList.toggle('collapsed');
+            icon.style.transform = content.classList.contains('collapsed') ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+
+        function toggleBlock(btn) {
+            const block = btn.closest('.target-group-block');
+            const blockCollapsible = block.querySelector('.block-collapsible');
+            const pillarContents = block.querySelectorAll('.pillar-content');
+            const pillarIcons = block.querySelectorAll('.pillar-icon');
+            
+            let state = parseInt(btn.getAttribute('data-toggle-state') || '0');
+            state = (state + 1) % 4;
+            btn.setAttribute('data-toggle-state', state);
+
+            if (state === 0) {
+                blockCollapsible.classList.remove('collapsed');
+                pillarContents.forEach(c => c.classList.remove('collapsed'));
+                pillarIcons.forEach(i => i.style.transform = 'rotate(0deg)');
+                btn.innerHTML = '<i data-lucide="chevron-up" class="w-4 h-4 transition-transform duration-300 block-icon"></i>';
+            } else if (state === 1) {
+                blockCollapsible.classList.remove('collapsed');
+                pillarContents.forEach(c => c.classList.add('collapsed'));
+                pillarIcons.forEach(i => i.style.transform = 'rotate(180deg)');
+                btn.innerHTML = '<i data-lucide="chevrons-up" class="w-4 h-4 transition-transform duration-300 block-icon"></i>';
+            } else if (state === 2) {
+                blockCollapsible.classList.add('collapsed');
+                btn.innerHTML = '<i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-300 block-icon"></i>';
+            } else if (state === 3) {
+                blockCollapsible.classList.remove('collapsed');
+                pillarContents.forEach(c => c.classList.add('collapsed'));
+                pillarIcons.forEach(i => i.style.transform = 'rotate(180deg)');
+                btn.innerHTML = '<i data-lucide="chevrons-down" class="w-4 h-4 transition-transform duration-300 block-icon"></i>';
+            }
+            lucide.createIcons({ root: btn });
+        }
+
+        function addPillar(btn) {
+            const block = btn.closest('.target-group-block');
+            const blockToggleBtn = block.querySelector('button[onclick="toggleBlock(this)"]');
+            if (blockToggleBtn.getAttribute('data-toggle-state') !== '0') {
+                blockToggleBtn.setAttribute('data-toggle-state', '3'); toggleBlock(blockToggleBtn);
+            }
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = createPillarHTML();
+            const newPillar = tempDiv.firstElementChild;
+            block.querySelector('.pillars-container').appendChild(newPillar);
+            lucide.createIcons({ root: newPillar });
+            syncPillarLocks();
+            initAllSortables(); 
+            newPillar.querySelector('input[type="text"]').focus();
+        }
+
+        function addBlock() {
+            const execBlocks = document.querySelectorAll('.execution-block');
+            const newName = `Execution ${execBlocks.length + 1}`;
+            
+            const overallPillars = document.querySelectorAll('#overall-block .pillar-block');
+            const clonedPillarsContainer = document.createElement('div');
+            clonedPillarsContainer.className = 'pillars-container sortable-pillars'; 
+            
+            overallPillars.forEach((p, idx) => {
+                p.setAttribute('data-pillar-index', idx);
+                if (p.querySelector('.done-icon').getAttribute('data-lucide') !== 'check-circle-2') {
+                    p.querySelectorAll('input').forEach(inp => inp.setAttribute('value', inp.value));
+                    const clonedPillar = p.cloneNode(true);
+                    
+                    const pillarTitleInput = clonedPillar.querySelector('input[type="text"]');
+                    if (pillarTitleInput) {
+                        pillarTitleInput.readOnly = true;
+                        pillarTitleInput.classList.remove('focus:bg-[#FF5A00]/10');
+                        pillarTitleInput.classList.add('cursor-default', 'opacity-80');
+                    }
+                    const warnIcon = clonedPillar.querySelector('.pillar-warning-icon');
+                    if (warnIcon) warnIcon.remove();
+                    
+                    clonedPillar.querySelectorAll('.targets-list').forEach(list => {
+                        const uniqueExecId = 'exec-target-' + Math.random().toString(36).substr(2, 9);
+                        list.innerHTML = `
+                            <div class="target-item-exec flex flex-col mt-1 group px-1 -mx-1 rounded-lg transition-colors duration-300" id="${uniqueExecId}">
+                                <div class="flex items-start gap-2 relative">
+                                    <i data-lucide="grip-vertical" class="w-4 h-4 text-gray-700 mt-1.5 cursor-grab hover:text-gray-400 shrink-0 drag-handle-target"></i>
+                                    <button class="mt-1 flex items-center justify-center text-gray-500 hover:text-green-500 transition-colors shrink-0 done-btn" onclick="toggleDone(this, 'target')"><i data-lucide="circle" class="w-4 h-4 done-icon"></i></button>
+                                    <input type="text" class="exec-target-input bg-transparent border-none outline-none text-white w-full placeholder-gray-600 focus:bg-white/5 rounded px-1 py-1 transition-colors" placeholder="+ target" onkeydown="handleExecTargetEnter(event, this)" onblur="handleExecTargetBlur(this)" oninput="syncRootTargets()">
+                                    <button class="exec-support-count hidden text-[11px] font-bold text-[#0A84FF] bg-[#0A84FF]/10 px-1.5 py-0.5 rounded-md mt-1 shrink-0 transition-colors hover:bg-[#0A84FF]/20" onclick="toggleSupportList(this)">(0)</button>
+                                </div>
+                                <div class="support-list pl-8 mt-1 flex flex-col gap-1"></div>
+                            </div>
+                        `;
+                    });
+                    
+                    clonedPillar.querySelectorAll('.done-btn').forEach(btn => {
+                        btn.querySelector('.done-icon').setAttribute('data-lucide', 'circle');
+                        btn.classList.remove('text-green-500'); btn.classList.add('text-gray-500');
+                    });
+                    clonedPillar.classList.remove('done-bg');
+                    clonedPillar.querySelectorAll('.done-bg').forEach(el => el.classList.remove('done-bg'));
+                    clonedPillar.querySelectorAll('.done-text').forEach(el => el.classList.remove('done-text'));
+
+                    clonedPillarsContainer.appendChild(clonedPillar);
+                }
+            });
+
+            const newBlock = document.createElement('div');
+            newBlock.className = 'target-group-block mb-6 execution-block';
+            newBlock.innerHTML = `
+                <div class="mb-2 flex justify-between items-center gap-2">
+                    <i data-lucide="grip-vertical" class="w-5 h-5 text-gray-700 cursor-grab hover:text-gray-400 shrink-0 drag-handle-block block-drag-handle"></i>
+                    <button class="text-gray-500 hover:text-green-500 transition-colors shrink-0 done-btn mr-1" onclick="toggleDone(this, 'block')"><i data-lucide="circle" class="w-6 h-6 done-icon"></i></button>
+                    <input type="text" value="${newName}" oninput="syncRootTargets()" class="text-[22px] font-bold tracking-tight bg-transparent border-none outline-none flex-1 min-w-0 text-white placeholder-gray-600 focus:bg-white/5 rounded px-1 -ml-1 transition-colors" placeholder="Tên nhóm...">
+                    <div class="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+                        <button onclick="addExtraPillar(this)" class="text-[12px] font-semibold text-[#BF5AF2] bg-[#BF5AF2]/10 px-2.5 py-1 rounded-full hover:bg-[#BF5AF2]/20 transition-colors shrink-0">+ Extra</button>
+                        <button data-toggle-state="0" class="w-7 h-7 flex items-center justify-center rounded-full bg-gray-600/30 text-gray-300 hover:bg-gray-600/50 transition-colors shrink-0" onclick="toggleBlock(this)"><i data-lucide="chevron-up" class="w-4 h-4 transition-transform duration-300 block-icon"></i></button>
+                        <button class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-500/20 text-gray-500 hover:text-red-500 transition-colors shrink-0" onclick="requestDelete(this, 'block')"><i data-lucide="x" class="w-4 h-4"></i></button>
+                    </div>
+                </div>
+                <div class="collapsible-content block-collapsible"><div class="collapsible-inner pt-1"><div class="health-card p-4 block-content transition-colors duration-300"></div></div></div>
+            `;
+            newBlock.querySelector('.block-content').appendChild(clonedPillarsContainer);
+            document.getElementById('execution-blocks-wrapper').appendChild(newBlock);
+            lucide.createIcons({ root: newBlock });
+            syncPillarLocks();
+            initAllSortables(); 
+        }
+
+        function addExtraPillar(btn) {
+            const block = btn.closest('.target-group-block');
+            const blockToggleBtn = block.querySelector('button[onclick="toggleBlock(this)"]');
+            if (blockToggleBtn.getAttribute('data-toggle-state') !== '0') {
+                blockToggleBtn.setAttribute('data-toggle-state', '3'); toggleBlock(blockToggleBtn);
+            }
+            const uniqueExecId = 'exec-target-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = `
+                <div class="pillar-block mb-4 last:mb-0 p-2 -mx-2 rounded-xl transition-colors duration-300" data-is-extra="true">
+                    <div class="flex justify-between items-center mb-2">
+                        <div class="flex items-center gap-1.5 text-[#BF5AF2] flex-1">
+                            <i data-lucide="grip-vertical" class="w-4 h-4 text-gray-700 cursor-grab hover:text-gray-400 shrink-0 drag-handle-pillar"></i>
+                            <button class="text-gray-500 hover:text-green-500 transition-colors shrink-0 done-btn mr-0.5" onclick="toggleDone(this, 'pillar')"><i data-lucide="circle" class="w-5 h-5 done-icon"></i></button>
+                            <i data-lucide="layers" class="w-5 h-5 fill-current shrink-0"></i>
+                            <div class="font-bold text-[15px] tracking-wide uppercase text-[#BF5AF2] w-full px-1 -ml-1 cursor-default opacity-80">Extra</div>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button onclick="addTargetToPillar(this)" class="text-[11px] font-semibold text-[#BF5AF2] bg-[#BF5AF2]/10 px-2 py-0.5 rounded-full hover:bg-[#BF5AF2]/20 transition-colors shrink-0">+ Target</button>
+                            <button class="w-7 h-7 flex items-center justify-center rounded-full bg-gray-600/30 text-gray-300 hover:bg-gray-600/50 transition-colors shrink-0" onclick="togglePillar(this)"><i data-lucide="chevron-up" class="w-4 h-4 transition-transform duration-300 pillar-icon"></i></button>
+                            <button class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-500/20 text-gray-500 hover:text-red-500 transition-colors shrink-0" onclick="requestDelete(this, 'pillar')"><i data-lucide="x" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                    <div class="collapsible-content pillar-content">
+                        <div class="collapsible-inner targets-list sortable-targets space-y-1">
+                            <div class="target-item-exec flex flex-col mt-1 group px-1 -mx-1 rounded-lg transition-colors duration-300" id="${uniqueExecId}">
+                                <div class="flex items-start gap-2 relative">
+                                    <i data-lucide="grip-vertical" class="w-4 h-4 text-gray-700 mt-1.5 cursor-grab hover:text-gray-400 shrink-0 drag-handle-target"></i>
+                                    <button class="mt-1 flex items-center justify-center text-gray-500 hover:text-green-500 transition-colors shrink-0 done-btn" onclick="toggleDone(this, 'target')"><i data-lucide="circle" class="w-4 h-4 done-icon"></i></button>
+                                    <input type="text" class="exec-target-input bg-transparent border-none outline-none text-white w-full placeholder-gray-600 focus:bg-white/5 rounded px-1 py-1 transition-colors" placeholder="+ target" onkeydown="handleExecTargetEnter(event, this)" onblur="handleExecTargetBlur(this)" oninput="syncRootTargets()">
+                                    <button class="exec-support-count hidden text-[11px] font-bold text-[#0A84FF] bg-[#0A84FF]/10 px-1.5 py-0.5 rounded-md mt-1 shrink-0 transition-colors hover:bg-[#0A84FF]/20" onclick="toggleSupportList(this)">(0)</button>
+                                </div>
+                                <div class="support-list pl-8 mt-1 flex flex-col gap-1"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            const newPillar = tempDiv.firstElementChild;
+            block.querySelector('.pillars-container').appendChild(newPillar);
+            lucide.createIcons({ root: newPillar });
+            syncPillarLocks();
+            initAllSortables();
+            newPillar.querySelector('input').focus();
+        }
+
+        // ==========================================
+        // LOGIC TAB TODAY'S PLAN
+        // ==========================================
+        const vnDays = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+        function formatVNShortDate(d) { return `${vnDays[d.getDay()]}, ${d.getDate()} thg ${d.getMonth() + 1}, ${d.getFullYear()}`; }
+
+        function initTodayDate() {
+            const picker = document.getElementById('today-date-picker');
+            if (!picker.value) {
+                const today = new Date();
+                const yyyy = today.getFullYear();
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                picker.value = `${yyyy}-${mm}-${dd}`;
+                document.getElementById('today-date-display').innerText = formatVNShortDate(today);
+            }
+        }
+
+        function updateTodayDate(input) {
+            if (input.value) {
+                const [y, m, d] = input.value.split('-');
+                const dateObj = new Date(y, m - 1, d);
+                document.getElementById('today-date-display').innerText = formatVNShortDate(dateObj);
+            }
+        }
+
+        function startToday() {
+            document.getElementById('start-today-container').classList.add('hidden');
+            const contentContainer = document.getElementById('today-content-container');
+            contentContainer.classList.remove('hidden');
+            contentContainer.classList.add('flex');
+            executeInitialSync();
+        }
+
+        function executeInitialSync() {
+            const container = document.getElementById('today-pillars-container');
+            container.innerHTML = ''; 
+            const overallPillars = document.querySelectorAll('#overall-block .pillar-block');
+            
+            overallPillars.forEach((p, idx) => {
+                p.setAttribute('data-pillar-index', idx);
+                const isDone = p.querySelector('.done-icon').getAttribute('data-lucide') === 'check-circle-2';
+                if (!isDone) {
+                    const name = p.querySelector('input').value || 'Pillar';
+                    addSpecificTodayPillar(idx, name);
+                }
+            });
+            initAllSortables();
+        }
+
+        function addSpecificTodayPillar(idx, name, isExtra = false) {
+            const container = document.getElementById('today-pillars-container');
+            const todayPillar = document.createElement('div');
+            todayPillar.className = 'today-pillar-block mb-4 last:mb-0 p-2 -mx-2 rounded-xl transition-all duration-300';
+            todayPillar.setAttribute('data-ref-index', idx);
+            if (isExtra) todayPillar.setAttribute('data-is-extra', 'true');
+            
+            todayPillar.innerHTML = `
+                <div class="flex items-center gap-1.5 ${isExtra ? 'text-[#BF5AF2]' : 'text-[#FF5A00]'} mb-2">
+                    <i data-lucide="grip-vertical" class="w-4 h-4 text-gray-700 cursor-grab hover:text-gray-400 shrink-0 drag-handle-pillar"></i>
+                    <button class="text-gray-500 hover:text-green-500 transition-colors shrink-0 done-btn mr-0.5" onclick="toggleDone(this, 'pillar')"><i data-lucide="circle" class="w-5 h-5 done-icon"></i></button>
+                    <i data-lucide="layers" class="w-5 h-5 fill-current shrink-0"></i>
+                    <div class="font-bold text-[15px] tracking-wide uppercase px-1 -ml-1 pillar-title-display flex-1">${name}</div>
+                    
+                    <button onclick="addTodayActionDirectly(this)" class="ml-2 text-[11px] font-semibold bg-white/10 hover:bg-white/20 text-white px-2 py-0.5 rounded transition-colors shrink-0">+ action</button>
+                    ${isExtra ? '<button onclick="removeTodayExtraPillar(this)" class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-500/20 text-gray-400 hover:text-red-500 transition-colors shrink-0" title="Xoá Extra"><i data-lucide="x" class="w-4 h-4"></i></button>' : ''}
+                </div>
+                <div class="targets-list sortable-targets space-y-1 relative">
+                    <div class="lock-overlay hidden absolute inset-0 bg-[#1C1C1E]/50 z-10 backdrop-blur-[1px] rounded-lg cursor-not-allowed"></div>
+                    ${createTodayActionHTML()}
+                </div>
+            `;
+            container.appendChild(todayPillar);
+            lucide.createIcons({ root: todayPillar });
+        }
+
+        function addTodayActionDirectly(btn) {
+            const list = btn.closest('.today-pillar-block').querySelector('.targets-list');
+            const taskItems = Array.from(list.querySelectorAll('.today-task-item'));
+            const lastTask = taskItems[taskItems.length - 1];
+
+            if (lastTask) {
+                const lastActionInput = lastTask.querySelector('.action-input');
+                if (lastActionInput && lastActionInput.value.trim() === '') {
+                    lastActionInput.focus();
+                    return;
+                }
+                if (!canAdvanceTodayAction(lastTask)) return;
+            }
+
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = createTodayActionHTML();
+            const newItem = tempDiv.firstElementChild;
+            list.appendChild(newItem);
+            lucide.createIcons({ root: newItem });
+            initAllSortables(); 
+            newItem.querySelector('.action-input').focus();
+        }
+
+        function addTodayExtraPillar() {
+            const idx = 'extra-' + Date.now();
+            addSpecificTodayPillar(idx, "Extra", true);
+            const container = document.getElementById('today-pillars-container');
+            const newPillar = container.lastElementChild;
+            initAllSortables();
+            const inputs = newPillar.querySelectorAll('.action-input');
+            if (inputs.length > 0) inputs[0].focus();
+        }
+
+        function removeTodayExtraPillar(btn) {
+            const pillar = btn.closest('.today-pillar-block');
+            if (!pillar) return;
+            pillar.style.transition = 'opacity 0.2s, height 0.2s';
+            pillar.style.opacity = '0';
+            setTimeout(() => pillar.remove(), 200);
+        }
+
+        let orphanedPillarsCache = [];
+
+        function refreshTodayPlan() {
+            if (!document.getElementById('start-today-container').classList.contains('hidden')) return;
+
+            const overallPillars = document.querySelectorAll('#overall-block .pillar-block');
+            const overallMap = new Map();
+            overallPillars.forEach((p, idx) => {
+                p.setAttribute('data-pillar-index', idx);
+                const isDone = p.querySelector('.done-icon').getAttribute('data-lucide') === 'check-circle-2';
+                const name = p.querySelector('input').value || 'Pillar';
+                overallMap.set(idx.toString(), { isDone, name });
+            });
+
+            const todayPillars = document.querySelectorAll('.today-pillar-block:not([data-is-extra="true"])');
+            const currentTodayIndices = new Set();
+            orphanedPillarsCache = [];
+
+            todayPillars.forEach(tp => {
+                const idx = tp.getAttribute('data-ref-index');
+                currentTodayIndices.add(idx);
+                if (!overallMap.has(idx) || overallMap.get(idx).isDone) {
+                    orphanedPillarsCache.push(tp);
+                } 
+                else if (overallMap.has(idx) && !overallMap.get(idx).isDone) {
+                    unlockTodayPillar(tp);
+                    tp.querySelector('.pillar-title-display').innerText = overallMap.get(idx).name;
+                }
+            });
+
+            overallMap.forEach((data, idx) => {
+                if (!data.isDone && !currentTodayIndices.has(idx)) addSpecificTodayPillar(idx, data.name);
+            });
+
+            initAllSortables();
+            if (orphanedPillarsCache.length > 0) showSyncModal();
+        }
+
+        function showSyncModal() {
+            const modal = document.getElementById('sync-modal'); const modalContent = document.getElementById('sync-modal-content');
+            modal.classList.remove('hidden'); void modal.offsetWidth; modal.classList.remove('opacity-0'); modalContent.classList.remove('scale-95');
+        }
+        function closeSyncModal() {
+            const modal = document.getElementById('sync-modal');
+            modal.classList.add('opacity-0'); document.getElementById('sync-modal-content').classList.add('scale-95');
+            setTimeout(() => { modal.classList.add('hidden'); orphanedPillarsCache = []; }, 300);
+        }
+        function confirmSyncDelete() { orphanedPillarsCache.forEach(p => { p.style.transition = 'opacity 0.2s, height 0.2s'; p.style.opacity = '0'; setTimeout(() => p.remove(), 200); }); closeSyncModal(); }
+        function confirmSyncLock() { orphanedPillarsCache.forEach(p => lockTodayPillar(p)); closeSyncModal(); }
+
+        function lockTodayPillar(pillarEl) {
+            pillarEl.classList.add('opacity-60', 'grayscale');
+            const overlay = pillarEl.querySelector('.lock-overlay'); if (overlay) overlay.classList.remove('hidden');
+            pillarEl.querySelectorAll('input, button').forEach(el => { el.disabled = true; el.classList.add('cursor-not-allowed'); });
+            const title = pillarEl.querySelector('.pillar-title-display');
+            if(!title.innerText.includes("(Locked)")) title.innerText += " (Locked)";
+        }
+
+        function unlockTodayPillar(pillarEl) {
+            pillarEl.classList.remove('opacity-60', 'grayscale');
+            const overlay = pillarEl.querySelector('.lock-overlay'); if (overlay) overlay.classList.add('hidden');
+            pillarEl.querySelectorAll('input, button').forEach(el => { el.disabled = false; el.classList.remove('cursor-not-allowed'); });
+            const titleEl = pillarEl.querySelector('.pillar-title-display'); titleEl.innerText = titleEl.innerText.replace(" (Locked)", "");
+        }
+
+
+        // SỬA LỖI: ÉP BUỘC ĐIỀN CHẶT CHẼ TRONG TODAY'S PLAN
+        function hasValidOutput(taskItem) {
+            return Array.from(taskItem.querySelectorAll('.output-input')).some(inp => inp.value.trim() !== '');
+        }
+
+        function hasSelectedTodaySupport(taskItem) {
+            return Array.from(taskItem.querySelectorAll('.today-support-btn')).some(btn => btn.hasAttribute('data-selected-id'));
+        }
+
+        function focusRequiredOutput(taskItem) {
+            let firstOut = taskItem.querySelector('.output-list .output-input');
+            if (!firstOut) {
+                createOutputElement(taskItem);
+                const allOutputs = taskItem.querySelectorAll('.output-list .output-input');
+                firstOut = allOutputs[allOutputs.length - 1];
+            }
+            if (firstOut) {
+                firstOut.classList.add('ring-2', 'ring-red-500');
+                setTimeout(() => firstOut.classList.remove('ring-2', 'ring-red-500'), 1500);
+                firstOut.focus();
+            }
+        }
+
+        function highlightMissingTodaySupport(taskItem) {
+            const supList = taskItem.querySelector('.today-support-list');
+            if (supList.children.length === 0) {
+                addTodaySupportLine(taskItem);
+                return;
+            }
+            const firstSupBtn = supList.querySelector('.today-support-btn');
+            if (firstSupBtn) {
+                firstSupBtn.classList.add('ring-2', 'ring-red-500');
+                setTimeout(() => firstSupBtn.classList.remove('ring-2', 'ring-red-500'), 1500);
+            }
+        }
+
+        function canAdvanceTodayAction(taskItem) {
+            if (!taskItem) return false;
+            const actionInput = taskItem.querySelector('.action-input');
+            if (!actionInput || actionInput.value.trim() === '') {
+                actionInput?.focus();
+                return false;
+            }
+
+            if (!hasValidOutput(taskItem)) {
+                focusRequiredOutput(taskItem);
+                return false;
+            }
+
+            const isExtra = taskItem.closest('.today-pillar-block')?.getAttribute('data-is-extra') === 'true';
+            if (!isExtra && !hasSelectedTodaySupport(taskItem)) {
+                highlightMissingTodaySupport(taskItem);
+                return false;
+            }
+
+            return true;
+        }
+
+        function forceActionRequirements(input) {
+            setTimeout(() => {
+                if (!document.body.contains(input)) return;
+                const taskItem = input.closest('.today-task-item');
+                if (!taskItem) return;
+
+                const actionInput = taskItem.querySelector('.action-input');
+                if (!actionInput || actionInput.value.trim() === '') return;
+
+                if (!hasValidOutput(taskItem)) {
+                    focusRequiredOutput(taskItem);
+                    return;
+                }
+
+                const isExtra = taskItem.closest('.today-pillar-block')?.getAttribute('data-is-extra') === 'true';
+                if (!isExtra && !hasSelectedTodaySupport(taskItem)) {
+                    highlightMissingTodaySupport(taskItem);
+                }
+            }, 150);
+        }
+
+        function createTodayActionHTML() {
+            const uniqueId = 'today-task-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
+            return `
+                <div id="${uniqueId}" class="today-task-item flex flex-col mt-1 px-1 -mx-1 rounded-lg transition-colors duration-300 group/action relative">
+                    <div class="flex items-start gap-2 relative">
+                        <i data-lucide="grip-vertical" class="w-4 h-4 text-gray-700 mt-1.5 cursor-grab hover:text-gray-400 shrink-0 drag-handle-target"></i>
+                        <button class="mt-1 flex items-center justify-center text-gray-500 hover:text-green-500 transition-colors shrink-0 done-btn" onclick="toggleDone(this, 'target')"><i data-lucide="circle" class="w-4 h-4 done-icon"></i></button>
+                        <input type="text" class="action-input bg-transparent border-none outline-none text-white w-full placeholder-gray-600 focus:bg-white/5 rounded px-1 py-1 transition-colors" placeholder="+ action" onkeydown="handleActionEnter(event, this)" oninput="checkSmartPlus(this)" onblur="forceActionRequirements(this)">
+                        
+                        <div class="smart-plus-wrapper relative ml-auto shrink-0 hidden">
+                            <button class="w-6 h-6 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-700 hover:text-white transition-colors" onclick="toggleSmartMenu(this)"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                            <div class="smart-menu absolute right-0 top-full mt-1.5 w-36 bg-[#2C2C2E] border border-gray-700 rounded-lg shadow-2xl hidden z-50 py-1 text-[13px] flex-col overflow-hidden">
+                                <button class="w-full text-left px-3 py-2 text-white hover:bg-[#0A84FF] transition-colors border-b border-gray-700/50" onclick="addOutputLine(this)">Thêm Output</button>
+                                <button class="support-opt w-full text-left px-3 py-2 text-gray-500 transition-colors border-b border-gray-700/50 cursor-not-allowed" onclick="if(!this.classList.contains('cursor-not-allowed')) addTodaySupportLine(this.closest('.today-task-item')); closeAllSmartMenus();" title="Cần nhập Output trước">Thêm Support</button>
+                                <button class="w-full text-left px-3 py-2 text-white hover:bg-[#0A84FF] transition-colors" onclick="addNoteLine(this)">Thêm Note</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="output-list pl-8 mt-1 flex flex-col gap-1"></div>
+                    <div class="today-support-list pl-8 mt-1 flex flex-col gap-1"></div>
+                    <div class="note-list pl-8 mt-1 flex flex-col gap-1"></div>
+                </div>
+            `;
+        }
+
+        function checkSmartPlus(input) {
+            const taskItem = input.closest('.today-task-item');
+            const wrapper = taskItem.querySelector('.smart-plus-wrapper');
+            if (input.value.trim() !== '') {
+                wrapper.classList.remove('hidden');
+                checkUnlockSupport(taskItem);
+            }
+            else wrapper.classList.add('hidden');
+        }
+
+        function toggleSmartMenu(btn) {
+            const menu = btn.nextElementSibling;
+            const isHidden = menu.classList.contains('hidden');
+            closeAllSmartMenus();
+            if (isHidden) menu.classList.remove('hidden');
+            
+            setTimeout(() => {
+                document.addEventListener('click', function closeMenu(e) {
+                    if (!menu.contains(e.target) && e.target !== btn) {
+                        menu.classList.add('hidden');
+                        document.removeEventListener('click', closeMenu);
+                    }
+                });
+            }, 0);
+        }
+
+        function closeAllSmartMenus() {
+            document.querySelectorAll('.smart-menu').forEach(m => m.classList.add('hidden'));
+        }
+
+        function handleActionEnter(e, input) {
+            if (e.isComposing || e.keyCode === 229) return;
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (input.value.trim() !== '') {
+                    const taskItem = input.closest('.today-task-item');
+                    if (canAdvanceTodayAction(taskItem)) {
+                        spawnNewTodayActionIfValid(taskItem);
+                    }
+                }
+            } else if (e.key === 'Backspace' && input.value === '') {
+                const currentItem = input.closest('.today-task-item');
+                const list = currentItem.parentElement;
+                if (list.children.length > 1) {
+                    e.preventDefault();
+                    const previousItem = currentItem.previousElementSibling;
+                    currentItem.remove();
+                    if (previousItem) {
+                        const prevInput = previousItem.querySelector('.action-input');
+                        if (prevInput) {
+                            prevInput.focus(); 
+                            setTimeout(() => prevInput.selectionStart = prevInput.selectionEnd = prevInput.value.length, 0);
+                        }
+                    }
+                }
+            }
+        }
+
+        function checkUnlockSupport(taskItem) {
+            const validOutputs = Array.from(taskItem.querySelectorAll('.output-input')).filter(inp => inp.value.trim() !== '');
+            const supportOpt = taskItem.querySelector('.support-opt');
+            
+            if (validOutputs.length > 0) {
+                supportOpt.classList.remove('text-gray-500', 'cursor-not-allowed');
+                supportOpt.classList.add('text-white', 'hover:bg-[#0A84FF]');
+                supportOpt.title = "";
+            } else {
+                supportOpt.classList.add('text-gray-500', 'cursor-not-allowed');
+                supportOpt.classList.remove('text-white', 'hover:bg-[#0A84FF]');
+                supportOpt.title = "Cần nhập Output trước";
+            }
+        }
+
+        function createOutputElement(taskItem) {
+            const outList = taskItem.querySelector('.output-list');
+            const line = document.createElement('div');
+            line.className = 'flex items-start gap-2 text-[13px]';
+            line.innerHTML = `
+                <span class="text-green-400 mt-1.5 font-medium italic shrink-0">↳ output:</span>
+                <input type="text" class="output-input bg-transparent border-none outline-none text-white w-full placeholder-gray-600 focus:bg-white/5 rounded px-1 py-1 transition-colors" placeholder="Bắt buộc nhập output..." onkeydown="handleOutputEnter(event, this)" oninput="checkUnlockSupport(this.closest('.today-task-item'))" onblur="forceActionRequirements(this)">
+            `;
+            outList.appendChild(line);
+            line.querySelector('input').focus();
+        }
+
+        function createNoteElement(taskItem) {
+            const noteList = taskItem.querySelector('.note-list');
+            const line = document.createElement('div');
+            line.className = 'flex items-start gap-2 text-[13px]';
+            line.innerHTML = `
+                <span class="text-yellow-400 mt-1.5 font-medium italic shrink-0">📝 note:</span>
+                <input type="text" class="note-input bg-transparent border-none outline-none text-white w-full placeholder-gray-600 focus:bg-white/5 rounded px-1 py-1 transition-colors" placeholder="Nhập ghi chú..." onkeydown="handleNoteEnter(event, this)">
+            `;
+            noteList.appendChild(line);
+            line.querySelector('input').focus();
+        }
+
+        function addOutputLine(btn) {
+            closeAllSmartMenus();
+            createOutputElement(btn.closest('.today-task-item'));
+        }
+        function addNoteLine(btn) {
+            closeAllSmartMenus();
+            createNoteElement(btn.closest('.today-task-item'));
+        }
+
+        function handleOutputEnter(e, input) {
+            if (e.isComposing || e.keyCode === 229) return;
+            const taskItem = input.closest('.today-task-item');
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (input.value.trim() === '') {
+                    input.classList.add('ring-2', 'ring-red-500'); setTimeout(() => input.classList.remove('ring-2', 'ring-red-500'), 800);
+                    return;
+                }
+                createOutputElement(taskItem);
+            } else if (e.key === 'Backspace' && input.value === '') {
+                e.preventDefault();
+                const line = input.closest('.flex');
+                const prev = line.previousElementSibling;
+                line.remove();
+                checkUnlockSupport(taskItem);
+                if(prev) {
+                    const pInp = prev.querySelector('input');
+                    pInp.focus(); setTimeout(() => pInp.selectionStart = pInp.selectionEnd = pInp.value.length, 0);
+                } else {
+                    const actionInp = taskItem.querySelector('.action-input');
+                    actionInp.focus(); setTimeout(() => actionInp.selectionStart = actionInp.selectionEnd = actionInp.value.length, 0);
+                }
+            }
+        }
+
+        function handleNoteEnter(e, input) {
+            if (e.isComposing || e.keyCode === 229) return;
+            const taskItem = input.closest('.today-task-item');
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                createNoteElement(taskItem);
+            } else if (e.key === 'Backspace' && input.value === '') {
+                e.preventDefault();
+                const line = input.closest('.flex');
+                const prev = line.previousElementSibling;
+                line.remove();
+                if(prev) {
+                    const pInp = prev.querySelector('input');
+                    pInp.focus(); setTimeout(() => pInp.selectionStart = pInp.selectionEnd = pInp.value.length, 0);
+                } else {
+                    const lastOut = taskItem.querySelector('.output-list').lastElementChild;
+                    if(lastOut) {
+                        const oInp = lastOut.querySelector('input');
+                        oInp.focus(); setTimeout(() => oInp.selectionStart = oInp.selectionEnd = oInp.value.length, 0);
+                    } else {
+                        const actionInp = taskItem.querySelector('.action-input');
+                        actionInp.focus(); setTimeout(() => actionInp.selectionStart = actionInp.selectionEnd = actionInp.value.length, 0);
+                    }
+                }
+            }
+        }
+
+        function addTodaySupportLine(taskItem) {
+            const supportList = taskItem.querySelector('.today-support-list');
+            supportList.classList.remove('hidden');
+            const line = document.createElement('div');
+            line.className = 'today-support-line flex items-center gap-1.5 text-[13px]';
+            line.innerHTML = `
+                <i data-lucide="corner-down-right" class="w-3.5 h-3.5 text-gray-500 shrink-0"></i>
+                <span class="text-gray-600 font-medium italic text-[12px]">support for:</span>
+                <button class="today-support-btn px-2 py-0.5 rounded-md bg-white/5 hover:bg-white/10 transition-colors text-gray-400 text-left truncate max-w-[130px]" onclick="openTodaySupportDropdown(event, this)">Chọn mục tiêu...</button>
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button class="w-5 h-5 flex items-center justify-center rounded-full hover:bg-white/10 text-gray-500 transition-colors" onclick="addTodaySupportLine(this.closest('.today-task-item'))" title="Thêm liên kết"><i data-lucide="plus" class="w-3 h-3"></i></button>
+                    <button class="w-5 h-5 flex items-center justify-center rounded-full hover:bg-red-500/20 text-gray-500 hover:text-red-500 transition-colors" onclick="this.closest('.today-support-line').remove()" title="Xoá"><i data-lucide="x" class="w-3 h-3"></i></button>
+                </div>
+            `;
+            supportList.appendChild(line);
+            lucide.createIcons({ root: line });
+            line.querySelector('.today-support-btn').click();
+        }
+        
+        function spawnNewTodayActionIfValid(taskItem) {
+            const list = taskItem.parentElement;
+            if (taskItem === list.lastElementChild) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = createTodayActionHTML();
+                const newItem = tempDiv.firstElementChild;
+                list.appendChild(newItem);
+                lucide.createIcons({ root: newItem });
+                initAllSortables(); 
+            }
+        }
+        
+        let currentTodaySupportBtn = null;
+        let todaySupportData = [];
+
+        function openTodaySupportDropdown(event, btn) {
+            if (btn.disabled) return;
+            currentTodaySupportBtn = btn;
+            const dropdown = document.getElementById('today-support-dropdown');
+            const searchInput = document.getElementById('today-support-search');
+            
+            todaySupportData = [];
+            document.querySelectorAll('.execution-block').forEach(block => {
+                const blockName = block.querySelector('input').value || 'Execution';
+                block.querySelectorAll('.pillar-block').forEach(pillar => {
+                    const pillarTitleEl = pillar.querySelector('input[type="text"]');
+                    const pillarName = pillarTitleEl ? pillarTitleEl.value : (pillar.getAttribute('data-is-extra') === 'true' ? 'Extra' : 'Pillar');
+                    pillar.querySelectorAll('.target-item-exec').forEach(item => {
+                        const isDone = item.querySelector('.done-icon').getAttribute('data-lucide') === 'check-circle-2';
+                        if(!isDone) {
+                            const targetInput = item.querySelector('.exec-target-input');
+                            if(targetInput && targetInput.value.trim() !== '') {
+                                todaySupportData.push({ id: item.id, name: targetInput.value.trim(), blockName: blockName, pillarName: pillarName });
+                            }
+                        }
+                    });
+                });
+            });
+            
+            searchInput.value = '';
+            renderTodaySupportDropdown();
+
+            const rect = btn.getBoundingClientRect();
+            dropdown.style.top = `${rect.bottom + 6}px`;
+            let leftPos = rect.left; if (leftPos + 280 > window.innerWidth) leftPos = window.innerWidth - 290; 
+            dropdown.style.left = `${leftPos}px`;
+            
+            dropdown.classList.remove('hidden');
+            searchInput.focus();
+            
+            setTimeout(() => document.addEventListener('click', closeTodaySupportDropdown), 0);
+        }
+        
+        function renderTodaySupportDropdown() {
+            const listContainer = document.getElementById('today-support-list');
+            const searchVal = document.getElementById('today-support-search').value.toLowerCase();
+            
+            const supportList = currentTodaySupportBtn.closest('.today-support-list');
+            const selectedIds = Array.from(supportList.querySelectorAll('.today-support-btn')).filter(b => b !== currentTodaySupportBtn && b.hasAttribute('data-selected-id')).map(b => b.getAttribute('data-selected-id'));
+                
+            const filtered = todaySupportData.filter(t => !selectedIds.includes(t.id) && (t.name.toLowerCase().includes(searchVal) || t.blockName.toLowerCase().includes(searchVal) || t.pillarName.toLowerCase().includes(searchVal)));
+            
+            if (filtered.length === 0) listContainer.innerHTML = '<div class="px-3 py-4 text-gray-500 text-xs italic text-center">Không tìm thấy mục tiêu chưa hoàn thành</div>';
+            else listContainer.innerHTML = filtered.map(t => {
+                const safeT = t.name.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+                return `<button class="w-full text-left px-3 py-2 text-white hover:bg-[#0A84FF] transition-colors border-b border-gray-700/50 last:border-0 flex flex-col gap-0.5" onclick="selectTodaySupportTarget('${t.id}', '${safeT}')"><span class="font-medium text-[13px] truncate">${t.name}</span><span class="text-[10px] text-gray-400 truncate">${t.blockName} • ${t.pillarName}</span></button>`;
+            }).join('');
+        }
+
+        function closeTodaySupportDropdown(e) {
+            const dropdown = document.getElementById('today-support-dropdown');
+            const searchInput = document.getElementById('today-support-search');
+            if (e && (dropdown.contains(e.target) && e.target !== searchInput && !e.target.closest('#today-support-list'))) return;
+            if (e && e.target === searchInput) return;
+            dropdown.classList.add('hidden'); document.removeEventListener('click', closeTodaySupportDropdown);
+        }
+
+        function selectTodaySupportTarget(id, val) {
+            if (currentTodaySupportBtn) {
+                currentTodaySupportBtn.innerText = val;
+                currentTodaySupportBtn.setAttribute('data-selected-id', id);
+                currentTodaySupportBtn.classList.add('text-[#0A84FF]', 'bg-[#0A84FF]/10', 'font-medium');
+                currentTodaySupportBtn.classList.remove('text-gray-400', 'bg-white/5');
+                spawnNewTodayActionIfValid(currentTodaySupportBtn.closest('.today-task-item'));
+            }
+            closeTodaySupportDropdown();
+        }
+
+        // ==========================================
+        // LOGIC TAB REVIEW
+        // ==========================================
+
+        function toggleReviewSection(contentId, btn) {
+            const content = document.getElementById(contentId);
+            const icon = btn.querySelector('.section-icon');
+            content.classList.toggle('collapsed');
+            icon.style.transform = content.classList.contains('collapsed') ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+
+        function openReviewDateModal() {
+            const modal = document.getElementById('review-date-modal');
+            const modalContent = document.getElementById('review-date-modal-content');
+            modal.classList.remove('hidden'); void modal.offsetWidth;
+            modal.classList.remove('opacity-0'); modalContent.classList.remove('scale-95');
+        }
+
+        function closeReviewDateModal() {
+            const modal = document.getElementById('review-date-modal');
+            modal.classList.add('opacity-0'); document.getElementById('review-date-modal-content').classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        function applyReviewDateRange() {
+            const start = document.getElementById('rev-start-date').value;
+            const end = document.getElementById('rev-end-date').value;
+            
+            if (!start || !end) {
+                alert("Vui lòng chọn cả ngày bắt đầu và kết thúc!"); return;
+            }
+
+            const [sy, sm, sd] = start.split('-');
+            const [ey, em, ed] = end.split('-');
+            const dStart = new Date(sy, sm - 1, sd); 
+            const dEnd = new Date(ey, em - 1, ed);
+
+            if (dStart > dEnd) {
+                alert("Ngày bắt đầu không được lớn hơn ngày kết thúc!"); return;
+            }
+
+            document.getElementById('review-empty-state').classList.add('hidden');
+            const configState = document.getElementById('review-config-state');
+            configState.classList.remove('hidden'); configState.classList.add('flex');
+
+            const sStr = `${String(dStart.getDate()).padStart(2,'0')}/${String(dStart.getMonth()+1).padStart(2,'0')}/${dStart.getFullYear()}`;
+            const eStr = `${String(dEnd.getDate()).padStart(2,'0')}/${String(dEnd.getMonth()+1).padStart(2,'0')}/${dEnd.getFullYear()}`;
+            document.getElementById('review-time-range-display').innerText = `${sStr} - ${eStr}`;
+
+            closeReviewDateModal();
+            document.getElementById('report-output-container').classList.add('hidden');
+        }
+
+        function generateReviewReport() {
+            const activeHierarchy = [];
+            document.querySelectorAll('#review-hierarchy-list > div').forEach(item => {
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                if (checkbox.checked) activeHierarchy.push(item.getAttribute('data-hier-id'));
+            });
+
+            const showDay = document.getElementById('rev-opt-day').checked;
+            const showOut = document.getElementById('rev-opt-output').checked;
+            const showNote = document.getElementById('rev-opt-note').checked;
+            const showDone = document.getElementById('rev-opt-done').checked;
+            const showNotDone = document.getElementById('rev-opt-notdone').checked;
+            const showExtra = document.getElementById('rev-opt-extra').checked;
+
+            const overallNodes = {};
+            document.querySelectorAll('.root-target-input').forEach(inp => {
+                const id = inp.getAttribute('data-root-id');
+                const pillarName = inp.closest('.pillar-block').querySelector('input[type="text"]')?.value || 'Pillar';
+                overallNodes[id] = { id, text: inp.value, pillar: pillarName };
+            });
+
+            const execNodes = {};
+            document.querySelectorAll('.target-item-exec').forEach(item => {
+                if (!item.id) item.id = 'exec-target-' + Math.random().toString(36).substr(2, 9);
+                const id = item.id;
+                const inp = item.querySelector('.exec-target-input');
+                const text = inp ? inp.value : '';
+                const pillarTitleEl = item.closest('.pillar-block').querySelector('input[type="text"]');
+                const pillarName = pillarTitleEl ? pillarTitleEl.value : (item.closest('.pillar-block').getAttribute('data-is-extra') === 'true' ? 'Extra' : 'Pillar');
+                const supportIds = Array.from(item.querySelectorAll('.support-btn[data-selected-id]')).map(b => b.getAttribute('data-selected-id'));
+                execNodes[id] = { id, text, pillar: pillarName, supportIds };
+            });
+
+            const actionNodes = [];
+            const currentDay = document.getElementById('today-date-display').innerText; 
+            document.querySelectorAll('#page-plan .today-task-item').forEach(item => {
+                const actionInput = item.querySelector('.action-input');
+                if (!actionInput || !actionInput.value.trim()) return;
+                
+                const isDone = item.querySelector('.done-icon').getAttribute('data-lucide') === 'check-circle-2';
+                
+                if (isDone && !showDone) return;
+                if (!isDone && !showNotDone) return;
+
+                const pillarEl = item.closest('.today-pillar-block').querySelector('.pillar-title-display');
+                const pillarName = pillarEl ? pillarEl.innerText.replace(' (Locked)', '').trim() : 'Extra';
+                const isExtra = item.closest('.today-pillar-block').getAttribute('data-is-extra') === 'true' || pillarName === 'Extra';
+                
+                if (!showExtra && isExtra) return;
+
+                const actionText = actionInput.value.trim();
+                const outputs = Array.from(item.querySelectorAll('.output-input')).map(i => i.value.trim()).filter(v => v);
+                const notes = Array.from(item.querySelectorAll('.note-input')).map(i => i.value.trim()).filter(v => v);
+                const supportExecIds = Array.from(item.querySelectorAll('.today-support-btn[data-selected-id]')).map(b => b.getAttribute('data-selected-id'));
+                
+                actionNodes.push({ actionText, pillar: pillarName, outputs, notes, supportExecIds, day: currentDay, isDone });
+            });
+
+            const tree = {};
+            actionNodes.forEach(action => {
+                let paths = [];
+                if (action.supportExecIds.length > 0) {
+                    action.supportExecIds.forEach(execId => {
+                        const execNode = execNodes[execId];
+                        const execName = execNode ? execNode.text : 'Chưa xác định';
+                        if (execNode && execNode.supportIds && execNode.supportIds.length > 0) {
+                            execNode.supportIds.forEach(overallId => {
+                                const overallNode = overallNodes[overallId];
+                                const overallName = overallNode ? overallNode.text : 'Chưa xác định';
+                                paths.push({ 'opt-pillar': action.pillar, 'opt-exec': execName, 'opt-overall': overallName });
+                            });
+                        } else {
+                            paths.push({ 'opt-pillar': action.pillar, 'opt-exec': execName, 'opt-overall': 'Độc lập (Không support)' });
+                        }
+                    });
+                } else {
+                    paths.push({ 'opt-pillar': action.pillar, 'opt-exec': 'Độc lập (Không support)', 'opt-overall': 'Độc lập (Không support)' });
+                }
+
+                paths.forEach(path => {
+                    let currentLevel = tree;
+                    activeHierarchy.forEach((hierKey, index) => {
+                        const val = path[hierKey];
+                        if (index === activeHierarchy.length - 1) {
+                            if (!currentLevel[val]) currentLevel[val] = [];
+                            if(!currentLevel[val].includes(action)) currentLevel[val].push(action);
+                        } else {
+                            if (!currentLevel[val]) currentLevel[val] = {};
+                            currentLevel = currentLevel[val];
+                        }
+                    });
+                    
+                    if (activeHierarchy.length === 0) {
+                        if (!tree['Tất cả mục tiêu']) tree['Tất cả mục tiêu'] = [];
+                        if(!tree['Tất cả mục tiêu'].includes(action)) tree['Tất cả mục tiêu'].push(action);
+                    }
+                });
+            });
+
+            function renderTreeHTML(node, level = 0) {
+                if (Array.isArray(node)) {
+                    if (node.length === 0) return '<div class="text-gray-600 text-[12px] italic mt-1 ml-2">Không có dữ liệu...</div>';
+                    let html = '<div class="flex flex-col mt-2 mb-4">';
+                    node.forEach(action => {
+                        let doneBgClass = action.isDone ? 'bg-[rgba(48,209,88,0.15)] rounded-lg px-3 py-2 -mx-3 border-transparent' : 'py-3 border-b border-gray-800/80 last:border-b-0';
+                        let doneTextClass = action.isDone ? 'line-through text-gray-400' : 'text-white';
+                        let doneDotColor = action.isDone ? 'text-green-500' : 'text-[#0A84FF]';
+
+                        html += `<div class="${doneBgClass} mb-1 last:mb-0 flex flex-col gap-1.5">`;
+                        html += `   <div class="flex items-start justify-between gap-3">`;
+                        html += `       <div class="text-[14px] ${doneTextClass} font-medium leading-snug"><span class="${doneDotColor} mr-1.5">•</span>${action.actionText}</div>`;
+                        if(showDay && action.day) {
+                            html += `   <div class="text-[10px] text-gray-400 bg-black/40 px-2 py-0.5 rounded-md whitespace-nowrap shrink-0">${action.day}</div>`;
+                        }
+                        html += `   </div>`;
+                        
+                        if (showOut && action.outputs.length > 0) {
+                            let outBorder = action.isDone ? 'border-green-500/50' : 'border-green-500/30';
+                            let outText = action.isDone ? 'text-gray-400 line-through' : 'text-gray-300';
+                            let outTitle = action.isDone ? 'text-green-600' : 'text-green-400';
+                            html += `<div class="mt-1 pl-3.5 border-l-2 ${outBorder} flex flex-col gap-1">`;
+                            action.outputs.forEach(o => {
+                                html += `<div class="text-[13px] ${outText} leading-snug"><span class="${outTitle} mr-1.5 font-medium">↳ output:</span>${o}</div>`;
+                            });
+                            html += `</div>`;
+                        }
+                        
+                        if (showNote && action.notes.length > 0) {
+                            let noteBorder = action.isDone ? 'border-yellow-600/50' : 'border-yellow-500/30';
+                            let noteText = action.isDone ? 'text-gray-400 line-through' : 'text-gray-300';
+                            let noteTitle = action.isDone ? 'text-yellow-600' : 'text-yellow-400';
+                            html += `<div class="mt-1 pl-3.5 border-l-2 ${noteBorder} flex flex-col gap-1">`;
+                            action.notes.forEach(n => {
+                                html += `<div class="text-[13px] ${noteText} leading-snug"><span class="${noteTitle} mr-1.5 font-medium">📝 note:</span>${n}</div>`;
+                            });
+                            html += `</div>`;
+                        }
+                        html += `</div>`;
+                    });
+                    html += '</div>';
+                    return html;
+                }
+
+                let html = '<div class="flex flex-col gap-1 mt-2">';
+                for (const key in node) {
+                    let colorClass = level === 0 ? 'text-[#FF5A00] text-[16px]' : (level === 1 ? 'text-[#BF5AF2] text-[15px]' : 'text-[#0A84FF] text-[14px]');
+                    let icon = level === 0 ? 'layers' : (level === 1 ? 'target' : 'zap');
+                    html += `<div class="${level > 0 ? 'pl-4 border-l border-gray-700/50' : ''}">`;
+                    html += `<div class="font-bold ${colorClass} tracking-wide flex items-center gap-1.5 mt-2.5 mb-1"><i data-lucide="${icon}" class="w-4 h-4"></i> ${key}</div>`;
+                    html += renderTreeHTML(node[key], level + 1);
+                    html += `</div>`;
+                }
+                html += '</div>';
+                return html;
+            }
+
+            const reportContainer = document.getElementById('report-output-container');
+            if (Object.keys(tree).length === 0) {
+                reportContainer.innerHTML = '<div class="text-center text-gray-500 italic py-6">Không có dữ liệu phù hợp với bộ lọc trong khoảng thời gian này.</div>';
+            } else {
+                reportContainer.innerHTML = renderTreeHTML(tree, 0);
+            }
+            
+            reportContainer.classList.remove('hidden');
+            lucide.createIcons({ root: reportContainer });
+            
+            reportContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+
+        // ==========================================
+        // LOGIC TAB SCHEDULE (LỊCH TRÌNH FIXED/FREE)
+        // ==========================================
+
+        function startScheduleSetup() {
+            const planActions = document.querySelectorAll('#page-plan .today-task-item');
+            const validActions = Array.from(planActions).filter(item => {
+                const inp = item.querySelector('.action-input');
+                return inp && inp.value.trim() !== '';
+            });
+
+            if (validActions.length === 0) {
+                alert("Vui lòng tạo ít nhất 1 hành động ở tab Today's Plan trước khi lên lịch!");
+                return;
+            }
+
+            document.getElementById('schedule-empty-state').classList.add('hidden');
+            document.getElementById('schedule-setup-state').classList.remove('hidden');
+            document.getElementById('schedule-setup-state').classList.add('flex');
+
+            const setupList = document.getElementById('schedule-setup-list');
+            setupList.innerHTML = '';
+
+            validActions.forEach(action => {
+                const id = action.id;
+                const text = action.querySelector('.action-input').value.trim();
+                const isExtra = action.closest('.today-pillar-block')?.getAttribute('data-is-extra') === 'true';
+                
+                const itemHtml = document.createElement('div');
+                itemHtml.className = 'flex items-center gap-3 bg-[#1C1C1E] p-3 rounded-xl border border-gray-800';
+                itemHtml.setAttribute('data-linked-id', id);
+                itemHtml.setAttribute('data-selected-type', 'free'); 
+                if (isExtra) itemHtml.setAttribute('data-is-extra', 'true');
+                
+                itemHtml.innerHTML = `
+                    <div class="flex bg-[#2C2C2E] rounded-lg p-0.5 shrink-0">
+                        <button class="px-3 py-1 rounded-md text-[12px] font-medium text-gray-400 transition-colors" onclick="toggleScheduleType(this, 'fixed')">Fixed</button>
+                        <button class="px-3 py-1 rounded-md text-[12px] font-medium bg-[#0A84FF] text-white transition-colors" onclick="toggleScheduleType(this, 'free')">Free</button>
+                    </div>
+                    <span class="text-[14px] text-white truncate flex-1">${text}</span>
+                `;
+                setupList.appendChild(itemHtml);
+            });
+        }
+
+        function toggleScheduleType(btn, type) {
+            const wrapper = btn.closest('.flex.bg-\\[\\#2C2C2E\\]');
+            const item = btn.closest('.flex.items-center.gap-3');
+            item.setAttribute('data-selected-type', type);
+            
+            Array.from(wrapper.children).forEach(b => {
+                b.className = "px-3 py-1 rounded-md text-[12px] font-medium text-gray-400 transition-colors";
+            });
+
+            if (type === 'fixed') {
+                btn.className = "px-3 py-1 rounded-md text-[12px] font-medium bg-[#FF5A00] text-white transition-colors";
+            } else {
+                btn.className = "px-3 py-1 rounded-md text-[12px] font-medium bg-[#0A84FF] text-white transition-colors";
+            }
+        }
+
+        function generateScheduleView() {
+            document.getElementById('schedule-setup-state').classList.add('hidden');
+            const viewState = document.getElementById('schedule-view-state');
+            viewState.classList.remove('hidden');
+            viewState.classList.add('flex');
+
+            const fixedList = document.getElementById('fixed-schedule-list');
+            const freeList = document.getElementById('free-schedule-list');
+            fixedList.innerHTML = '';
+            freeList.innerHTML = '';
+
+            const setupItems = document.querySelectorAll('#schedule-setup-list > div');
+            setupItems.forEach(item => {
+                const type = item.getAttribute('data-selected-type');
+                const linkedId = item.getAttribute('data-linked-id');
+                const isExtra = item.getAttribute('data-is-extra') === 'true';
+                const text = item.querySelector('span.truncate').innerText;
+
+                const originalAction = document.getElementById(linkedId);
+                let isDone = false;
+                if (originalAction) {
+                    isDone = originalAction.querySelector('.done-icon').getAttribute('data-lucide') === 'check-circle-2';
+                }
+
+                const doneIcon = isDone ? 'check-circle-2' : 'circle';
+                const doneColor = isDone ? 'text-green-500' : 'text-gray-500';
+                const doneBg = isDone ? 'done-bg' : '';
+                const doneText = isDone ? 'done-text' : 'text-white';
+                
+                const extraIconHtml = isExtra ? '<i data-lucide="zap" class="w-3.5 h-3.5 text-[#BF5AF2] shrink-0 mt-0.5 extra-icon-indicator"></i>' : '';
+
+                const scheduleItem = document.createElement('div');
+                scheduleItem.setAttribute('data-linked-id', linkedId);
+
+                if (type === 'fixed') {
+                    scheduleItem.className = `schedule-task-item flex bg-[#1C1C1E] rounded-xl border border-gray-800 overflow-hidden ${doneBg}`;
+                    scheduleItem.setAttribute('data-type', 'fixed');
+                    scheduleItem.innerHTML = `
+                        <div class="w-[85px] bg-[#2C2C2E] flex flex-col justify-center items-center shrink-0 border-r border-gray-800 p-2 gap-1">
+                            <input type="time" class="w-full bg-transparent text-white text-[12px] outline-none text-center font-medium">
+                            <div class="h-[1px] w-8 bg-gray-600"></div>
+                            <input type="time" class="w-full bg-transparent text-white text-[12px] outline-none text-center font-medium">
+                        </div>
+                        <div class="p-3 flex items-start gap-2 flex-1 min-w-0">
+                            <i data-lucide="grip-vertical" class="w-4 h-4 text-gray-600 mt-0.5 cursor-grab hover:text-gray-400 shrink-0 schedule-drag-handle"></i>
+                            <button class="mt-0.5 flex items-center justify-center ${doneColor} hover:text-green-500 transition-colors shrink-0 done-btn" onclick="toggleDone(this, 'target')">
+                                <i data-lucide="${doneIcon}" class="w-4 h-4 done-icon"></i>
+                            </button>
+                            ${extraIconHtml}
+                            <span class="text-[14px] font-medium ${doneText} leading-snug truncate-multiline schedule-task-text flex-1">${text}</span>
+                        </div>
+                    `;
+                    fixedList.appendChild(scheduleItem);
+                } else {
+                    scheduleItem.className = `schedule-task-item flex bg-[#1C1C1E] rounded-xl border border-gray-800 overflow-hidden p-3 items-start gap-2 ${doneBg}`;
+                    scheduleItem.setAttribute('data-type', 'free');
+                    scheduleItem.innerHTML = `
+                        <i data-lucide="grip-vertical" class="w-4 h-4 text-gray-600 mt-0.5 cursor-grab hover:text-gray-400 shrink-0 schedule-drag-handle"></i>
+                        <button class="mt-0.5 flex items-center justify-center ${doneColor} hover:text-green-500 transition-colors shrink-0 done-btn" onclick="toggleDone(this, 'target')">
+                            <i data-lucide="${doneIcon}" class="w-4 h-4 done-icon"></i>
+                        </button>
+                        ${extraIconHtml}
+                        <span class="text-[14px] font-medium ${doneText} leading-snug truncate-multiline schedule-task-text flex-1">${text}</span>
+                    `;
+                    freeList.appendChild(scheduleItem);
+                }
+            });
+            lucide.createIcons({ root: viewState });
+            initAllSortables();
+        }
+
+        function handleScheduleDrop(evt) {
+            const item = evt.item;
+            const toListId = evt.to.id;
+            const currentType = item.getAttribute('data-type');
+            
+            if (toListId === 'fixed-schedule-list' && currentType === 'free') {
+                item.setAttribute('data-type', 'fixed');
+                const textSpan = item.querySelector('.schedule-task-text').outerHTML;
+                const doneBtn = item.querySelector('.done-btn').outerHTML;
+                const grip = item.querySelector('.schedule-drag-handle').outerHTML;
+                const extraIconEl = item.querySelector('.extra-icon-indicator');
+                const extraIconHtml = extraIconEl ? extraIconEl.outerHTML : '';
+                
+                let startVal = item.getAttribute('data-time-start') || '';
+                let endVal = item.getAttribute('data-time-end') || '';
+                
+                let timeHtml = `
+                    <input type="time" class="w-full bg-transparent text-white text-[12px] outline-none text-center font-medium" value="${startVal}">
+                    <div class="h-[1px] w-8 bg-gray-600"></div>
+                    <input type="time" class="w-full bg-transparent text-white text-[12px] outline-none text-center font-medium" value="${endVal}">
+                `;
+
+                item.innerHTML = `
+                    <div class="w-[85px] bg-[#2C2C2E] flex flex-col justify-center items-center shrink-0 border-r border-gray-800 p-2 gap-1">
+                        ${timeHtml}
+                    </div>
+                    <div class="p-3 flex items-start gap-2 flex-1 min-w-0">
+                        ${grip}
+                        ${doneBtn}
+                        ${extraIconHtml}
+                        ${textSpan}
+                    </div>
+                `;
+                item.className = `schedule-task-item flex bg-[#1C1C1E] rounded-xl border border-gray-800 overflow-hidden ${item.classList.contains('done-bg') ? 'done-bg' : ''}`;
+            } else if (toListId === 'free-schedule-list' && currentType === 'fixed') {
+                item.setAttribute('data-type', 'free');
+                
+                const timeInputs = item.querySelectorAll('input[type="time"]');
+                if (timeInputs.length === 2) {
+                    item.setAttribute('data-time-start', timeInputs[0].value);
+                    item.setAttribute('data-time-end', timeInputs[1].value);
+                }
+
+                const textSpan = item.querySelector('.schedule-task-text').outerHTML;
+                const doneBtn = item.querySelector('.done-btn').outerHTML;
+                const grip = item.querySelector('.schedule-drag-handle').outerHTML;
+                const extraIconEl = item.querySelector('.extra-icon-indicator');
+                const extraIconHtml = extraIconEl ? extraIconEl.outerHTML : '';
+                
+                item.innerHTML = `
+                    ${grip}
+                    ${doneBtn}
+                    ${extraIconHtml}
+                    ${textSpan}
+                `;
+                item.className = `schedule-task-item flex bg-[#1C1C1E] rounded-xl border border-gray-800 overflow-hidden p-3 items-start gap-2 ${item.classList.contains('done-bg') ? 'done-bg' : ''}`;
+            }
+            lucide.createIcons({ root: item });
+        }
+
+        function resetSchedule() {
+            document.getElementById('schedule-view-state').classList.add('hidden');
+            document.getElementById('schedule-empty-state').classList.remove('hidden');
+        }
+
+        // ==========================================
+        // PERSISTENCE LAYER (LOCAL + SUPABASE CLOUD)
+        // ==========================================
+        const PLANNER_LOCAL_STATE_KEY = 'liem_planner_state_v1';
+        const PLANNER_LOCAL_CONFIG_KEY = 'liem_planner_cloud_config_v1';
+        const DEFAULT_TARGET_SECTION_HTML = document.querySelector('#page-targets .px-5').innerHTML;
+        const DEFAULT_PLAN_SECTION_HTML = document.querySelector('#page-plan .px-5').innerHTML;
+        const DEFAULT_SCHEDULE_SECTION_HTML = document.querySelector('#page-schedule .px-5').innerHTML;
+
+        let plannerAppState = createEmptyPlannerState();
+        let plannerCloudConfig = loadCloudConfig();
+        let plannerSupabase = null;
+        let plannerCloudUser = null;
+        let plannerAutosaveTimer = null;
+        let plannerStatusTimer = null;
+        let plannerIsApplyingState = false;
+        let plannerDomObserver = null;
+
+        function createEmptyPlannerState() {
+            return {
+                version: 1,
+                targetSectionHtml: DEFAULT_TARGET_SECTION_HTML,
+                plansByDate: {},
+                ui: { lastDate: null },
+                updatedAt: null
+            };
+        }
+
+        function loadCloudConfig() {
+            try {
+                return JSON.parse(localStorage.getItem(PLANNER_LOCAL_CONFIG_KEY)) || { url: '', anonKey: '' };
+            } catch (e) {
+                return { url: '', anonKey: '' };
+            }
+        }
+
+        function saveCloudConfigToLocal(config) {
+            plannerCloudConfig = { ...plannerCloudConfig, ...config };
+            localStorage.setItem(PLANNER_LOCAL_CONFIG_KEY, JSON.stringify(plannerCloudConfig));
+            hydrateCloudPanel();
+        }
+
+        function createDateKeyFromValue(value) {
+            if (value) return value;
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        function setTodayDateUiFromKey(dateKey) {
+            const picker = document.getElementById('today-date-picker');
+            const display = document.getElementById('today-date-display');
+            if (!picker || !display) return;
+            picker.value = dateKey;
+            const [y, m, d] = dateKey.split('-');
+            display.innerText = formatVNShortDate(new Date(y, m - 1, d));
+        }
+
+        function getCurrentDateKey() {
+            const picker = document.getElementById('today-date-picker');
+            return createDateKeyFromValue(picker ? picker.value : null);
+        }
+
+        function getTargetSectionEl() {
+            return document.querySelector('#page-targets .px-5');
+        }
+
+        function getPlanSectionEl() {
+            return document.querySelector('#page-plan .px-5');
+        }
+
+        function getScheduleSectionEl() {
+            return document.querySelector('#page-schedule .px-5');
+        }
+
+        function snapshotCurrentTargets() {
+            const targetEl = getTargetSectionEl();
+            if (!targetEl) return;
+            plannerAppState.targetSectionHtml = targetEl.innerHTML;
+        }
+
+        function snapshotCurrentDateSections(dateKey = null) {
+            const key = dateKey || getCurrentDateKey();
+            const planEl = getPlanSectionEl();
+            const scheduleEl = getScheduleSectionEl();
+            if (!planEl || !scheduleEl) return;
+            plannerAppState.plansByDate[key] = {
+                planSectionHtml: planEl.innerHTML,
+                scheduleSectionHtml: scheduleEl.innerHTML
+            };
+            plannerAppState.ui.lastDate = key;
+        }
+
+        function hydrateLucideAndInteractions() {
+            lucide.createIcons();
+            initAllSortables();
+            pillarCount = Math.max(document.querySelectorAll('#overall-block .pillar-block').length, 1);
+            syncRootTargets();
+            syncPillarLocks();
+        }
+
+        function restoreTargetsFromState() {
+            const targetEl = getTargetSectionEl();
+            if (!targetEl) return;
+            targetEl.innerHTML = plannerAppState.targetSectionHtml || DEFAULT_TARGET_SECTION_HTML;
+        }
+
+        function restoreDateSections(dateKey) {
+            const dayState = plannerAppState.plansByDate[dateKey];
+            const planEl = getPlanSectionEl();
+            const scheduleEl = getScheduleSectionEl();
+            if (!planEl || !scheduleEl) return;
+
+            if (dayState && dayState.planSectionHtml) {
+                planEl.innerHTML = dayState.planSectionHtml;
+            } else {
+                planEl.innerHTML = DEFAULT_PLAN_SECTION_HTML;
+            }
+
+            if (dayState && dayState.scheduleSectionHtml) {
+                scheduleEl.innerHTML = dayState.scheduleSectionHtml;
+            } else {
+                scheduleEl.innerHTML = DEFAULT_SCHEDULE_SECTION_HTML;
+            }
+
+            setTodayDateUiFromKey(dateKey);
+        }
+
+        function applyPlannerState(state, options = {}) {
+            plannerIsApplyingState = true;
+            try {
+                plannerAppState = state && typeof state === 'object'
+                    ? {
+                        ...createEmptyPlannerState(),
+                        ...state,
+                        plansByDate: state.plansByDate || {},
+                        ui: { ...(state.ui || {}) }
+                    }
+                    : createEmptyPlannerState();
+
+                restoreTargetsFromState();
+                const dateKey = plannerAppState.ui.lastDate || getCurrentDateKey();
+                restoreDateSections(dateKey);
+                hydrateLucideAndInteractions();
+
+                if (options.persistLocal !== false) {
+                    persistPlannerStateLocally(false);
+                }
+            } finally {
+                plannerIsApplyingState = false;
+            }
+        }
+
+        function collectCurrentPlannerState() {
+            snapshotCurrentTargets();
+            snapshotCurrentDateSections();
+            plannerAppState.updatedAt = new Date().toISOString();
+            return plannerAppState;
+        }
+
+        function persistPlannerStateLocally(showToast = false) {
+            if (plannerIsApplyingState) return;
+            const state = collectCurrentPlannerState();
+            localStorage.setItem(PLANNER_LOCAL_STATE_KEY, JSON.stringify(state));
+            if (showToast) setPlannerStatus('Đã lưu local');
+            updatePlannerStatusBadge();
+        }
+
+        function loadPlannerStateFromLocalStorage() {
+            try {
+                const raw = localStorage.getItem(PLANNER_LOCAL_STATE_KEY);
+                if (!raw) return null;
+                return JSON.parse(raw);
+            } catch (e) {
+                console.error('Không đọc được local state', e);
+                return null;
+            }
+        }
+
+        function toggleCloudPanel() {
+            const panel = document.getElementById('cloud-panel');
+            if (!panel) return;
+            panel.classList.toggle('hidden');
+            lucide.createIcons({ root: panel });
+        }
+
+        function hydrateCloudPanel() {
+            const urlEl = document.getElementById('supabase-url-input');
+            const anonEl = document.getElementById('supabase-anon-input');
+            if (urlEl) urlEl.value = plannerCloudConfig.url || '';
+            if (anonEl) anonEl.value = plannerCloudConfig.anonKey || '';
+            updatePlannerStatusBadge();
+            renderCloudUserStatus();
+        }
+
+        function updatePlannerStatusBadge() {
+            const badge = document.getElementById('planner-status-badge');
+            if (!badge) return;
+            if (plannerCloudUser && plannerSupabase) {
+                badge.textContent = 'Cloud connected';
+                badge.className = 'text-[11px] text-green-300 bg-green-500/10 border border-green-500/20 rounded-full px-2.5 py-1';
+                return;
+            }
+            if (plannerCloudConfig.url && plannerCloudConfig.anonKey) {
+                badge.textContent = 'Cloud ready';
+                badge.className = 'text-[11px] text-[#0A84FF] bg-[#0A84FF]/10 border border-[#0A84FF]/20 rounded-full px-2.5 py-1';
+                return;
+            }
+            badge.textContent = 'Local only';
+            badge.className = 'text-[11px] text-gray-400 bg-white/5 border border-gray-800 rounded-full px-2.5 py-1';
+        }
+
+        function setPlannerStatus(message) {
+            const badge = document.getElementById('planner-status-badge');
+            if (badge) badge.textContent = message;
+            clearTimeout(plannerStatusTimer);
+            plannerStatusTimer = setTimeout(updatePlannerStatusBadge, 1800);
+        }
+
+        function renderCloudUserStatus() {
+            const statusEl = document.getElementById('cloud-user-status');
+            if (!statusEl) return;
+            if (plannerCloudUser) {
+                statusEl.textContent = `Đang đăng nhập: ${plannerCloudUser.email || plannerCloudUser.id}`;
+                statusEl.className = 'text-[12px] text-green-300 mt-1';
+            } else if (plannerCloudConfig.url && plannerCloudConfig.anonKey) {
+                statusEl.textContent = 'Đã lưu Supabase URL + anon key. Bước tiếp theo: đăng nhập bằng email.';
+                statusEl.className = 'text-[12px] text-[#0A84FF] mt-1';
+            } else {
+                statusEl.textContent = 'Chưa kết nối cloud.';
+                statusEl.className = 'text-[12px] text-gray-500 mt-1';
+            }
+        }
+
+        async function initPlannerSupabaseClient() {
+            if (!plannerCloudConfig.url || !plannerCloudConfig.anonKey || plannerSupabase) return plannerSupabase;
+            if (!window.__plannerCreateSupabaseClient) {
+                await new Promise(resolve => window.addEventListener('planner:supabase-ready', resolve, { once: true }));
+            }
+            plannerSupabase = window.__plannerCreateSupabaseClient(plannerCloudConfig.url, plannerCloudConfig.anonKey);
+            plannerSupabase.auth.onAuthStateChange(async (_event, session) => {
+                plannerCloudUser = session?.user || null;
+                renderCloudUserStatus();
+                updatePlannerStatusBadge();
+            });
+            const { data } = await plannerSupabase.auth.getSession();
+            plannerCloudUser = data?.session?.user || null;
+            renderCloudUserStatus();
+            updatePlannerStatusBadge();
+            return plannerSupabase;
+        }
+
+        function saveCloudConfig() {
+            const url = document.getElementById('supabase-url-input')?.value.trim() || '';
+            const anonKey = document.getElementById('supabase-anon-input')?.value.trim() || '';
+            if (!url || !anonKey) {
+                alert('Bạn cần dán cả Supabase URL và anon key.');
+                return;
+            }
+            plannerSupabase = null;
+            plannerCloudUser = null;
+            saveCloudConfigToLocal({ url, anonKey });
+            setPlannerStatus('Đã lưu cloud config');
+        }
+
+        async function sendCloudMagicLink() {
+            const email = document.getElementById('cloud-email-input')?.value.trim();
+            if (!email) {
+                alert('Nhập email để nhận magic link.');
+                return;
+            }
+            await initPlannerSupabaseClient();
+            if (!plannerSupabase) {
+                alert('Bạn cần lưu cloud config trước.');
+                return;
+            }
+            const redirectTo = window.location.href.split('#')[0];
+            const { error } = await plannerSupabase.auth.signInWithOtp({
+                email,
+                options: { emailRedirectTo: redirectTo }
+            });
+            if (error) {
+                alert('Không gửi được magic link: ' + error.message);
+                return;
+            }
+            setPlannerStatus('Đã gửi magic link');
+            alert('Magic link đã được gửi vào email của bạn. Mở email đó và bấm link để đăng nhập.');
+        }
+
+        async function signOutCloud() {
+            if (!plannerSupabase) return;
+            const { error } = await plannerSupabase.auth.signOut();
+            if (error) {
+                alert('Không đăng xuất được: ' + error.message);
+                return;
+            }
+            plannerCloudUser = null;
+            renderCloudUserStatus();
+            updatePlannerStatusBadge();
+            setPlannerStatus('Đã đăng xuất');
+        }
+
+        async function fetchPlannerStateFromCloud() {
+            await initPlannerSupabaseClient();
+            if (!plannerSupabase || !plannerCloudUser) return null;
+            const { data, error } = await plannerSupabase
+                .from('user_app_state')
+                .select('app_state')
+                .eq('user_id', plannerCloudUser.id)
+                .maybeSingle();
+
+            if (error) throw error;
+            return data?.app_state || null;
+        }
+
+        async function loadPlannerStateFromCloud() {
+            try {
+                const cloudState = await fetchPlannerStateFromCloud();
+                if (!cloudState) {
+                    setPlannerStatus('Cloud chưa có dữ liệu');
+                    alert('Cloud chưa có dữ liệu. Bạn có thể bấm Save cloud để đẩy dữ liệu hiện tại lên.');
+                    return;
+                }
+                applyPlannerState(cloudState, { persistLocal: true });
+                setPlannerStatus('Đã load cloud');
+            } catch (error) {
+                alert('Không load được cloud: ' + error.message);
+            }
+        }
+
+        async function savePlannerStateToCloud() {
+            try {
+                await initPlannerSupabaseClient();
+                if (!plannerSupabase || !plannerCloudUser) {
+                    alert('Bạn cần đăng nhập cloud trước.');
+                    return;
+                }
+                const appState = collectCurrentPlannerState();
+                const { error } = await plannerSupabase.from('user_app_state').upsert({
+                    user_id: plannerCloudUser.id,
+                    app_state: appState,
+                    updated_at: new Date().toISOString()
+                });
+                if (error) throw error;
+                persistPlannerStateLocally(false);
+                setPlannerStatus('Đã save cloud');
+            } catch (error) {
+                alert('Không save được cloud: ' + error.message);
+            }
+        }
+
+        function manualSavePlannerState() {
+            persistPlannerStateLocally(true);
+        }
+
+        function exportPlannerBackup() {
+            const state = collectCurrentPlannerState();
+            const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const dateKey = getCurrentDateKey();
+            a.href = url;
+            a.download = `planner-backup-${dateKey}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            setPlannerStatus('Đã export backup');
+        }
+
+        function importPlannerBackup(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    const imported = JSON.parse(reader.result);
+                    applyPlannerState(imported, { persistLocal: true });
+                    setPlannerStatus('Đã import backup');
+                } catch (error) {
+                    alert('File backup không hợp lệ.');
+                } finally {
+                    event.target.value = '';
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function queuePlannerAutosave() {
+            if (plannerIsApplyingState) return;
+            clearTimeout(plannerAutosaveTimer);
+            plannerAutosaveTimer = setTimeout(() => persistPlannerStateLocally(false), 500);
+        }
+
+        function setupPlannerAutosave() {
+            document.addEventListener('input', queuePlannerAutosave, true);
+            document.addEventListener('change', queuePlannerAutosave, true);
+            document.addEventListener('keydown', (event) => {
+                if (['Enter', 'Backspace', 'Delete'].includes(event.key)) setTimeout(queuePlannerAutosave, 30);
+            }, true);
+            document.addEventListener('click', (event) => {
+                if (event.target.closest('button') || event.target.closest('label')) setTimeout(queuePlannerAutosave, 60);
+            }, true);
+
+            if (plannerDomObserver) plannerDomObserver.disconnect();
+            plannerDomObserver = new MutationObserver(() => queuePlannerAutosave());
+            ['page-targets', 'page-plan', 'page-schedule'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) plannerDomObserver.observe(el, { childList: true, subtree: true, attributes: true });
+            });
+        }
+
+        function bootstrapPlannerPersistence() {
+            hydrateCloudPanel();
+            const localState = loadPlannerStateFromLocalStorage();
+            if (localState) {
+                applyPlannerState(localState, { persistLocal: false });
+            } else {
+                plannerAppState = createEmptyPlannerState();
+                setTodayDateUiFromKey(createDateKeyFromValue());
+            }
+            setupPlannerAutosave();
+            queuePlannerAutosave();
+        }
+
+        const originalInitTodayDate = initTodayDate;
+        initTodayDate = function() {
+            originalInitTodayDate();
+            const preferredDate = plannerAppState?.ui?.lastDate || createDateKeyFromValue(document.getElementById('today-date-picker')?.value);
+            setTodayDateUiFromKey(preferredDate);
+        };
+
+        updateTodayDate = function(input) {
+            const previousKey = plannerAppState?.ui?.lastDate || getCurrentDateKey();
+            snapshotCurrentTargets();
+            snapshotCurrentDateSections(previousKey);
+            const nextKey = createDateKeyFromValue(input?.value);
+            restoreDateSections(nextKey);
+            hydrateLucideAndInteractions();
+            plannerAppState.ui.lastDate = nextKey;
+            persistPlannerStateLocally(false);
+        };
+
+        const originalStartToday = startToday;
+        startToday = function() {
+            originalStartToday();
+            queuePlannerAutosave();
+        };
+
+        const originalRefreshTodayPlan = refreshTodayPlan;
+        refreshTodayPlan = function() {
+            originalRefreshTodayPlan();
+            queuePlannerAutosave();
+        };
+
+        const originalResetSchedule = resetSchedule;
+        resetSchedule = function() {
+            originalResetSchedule();
+            queuePlannerAutosave();
+        };
+
+        function collectReviewActionNodesFromStoredPlan(planSectionHtml, dateKey, options) {
+            if (!planSectionHtml) return [];
+            const wrap = document.createElement('div');
+            wrap.innerHTML = planSectionHtml;
+            const actionNodes = [];
+            wrap.querySelectorAll('.today-task-item').forEach(item => {
+                const actionInput = item.querySelector('.action-input');
+                if (!actionInput || !actionInput.value.trim()) return;
+
+                const doneIcon = item.querySelector('.done-icon');
+                const isDone = doneIcon && doneIcon.getAttribute('data-lucide') === 'check-circle-2';
+                if (isDone && !options.showDone) return;
+                if (!isDone && !options.showNotDone) return;
+
+                const pillarEl = item.closest('.today-pillar-block')?.querySelector('.pillar-title-display');
+                const pillarName = pillarEl ? pillarEl.innerText.replace(' (Locked)', '').trim() : 'Extra';
+                const isExtra = item.closest('.today-pillar-block')?.getAttribute('data-is-extra') === 'true' || pillarName === 'Extra';
+                if (!options.showExtra && isExtra) return;
+
+                actionNodes.push({
+                    actionText: actionInput.value.trim(),
+                    pillar: pillarName,
+                    outputs: Array.from(item.querySelectorAll('.output-input')).map(i => i.value.trim()).filter(Boolean),
+                    notes: Array.from(item.querySelectorAll('.note-input')).map(i => i.value.trim()).filter(Boolean),
+                    supportExecIds: Array.from(item.querySelectorAll('.today-support-btn[data-selected-id]')).map(b => b.getAttribute('data-selected-id')),
+                    day: dateKey,
+                    dayLabel: formatVNShortDate(new Date(dateKey + 'T00:00:00')),
+                    isDone
+                });
+            });
+            return actionNodes;
+        }
+
+        function getReviewDateRangeKeys(startValue, endValue) {
+            const results = [];
+            const cursor = new Date(startValue + 'T00:00:00');
+            const end = new Date(endValue + 'T00:00:00');
+            while (cursor <= end) {
+                const yyyy = cursor.getFullYear();
+                const mm = String(cursor.getMonth() + 1).padStart(2, '0');
+                const dd = String(cursor.getDate()).padStart(2, '0');
+                results.push(`${yyyy}-${mm}-${dd}`);
+                cursor.setDate(cursor.getDate() + 1);
+            }
+            return results;
+        }
+
+        generateReviewReport = function() {
+            persistPlannerStateLocally(false);
+
+            const activeHierarchy = [];
+            document.querySelectorAll('#review-hierarchy-list > div').forEach(item => {
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                if (checkbox.checked) activeHierarchy.push(item.getAttribute('data-hier-id'));
+            });
+
+            const showDay = document.getElementById('rev-opt-day').checked;
+            const showOut = document.getElementById('rev-opt-output').checked;
+            const showNote = document.getElementById('rev-opt-note').checked;
+            const showDone = document.getElementById('rev-opt-done').checked;
+            const showNotDone = document.getElementById('rev-opt-notdone').checked;
+            const showExtra = document.getElementById('rev-opt-extra').checked;
+
+            const start = document.getElementById('rev-start-date').value;
+            const end = document.getElementById('rev-end-date').value;
+            if (!start || !end) {
+                alert('Bạn cần chọn khoảng ngày trước.');
+                return;
+            }
+
+            const overallNodes = {};
+            document.querySelectorAll('.root-target-input').forEach(inp => {
+                const id = inp.getAttribute('data-root-id');
+                const pillarName = inp.closest('.pillar-block')?.querySelector('input[type="text"]')?.value || 'Pillar';
+                overallNodes[id] = { id, text: inp.value, pillar: pillarName };
+            });
+
+            const execNodes = {};
+            document.querySelectorAll('.target-item-exec').forEach(item => {
+                const id = item.id || ('exec-target-' + Math.random().toString(36).slice(2, 9));
+                item.id = id;
+                const inp = item.querySelector('.exec-target-input');
+                const pillarTitleEl = item.closest('.pillar-block')?.querySelector('input[type="text"]');
+                const pillarName = pillarTitleEl ? pillarTitleEl.value : (item.closest('.pillar-block')?.getAttribute('data-is-extra') === 'true' ? 'Extra' : 'Pillar');
+                execNodes[id] = {
+                    id,
+                    text: inp ? inp.value : '',
+                    pillar: pillarName,
+                    supportIds: Array.from(item.querySelectorAll('.support-btn[data-selected-id]')).map(b => b.getAttribute('data-selected-id'))
+                };
+            });
+
+            const reviewOptions = { showDone, showNotDone, showExtra };
+            const actionNodes = [];
+            getReviewDateRangeKeys(start, end).forEach(dateKey => {
+                const planState = plannerAppState.plansByDate?.[dateKey];
+                if (!planState?.planSectionHtml) return;
+                actionNodes.push(...collectReviewActionNodesFromStoredPlan(planState.planSectionHtml, dateKey, reviewOptions));
+            });
+
+            const tree = {};
+            actionNodes.forEach(action => {
+                let paths = [];
+                if (action.supportExecIds.length > 0) {
+                    action.supportExecIds.forEach(execId => {
+                        const execNode = execNodes[execId];
+                        const execName = execNode && execNode.text ? execNode.text : 'Chưa xác định';
+                        if (execNode && execNode.supportIds && execNode.supportIds.length > 0) {
+                            execNode.supportIds.forEach(overallId => {
+                                const overallNode = overallNodes[overallId];
+                                const overallName = overallNode && overallNode.text ? overallNode.text : 'Chưa xác định';
+                                paths.push({ 'opt-pillar': action.pillar, 'opt-exec': execName, 'opt-overall': overallName });
+                            });
+                        } else {
+                            paths.push({ 'opt-pillar': action.pillar, 'opt-exec': execName, 'opt-overall': 'Độc lập (Không support)' });
+                        }
+                    });
+                } else {
+                    paths.push({ 'opt-pillar': action.pillar, 'opt-exec': 'Độc lập (Không support)', 'opt-overall': 'Độc lập (Không support)' });
+                }
+
+                paths.forEach(path => {
+                    let currentLevel = tree;
+                    activeHierarchy.forEach((hierKey, index) => {
+                        const val = path[hierKey];
+                        if (index === activeHierarchy.length - 1) {
+                            if (!currentLevel[val]) currentLevel[val] = [];
+                            if (!currentLevel[val].includes(action)) currentLevel[val].push(action);
+                        } else {
+                            if (!currentLevel[val]) currentLevel[val] = {};
+                            currentLevel = currentLevel[val];
+                        }
+                    });
+
+                    if (activeHierarchy.length === 0) {
+                        if (!tree['Tất cả mục tiêu']) tree['Tất cả mục tiêu'] = [];
+                        if (!tree['Tất cả mục tiêu'].includes(action)) tree['Tất cả mục tiêu'].push(action);
+                    }
+                });
+            });
+
+            function renderNode(node, level = 0) {
+                if (Array.isArray(node)) {
+                    if (node.length === 0) {
+                        return '<div class="text-gray-600 text-[12px] italic mt-1 ml-2">Không có dữ liệu...</div>';
+                    }
+                    return `
+                        <div class="flex flex-col mt-2 mb-4 gap-2">
+                            ${node.map(action => `
+                                <div class="rounded-2xl border border-gray-800 bg-[#1C1C1E] p-3">
+                                    <div class="flex items-start gap-2">
+                                        <i data-lucide="${action.isDone ? 'check-circle-2' : 'circle'}" class="w-4 h-4 mt-0.5 ${action.isDone ? 'text-green-500' : 'text-gray-500'} shrink-0"></i>
+                                        <div class="min-w-0 flex-1">
+                                            <div class="text-white text-[14px] font-medium leading-snug">${action.actionText}</div>
+                                            ${showDay ? `<div class="text-[11px] text-gray-500 mt-1">${action.dayLabel}</div>` : ''}
+                                            ${showOut && action.outputs.length ? `<div class="mt-2 text-[12px] text-green-300">${action.outputs.map(out => `↳ ${out}`).join('<br>')}</div>` : ''}
+                                            ${showNote && action.notes.length ? `<div class="mt-2 text-[12px] text-yellow-300">${action.notes.map(note => `📝 ${note}`).join('<br>')}</div>` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+
+                return Object.entries(node).map(([key, child]) => `
+                    <div class="${level === 0 ? 'mb-5' : 'mb-4 ml-3 border-l border-gray-800 pl-3'}">
+                        <div class="text-${level === 0 ? '[16px] text-[#0A84FF]' : '[14px] text-white'} font-semibold">${key}</div>
+                        ${renderNode(child, level + 1)}
+                    </div>
+                `).join('');
+            }
+
+            const output = document.getElementById('report-output-container');
+            if (!output) return;
+            output.classList.remove('hidden');
+            output.innerHTML = actionNodes.length
+                ? `<div class="health-card p-4">${renderNode(tree)}</div>`
+                : `<div class="health-card p-5 text-center text-gray-500 text-[13px]">Không có dữ liệu trong khoảng ngày đã chọn.</div>`;
+            lucide.createIcons({ root: output });
+        };
+
+        document.addEventListener('DOMContentLoaded', bootstrapPlannerPersistence);
+
+    </script>
+</body>
+</html>
