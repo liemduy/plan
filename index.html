@@ -354,20 +354,13 @@
 
     <div class="phone-container pb-24">
         <div class="bg-health-gradient"></div>
-
-        <main id="main-content" class="relative z-10">
-            <header class="px-5 pt-14 pb-2">
-                <p class="text-gray-400 text-[13px] font-medium tracking-wide mb-1">Liem's Planner</p>
-                <h1 id="dynamic-page-title" class="text-[34px] font-bold tracking-tight">Targets</h1>
-            </header>
-
-            <div class="px-5 pb-2">
+        <div class="px-5 pb-2">
                 <div class="flex items-center justify-between gap-2">
                     <span id="planner-status-badge" class="text-[11px] text-gray-400 bg-white/5 border border-gray-800 rounded-full px-2.5 py-1">On this device</span>
                     <div class="flex items-center justify-end gap-2">
                         <button id="planner-cloud-save-btn" onclick="manualSavePlannerCloud()" class="cloud-quick-save-chip hidden">
                             <i data-lucide="cloud-upload" class="w-4 h-4"></i>
-                            <span id="planner-cloud-save-label">Save cloud</span>
+                            <span id="planner-cloud-save-label">Save</span>
                         </button>
                         <button id="planner-account-chip" onclick="toggleCloudPanel()" class="cloud-account-chip">
                             <i data-lucide="user-round" class="w-4 h-4"></i>
@@ -475,6 +468,14 @@
                     </div>
                 </div>
             </div>
+
+        <main id="main-content" class="relative z-10">
+            <header class="px-5 pt-14 pb-2">
+                <p class="text-gray-400 text-[13px] font-medium tracking-wide mb-1">Liem's Planner</p>
+                <h1 id="dynamic-page-title" class="text-[34px] font-bold tracking-tight">Targets</h1>
+            </header>
+
+            
 
             <!-- TRANG 1: TARGETS -->
             <section id="page-targets" class="page-section block">
