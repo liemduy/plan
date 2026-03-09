@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -120,6 +121,51 @@
             box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
         }
 
+        .cloud-account-chip {
+            min-height: 38px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 14px;
+            color: #ffffff;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.07);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            transition: all 0.2s ease;
+        }
+        .cloud-account-chip:hover {
+            background: rgba(255,255,255,0.10);
+            border-color: rgba(255,255,255,0.12);
+        }
+
+        .cloud-quick-save-chip {
+            min-height: 38px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 14px;
+            color: #e5e7eb;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.07);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            transition: all 0.2s ease;
+        }
+        .cloud-quick-save-chip:hover {
+            background: rgba(255,255,255,0.10);
+            border-color: rgba(255,255,255,0.12);
+        }
+        .cloud-quick-save-chip.is-busy {
+            color: #8ec5ff;
+            border-color: rgba(10,132,255,0.18);
+            background: rgba(10,132,255,0.08);
+        }
+
         .cloud-close-btn {
             width: 30px;
             height: 30px;
@@ -136,7 +182,8 @@
             color: #d1d5db;
         }
 
-        .cloud-mini-note {
+        .cloud-mini-note,
+        .cloud-section-card {
             border-radius: 16px;
             padding: 12px 14px;
             background: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%);
@@ -194,6 +241,58 @@
         .cloud-password-toggle:hover {
             color: #d1d5db;
             background: rgba(255,255,255,0.05);
+        }
+
+        .cloud-link-btn {
+            border: none;
+            background: transparent;
+            color: #8ec5ff;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 0;
+            transition: color 0.2s ease;
+        }
+        .cloud-link-btn:hover {
+            color: #c7e2ff;
+        }
+
+        .cloud-toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding-top: 12px;
+            margin-top: 12px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .cloud-switch {
+            width: 46px;
+            height: 28px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 3px;
+            position: relative;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        .cloud-switch.is-on {
+            background: rgba(10,132,255,0.28);
+            border-color: rgba(10,132,255,0.35);
+        }
+        .cloud-switch-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 999px;
+            background: #ffffff;
+            display: block;
+            transform: translateX(0);
+            transition: transform 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+        }
+        .cloud-switch.is-on .cloud-switch-thumb {
+            transform: translateX(18px);
         }
 
         .cloud-btn {
@@ -263,15 +362,18 @@
             </header>
 
             <div class="px-5 pb-2">
-                <div class="flex flex-wrap items-center gap-2">
-                    <button onclick="manualSavePlannerState()" class="text-[12px] font-semibold text-white bg-[#0A84FF]/90 px-3 py-1.5 rounded-full hover:bg-[#0A84FF] transition-colors">Save</button>
-                    <button onclick="toggleCloudPanel()" class="text-[12px] font-semibold text-[#0A84FF] bg-[#0A84FF]/10 px-3 py-1.5 rounded-full hover:bg-[#0A84FF]/20 transition-colors">Account</button>
-                    <button onclick="exportPlannerBackup()" class="text-[12px] font-semibold text-gray-200 bg-white/10 px-3 py-1.5 rounded-full hover:bg-white/15 transition-colors">Export</button>
-                    <label class="text-[12px] font-semibold text-gray-200 bg-white/10 px-3 py-1.5 rounded-full hover:bg-white/15 transition-colors cursor-pointer">
-                        Import
-                        <input id="planner-import-input" type="file" accept="application/json" class="hidden" onchange="importPlannerBackup(event)">
-                    </label>
-                    <span id="planner-status-badge" class="text-[11px] text-gray-400 bg-white/5 border border-gray-800 rounded-full px-2.5 py-1">Local only</span>
+                <div class="flex items-center justify-between gap-2">
+                    <span id="planner-status-badge" class="text-[11px] text-gray-400 bg-white/5 border border-gray-800 rounded-full px-2.5 py-1">On this device</span>
+                    <div class="flex items-center justify-end gap-2">
+                        <button id="planner-cloud-save-btn" onclick="manualSavePlannerCloud()" class="cloud-quick-save-chip hidden">
+                            <i data-lucide="cloud-upload" class="w-4 h-4"></i>
+                            <span id="planner-cloud-save-label">Save cloud</span>
+                        </button>
+                        <button id="planner-account-chip" onclick="toggleCloudPanel()" class="cloud-account-chip">
+                            <i data-lucide="user-round" class="w-4 h-4"></i>
+                            <span id="planner-account-chip-label">Guest</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div id="cloud-panel" class="hidden mt-3 health-card overflow-hidden border border-white/5">
@@ -282,8 +384,8 @@
                                     <i data-lucide="shield-check" class="w-4 h-4"></i>
                                 </div>
                                 <div class="min-w-0">
-                                    <div class="text-white font-semibold text-[15px] tracking-tight">Tài khoản cloud</div>
-                                    
+                                    <div class="text-white font-semibold text-[15px] tracking-tight">Account</div>
+                                    <div class="text-[12px] text-gray-400 mt-1">Sign in so your data follows your account.</div>
                                 </div>
                             </div>
                             <button onclick="toggleCloudPanel()" class="cloud-close-btn shrink-0">
@@ -292,14 +394,16 @@
                         </div>
                     </div>
 
-                    <div class="p-4 space-y-3">
-                        <div class="cloud-mini-note">
-                            <div class="text-[11px] uppercase tracking-[0.16em] text-[#FFB48A] font-semibold">Secure login</div>
-                            
-                        </div>
+                    <div class="p-4 space-y-4">
+                        <div id="cloud-config-note" class="text-[11px] text-yellow-300/90 hidden"></div>
 
-                        <div class="space-y-2">
-                            <label class="block">
+                        <div id="cloud-auth-view" class="space-y-4">
+                            <div class="cloud-mini-note">
+                                <div id="cloud-auth-mode-title" class="text-white font-semibold text-[15px] tracking-tight">Sign in</div>
+                                <div id="cloud-auth-mode-subtitle" class="text-[12px] text-gray-400 mt-1 leading-relaxed">Sign in to sync your data across devices automatically.</div>
+                            </div>
+
+                            <label id="cloud-email-field" class="block">
                                 <div class="text-[11px] text-gray-500 font-medium mb-1.5">Email</div>
                                 <div class="cloud-input-wrap">
                                     <i data-lucide="mail" class="cloud-input-icon w-4 h-4"></i>
@@ -308,33 +412,65 @@
                             </label>
 
                             <label class="block">
-                                <div class="text-[11px] text-gray-500 font-medium mb-1.5">Mật khẩu</div>
+                                <div id="cloud-password-label" class="text-[11px] text-gray-500 font-medium mb-1.5">Password</div>
                                 <div class="cloud-input-wrap">
                                     <i data-lucide="lock-keyhole" class="cloud-input-icon w-4 h-4"></i>
-                                    <input id="cloud-password-input" type="password" class="cloud-auth-input pl-10 pr-11" placeholder="Ít nhất 6 ký tự" autocomplete="current-password">
-                                    <button type="button" onclick="toggleCloudPasswordVisibility()" class="cloud-password-toggle" aria-label="Hiện hoặc ẩn mật khẩu">
+                                    <input id="cloud-password-input" type="password" class="cloud-auth-input pl-10 pr-11" placeholder="At least 6 characters" autocomplete="current-password">
+                                    <button type="button" onclick="toggleCloudPasswordVisibility()" class="cloud-password-toggle" aria-label="Show or hide password">
                                         <i data-lucide="eye" id="cloud-password-eye" class="w-4 h-4"></i>
                                     </button>
                                 </div>
                             </label>
-                        </div>
 
-                        <div class="grid grid-cols-2 gap-2">
-                            <button onclick="signUpCloudPassword()" class="cloud-btn cloud-btn-secondary">Tạo tài khoản</button>
-                            <button onclick="signInCloudPassword()" class="cloud-btn cloud-btn-primary">Đăng nhập</button>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-2">
-                            <button onclick="loadPlannerStateFromCloud()" class="cloud-btn cloud-btn-muted">Load cloud</button>
-                            <button onclick="savePlannerStateToCloud()" class="cloud-btn cloud-btn-muted">Save cloud</button>
-                        </div>
-
-                        <div class="pt-1 flex items-center justify-between gap-3">
-                            <div class="min-w-0">
-                                <div id="cloud-user-status" class="text-[12px] text-gray-500">Chưa đăng nhập cloud.</div>
-                                <div id="cloud-config-note" class="text-[11px] text-yellow-300/90 mt-1 hidden"></div>
+                            <div class="flex items-center justify-between gap-3">
+                                <button id="cloud-forgot-password-link" type="button" onclick="requestCloudPasswordReset()" class="cloud-link-btn">Forgot password?</button>
                             </div>
-                            <button onclick="signOutCloud()" class="cloud-btn cloud-btn-danger shrink-0">Đăng xuất</button>
+
+                            <button id="cloud-submit-btn" onclick="submitCloudAuth()" class="cloud-btn cloud-btn-primary w-full">Sign in</button>
+
+                            <div id="cloud-auth-switch-row" class="text-[12px] text-gray-400">
+                                <span id="cloud-auth-switch-text">Don't have an account?</span>
+                                <button id="cloud-auth-switch-link" type="button" onclick="switchCloudAuthMode()" class="cloud-link-btn inline-flex ml-1">Create account</button>
+                            </div>
+                        </div>
+
+                        <div id="cloud-signed-in-view" class="hidden space-y-4">
+                            <div class="cloud-section-card">
+                                <div class="flex items-start gap-3 min-w-0">
+                                    <div class="cloud-panel-icon shrink-0">
+                                        <i data-lucide="shield-check" class="w-4 h-4"></i>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="text-[11px] uppercase tracking-[0.16em] text-[#FFB48A] font-semibold">CURRENT ACCOUNT</div>
+                                        <div id="cloud-account-email" class="text-white font-semibold text-[15px] tracking-tight mt-1 break-all">-</div>
+                                        <div id="cloud-account-sync" class="text-[12px] text-gray-400 mt-1">Your data is syncing automatically.</div>
+                                    </div>
+                                </div>
+
+                                <div class="cloud-toggle-row">
+                                    <div class="min-w-0">
+                                        <div class="text-[12px] text-white font-semibold">Auto save cloud</div>
+                                        <div id="cloud-autosave-note" class="text-[11px] text-gray-400 mt-1 leading-relaxed">Each change syncs to the cloud after a short pause.</div>
+                                    </div>
+                                    <button id="cloud-autosave-toggle" type="button" role="switch" aria-checked="true" onclick="togglePlannerCloudAutosave()" class="cloud-switch is-on">
+                                        <span class="cloud-switch-thumb"></span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="cloud-manual-save-hint" class="hidden text-[11px] text-gray-500 -mt-2">When auto save is off, use Save cloud in the header to push this device to your account.</div>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <button id="planner-cloud-load-btn" onclick="manualLoadPlannerCloud()" class="cloud-btn cloud-btn-muted">
+                                    <span id="planner-cloud-load-label">Load from cloud</span>
+                                </button>
+                                <button onclick="signOutCloud()" class="cloud-btn cloud-btn-danger">Sign out</button>
+                                <button onclick="exportPlannerBackup()" class="cloud-btn cloud-btn-muted">Export data</button>
+                                <label class="cloud-btn cloud-btn-muted w-full cursor-pointer">
+                                    Import data
+                                    <input id="planner-import-input" type="file" accept="application/json" class="hidden" onchange="importPlannerBackup(event)">
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2531,9 +2667,14 @@
         let plannerSupabase = null;
         let plannerCloudUser = null;
         let plannerAutosaveTimer = null;
+        let plannerCloudSyncTimer = null;
         let plannerStatusTimer = null;
         let plannerIsApplyingState = false;
         let plannerDomObserver = null;
+        let plannerCloudHydrated = false;
+        let plannerCloudSyncing = false;
+        let plannerCloudAuthMode = 'signin';
+        let plannerCloudRecoveryMode = false;
 
         function createEmptyPlannerState() {
             return {
@@ -2554,10 +2695,14 @@
                 const savedConfig = JSON.parse(localStorage.getItem(PLANNER_LOCAL_CONFIG_KEY)) || {};
                 return {
                     url: embeddedConfig.url || savedConfig.url || '',
-                    anonKey: embeddedConfig.anonKey || savedConfig.anonKey || ''
+                    anonKey: embeddedConfig.anonKey || savedConfig.anonKey || '',
+                    autoSyncEnabled: savedConfig.autoSyncEnabled !== false
                 };
             } catch (e) {
-                return embeddedConfig;
+                return {
+                    ...embeddedConfig,
+                    autoSyncEnabled: true
+                };
             }
         }
 
@@ -2691,8 +2836,9 @@
             if (plannerIsApplyingState) return;
             const state = collectCurrentPlannerState();
             localStorage.setItem(PLANNER_LOCAL_STATE_KEY, JSON.stringify(state));
-            if (showToast) setPlannerStatus('Đã lưu local');
+            if (showToast) setPlannerStatus('Saved on this device', 'success');
             updatePlannerStatusBadge();
+            queuePlannerCloudSync(state);
         }
 
         function loadPlannerStateFromLocalStorage() {
@@ -2701,16 +2847,55 @@
                 if (!raw) return null;
                 return JSON.parse(raw);
             } catch (e) {
-                console.error('Không đọc được local state', e);
+                console.error('Could not read local state', e);
                 return null;
             }
         }
 
-        function toggleCloudPanel() {
+        function toggleCloudPanel(forceOpen = null) {
             const panel = document.getElementById('cloud-panel');
             if (!panel) return;
-            panel.classList.toggle('hidden');
+            const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : panel.classList.contains('hidden');
+            panel.classList.toggle('hidden', !shouldOpen);
+            renderCloudPanel();
             lucide.createIcons({ root: panel });
+        }
+
+        function truncatePlannerAccountLabel(value) {
+            if (!value) return 'Guest';
+            return value.length > 22 ? `${value.slice(0, 19)}...` : value;
+        }
+
+        function updatePlannerAccountChip() {
+            const label = document.getElementById('planner-account-chip-label');
+            if (!label) return;
+            label.textContent = truncatePlannerAccountLabel(plannerCloudUser?.email || 'Guest');
+        }
+
+        function resetCloudAuthFields(options = {}) {
+            const emailInput = document.getElementById('cloud-email-input');
+            const passwordInput = document.getElementById('cloud-password-input');
+            if (emailInput && !options.keepEmail) emailInput.value = '';
+            if (passwordInput) {
+                passwordInput.value = '';
+                passwordInput.type = 'password';
+            }
+            const eye = document.getElementById('cloud-password-eye');
+            if (eye) {
+                eye.setAttribute('data-lucide', 'eye');
+                lucide.createIcons({ root: eye.parentElement || document });
+            }
+        }
+
+        function setCloudAuthMode(mode = 'signin') {
+            plannerCloudAuthMode = mode;
+            plannerCloudRecoveryMode = mode === 'recovery';
+            renderCloudPanel();
+        }
+
+        function switchCloudAuthMode() {
+            if (plannerCloudRecoveryMode) return;
+            setCloudAuthMode(plannerCloudAuthMode === 'signin' ? 'signup' : 'signin');
         }
 
         function hydrateCloudPanel() {
@@ -2721,49 +2906,236 @@
                     noteEl.textContent = '';
                 } else {
                     noteEl.classList.remove('hidden');
-                    noteEl.textContent = 'File này chưa được gắn đủ publishable key trong code. Trên browser cũ vẫn có thể dùng nếu key đã từng được lưu local từ bản trước.';
+                    noteEl.textContent = 'Account sync is not ready on this device yet. You can still use the app normally on this device.';
                 }
             }
+            updatePlannerAccountChip();
             updatePlannerStatusBadge();
-            renderCloudUserStatus();
+            renderCloudPanel();
         }
 
         function updatePlannerStatusBadge() {
             const badge = document.getElementById('planner-status-badge');
             if (!badge) return;
-            if (plannerCloudUser && plannerSupabase) {
-                badge.textContent = 'Cloud connected';
-                badge.className = 'text-[11px] text-green-300 bg-green-500/10 border border-green-500/20 rounded-full px-2.5 py-1';
-                return;
-            }
-            if (plannerCloudConfig.url && plannerCloudConfig.anonKey) {
-                badge.textContent = 'Cloud ready';
+            if (plannerCloudUser && (!plannerCloudHydrated || plannerCloudSyncing)) {
+                badge.textContent = 'Syncing...';
                 badge.className = 'text-[11px] text-[#0A84FF] bg-[#0A84FF]/10 border border-[#0A84FF]/20 rounded-full px-2.5 py-1';
                 return;
             }
-            badge.textContent = 'Local only';
+            if (plannerCloudUser && plannerSupabase && plannerCloudConfig.autoSyncEnabled === false) {
+                badge.textContent = 'Manual cloud';
+                badge.className = 'text-[11px] text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 rounded-full px-2.5 py-1';
+                return;
+            }
+            if (plannerCloudUser && plannerSupabase) {
+                badge.textContent = 'Auto sync';
+                badge.className = 'text-[11px] text-green-300 bg-green-500/10 border border-green-500/20 rounded-full px-2.5 py-1';
+                return;
+            }
+            badge.textContent = 'On this device';
             badge.className = 'text-[11px] text-gray-400 bg-white/5 border border-gray-800 rounded-full px-2.5 py-1';
         }
 
-        function setPlannerStatus(message) {
+        function setPlannerStatus(message, variant = 'neutral') {
             const badge = document.getElementById('planner-status-badge');
-            if (badge) badge.textContent = message;
+            if (badge) {
+                badge.textContent = message;
+                if (variant === 'success') {
+                    badge.className = 'text-[11px] text-green-300 bg-green-500/10 border border-green-500/20 rounded-full px-2.5 py-1';
+                } else if (variant === 'info') {
+                    badge.className = 'text-[11px] text-[#0A84FF] bg-[#0A84FF]/10 border border-[#0A84FF]/20 rounded-full px-2.5 py-1';
+                } else if (variant === 'warning') {
+                    badge.className = 'text-[11px] text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 rounded-full px-2.5 py-1';
+                } else {
+                    badge.className = 'text-[11px] text-gray-300 bg-white/10 border border-white/10 rounded-full px-2.5 py-1';
+                }
+            }
             clearTimeout(plannerStatusTimer);
-            plannerStatusTimer = setTimeout(updatePlannerStatusBadge, 1800);
+            plannerStatusTimer = setTimeout(updatePlannerStatusBadge, 2200);
+        }
+
+        function updatePlannerCloudQuickSaveButton() {
+            const btn = document.getElementById('planner-cloud-save-btn');
+            const label = document.getElementById('planner-cloud-save-label');
+            if (!btn) return;
+            const shouldShow = !!plannerCloudUser && !!plannerSupabase && plannerCloudConfig.autoSyncEnabled === false;
+            btn.classList.toggle('hidden', !shouldShow);
+            btn.classList.toggle('is-busy', !!plannerCloudSyncing);
+            btn.disabled = !plannerCloudHydrated || plannerCloudSyncing;
+            if (label) {
+                label.textContent = plannerCloudSyncing ? 'Working...' : 'Save cloud';
+            }
+        }
+
+        function updatePlannerCloudLoadButton() {
+            const btn = document.getElementById('planner-cloud-load-btn');
+            const label = document.getElementById('planner-cloud-load-label');
+            if (!btn) return;
+            btn.classList.toggle('is-busy', !!plannerCloudSyncing);
+            btn.disabled = !plannerCloudUser || !plannerSupabase || !plannerCloudHydrated || plannerCloudSyncing;
+            if (label) {
+                label.textContent = plannerCloudSyncing ? 'Loading...' : 'Load from cloud';
+            }
+        }
+
+        function renderPlannerCloudAutosaveUi() {
+            const toggle = document.getElementById('cloud-autosave-toggle');
+            const note = document.getElementById('cloud-autosave-note');
+            const manualHint = document.getElementById('cloud-manual-save-hint');
+            const autoSyncEnabled = plannerCloudConfig.autoSyncEnabled !== false;
+
+            if (toggle) {
+                toggle.classList.toggle('is-on', autoSyncEnabled);
+                toggle.setAttribute('aria-checked', autoSyncEnabled ? 'true' : 'false');
+            }
+
+            if (note) {
+                note.textContent = autoSyncEnabled
+                    ? 'Each change syncs to the cloud after a short pause.'
+                    : 'Auto save is off. Your data still saves on this device, and the cloud only updates when you press Save cloud.';
+            }
+
+            if (manualHint) {
+                manualHint.classList.toggle('hidden', autoSyncEnabled);
+            }
+
+            updatePlannerCloudQuickSaveButton();
+            updatePlannerCloudLoadButton();
         }
 
         function renderCloudUserStatus() {
-            const statusEl = document.getElementById('cloud-user-status');
-            if (!statusEl) return;
-            if (plannerCloudUser) {
-                statusEl.textContent = `Đang đăng nhập: ${plannerCloudUser.email || plannerCloudUser.id}`;
-                statusEl.className = 'text-[12px] text-green-300 mt-1';
-            } else if (plannerCloudConfig.url && plannerCloudConfig.anonKey) {
-                statusEl.textContent = 'Database ready.';
-                statusEl.className = 'text-[12px] text-[#0A84FF] mt-1';
-            } else {
-                statusEl.textContent = 'Thiếu publishable key cố định trong file.';
-                statusEl.className = 'text-[12px] text-yellow-300 mt-1';
+            const emailEl = document.getElementById('cloud-account-email');
+            const syncEl = document.getElementById('cloud-account-sync');
+            if (emailEl) {
+                emailEl.textContent = plannerCloudUser?.email || 'Guest';
+            }
+            if (syncEl) {
+                if (plannerCloudUser && (!plannerCloudHydrated || plannerCloudSyncing)) {
+                    syncEl.textContent = 'Syncing data for this account...';
+                    syncEl.className = 'text-[12px] text-[#8ec5ff] mt-1';
+                } else if (plannerCloudUser && plannerCloudConfig.autoSyncEnabled === false) {
+                    syncEl.textContent = 'Cloud is in manual save mode.';
+                    syncEl.className = 'text-[12px] text-yellow-200/90 mt-1';
+                } else if (plannerCloudUser) {
+                    syncEl.textContent = 'Your data is syncing automatically across devices.';
+                    syncEl.className = 'text-[12px] text-gray-400 mt-1';
+                } else {
+                    syncEl.textContent = 'Sign in so your data follows your account.';
+                    syncEl.className = 'text-[12px] text-gray-400 mt-1';
+                }
+            }
+            renderPlannerCloudAutosaveUi();
+        }
+
+        function renderCloudPanel() {
+            const authView = document.getElementById('cloud-auth-view');
+            const signedInView = document.getElementById('cloud-signed-in-view');
+            const emailField = document.getElementById('cloud-email-field');
+            const titleEl = document.getElementById('cloud-auth-mode-title');
+            const subtitleEl = document.getElementById('cloud-auth-mode-subtitle');
+            const passwordLabel = document.getElementById('cloud-password-label');
+            const passwordInput = document.getElementById('cloud-password-input');
+            const submitBtn = document.getElementById('cloud-submit-btn');
+            const forgotBtn = document.getElementById('cloud-forgot-password-link');
+            const switchRow = document.getElementById('cloud-auth-switch-row');
+            const switchText = document.getElementById('cloud-auth-switch-text');
+            const switchLink = document.getElementById('cloud-auth-switch-link');
+            const isSignedInView = !!plannerCloudUser && !plannerCloudRecoveryMode;
+
+            if (authView) authView.classList.toggle('hidden', isSignedInView);
+            if (signedInView) signedInView.classList.toggle('hidden', !isSignedInView);
+
+            if (emailField) emailField.classList.toggle('hidden', plannerCloudRecoveryMode);
+            if (forgotBtn) forgotBtn.classList.toggle('hidden', plannerCloudAuthMode !== 'signin');
+            if (switchRow) switchRow.classList.toggle('hidden', plannerCloudRecoveryMode);
+
+            if (titleEl) {
+                titleEl.textContent = plannerCloudRecoveryMode
+                    ? 'Reset password'
+                    : plannerCloudAuthMode === 'signup'
+                        ? 'Create account'
+                        : 'Sign in';
+            }
+
+            if (subtitleEl) {
+                subtitleEl.textContent = plannerCloudRecoveryMode
+                    ? 'Enter a new password to finish resetting your password.'
+                    : plannerCloudAuthMode === 'signup'
+                        ? 'Create an account to sync your data across devices automatically.'
+                        : 'Sign in to sync your data across devices automatically.';
+            }
+
+            if (passwordLabel) {
+                passwordLabel.textContent = plannerCloudRecoveryMode ? 'New password' : 'Password';
+            }
+
+            if (passwordInput) {
+                passwordInput.placeholder = plannerCloudRecoveryMode ? 'At least 6 characters' : 'At least 6 characters';
+                passwordInput.autocomplete = plannerCloudRecoveryMode || plannerCloudAuthMode === 'signup' ? 'new-password' : 'current-password';
+            }
+
+            if (submitBtn) {
+                submitBtn.textContent = plannerCloudRecoveryMode
+                    ? 'Update password'
+                    : plannerCloudAuthMode === 'signup'
+                        ? 'Create account'
+                        : 'Sign in';
+                submitBtn.className = `cloud-btn ${plannerCloudAuthMode === 'signup' ? 'cloud-btn-secondary' : 'cloud-btn-primary'} w-full`;
+            }
+
+            if (switchText) {
+                switchText.textContent = plannerCloudAuthMode === 'signup' ? 'Already have an account?' : "Don't have an account?";
+            }
+
+            if (switchLink) {
+                switchLink.textContent = plannerCloudAuthMode === 'signup' ? 'Sign in' : 'Create account';
+            }
+
+            renderCloudUserStatus();
+            updatePlannerAccountChip();
+            updatePlannerCloudQuickSaveButton();
+            updatePlannerCloudLoadButton();
+            lucide.createIcons({ root: document.getElementById('cloud-panel') || document });
+        }
+
+        async function handlePlannerAuthenticatedState(options = {}) {
+            if (!plannerCloudUser) {
+                plannerCloudHydrated = false;
+                plannerCloudSyncing = false;
+                renderCloudPanel();
+                updatePlannerAccountChip();
+                updatePlannerStatusBadge();
+                return;
+            }
+
+            plannerCloudHydrated = false;
+            plannerCloudSyncing = false;
+            plannerCloudRecoveryMode = false;
+            plannerCloudAuthMode = 'signin';
+            renderCloudPanel();
+            updatePlannerAccountChip();
+            updatePlannerStatusBadge();
+
+            let cloudState = null;
+            try {
+                cloudState = await loadPlannerStateFromCloud({
+                    silentWhenEmpty: true,
+                    silent: options.silent !== false,
+                    seedCloudWhenEmpty: false
+                });
+            } finally {
+                plannerCloudHydrated = true;
+                renderCloudPanel();
+                updatePlannerAccountChip();
+                updatePlannerStatusBadge();
+            }
+
+            if (!cloudState) {
+                if (plannerCloudConfig.autoSyncEnabled === false) {
+                    setPlannerStatus('Cloud is empty — press Save cloud to upload', 'info');
+                } else {
+                    queuePlannerCloudSync(collectCurrentPlannerState());
+                }
             }
         }
 
@@ -2773,20 +3145,33 @@
                 await new Promise(resolve => window.addEventListener('planner:supabase-ready', resolve, { once: true }));
             }
             plannerSupabase = window.__plannerCreateSupabaseClient(plannerCloudConfig.url, plannerCloudConfig.anonKey);
-            plannerSupabase.auth.onAuthStateChange(async (_event, session) => {
+            plannerSupabase.auth.onAuthStateChange((event, session) => {
                 plannerCloudUser = session?.user || null;
-                renderCloudUserStatus();
-                updatePlannerStatusBadge();
-                if (plannerCloudUser) {
-                    await loadPlannerStateFromCloud({ silentWhenEmpty: true, silent: true });
+                if (event === 'PASSWORD_RECOVERY') {
+                    plannerCloudRecoveryMode = true;
+                    plannerCloudAuthMode = 'recovery';
+                    toggleCloudPanel(true);
+                    setPlannerStatus('Enter your new password', 'info');
                 }
+                if (event === 'SIGNED_OUT') {
+                    plannerCloudRecoveryMode = false;
+                    plannerCloudAuthMode = 'signin';
+                    plannerCloudHydrated = false;
+                    plannerCloudSyncing = false;
+                    resetCloudAuthFields();
+                }
+                renderCloudPanel();
+                updatePlannerAccountChip();
+                updatePlannerStatusBadge();
             });
             const { data } = await plannerSupabase.auth.getSession();
             plannerCloudUser = data?.session?.user || null;
-            renderCloudUserStatus();
-            updatePlannerStatusBadge();
             if (plannerCloudUser) {
-                loadPlannerStateFromCloud({ silentWhenEmpty: true, silent: true });
+                await handlePlannerAuthenticatedState({ silent: true });
+            } else {
+                renderCloudPanel();
+                updatePlannerAccountChip();
+                updatePlannerStatusBadge();
             }
             return plannerSupabase;
         }
@@ -2809,78 +3194,150 @@
             return { email, password };
         }
 
+        async function submitCloudAuth() {
+            if (plannerCloudRecoveryMode) {
+                await completeCloudPasswordRecovery();
+                return;
+            }
+            if (plannerCloudAuthMode === 'signup') {
+                await signUpCloudPassword();
+                return;
+            }
+            await signInCloudPassword();
+        }
+
         async function signUpCloudPassword() {
             const { email, password } = getCloudCredentials();
             if (!email || !password) {
-                alert('Nhập đủ email và password.');
+                alert('Enter both email and password.');
                 return;
             }
             if (password.length < 6) {
-                alert('Password cần ít nhất 6 ký tự.');
+                alert('Password must be at least 6 characters.');
                 return;
             }
             await initPlannerSupabaseClient();
             if (!plannerSupabase) {
-                alert('File này chưa có đủ Supabase URL + publishable key.');
+                alert('Account sync is not ready on this device yet.');
                 return;
             }
             const { data, error } = await plannerSupabase.auth.signUp({ email, password });
             if (error) {
-                alert('Không đăng ký được: ' + error.message);
+                alert('Could not create account: ' + error.message);
                 return;
             }
             plannerCloudUser = data?.user || data?.session?.user || null;
-            renderCloudUserStatus();
-            updatePlannerStatusBadge();
             if (data?.session?.user) {
-                setPlannerStatus('Đăng ký + đăng nhập thành công');
-                await loadPlannerStateFromCloud({ silentWhenEmpty: true });
-            } else {
-                setPlannerStatus('Đăng ký thành công');
-                alert('Đăng ký thành công. Nếu Supabase của bạn đang bật xác nhận email, hãy xác nhận email rồi quay lại đăng nhập.');
+                resetCloudAuthFields({ keepEmail: true });
+                setPlannerStatus('Account created', 'success');
+                await handlePlannerAuthenticatedState({ silent: true });
+                return;
             }
+            setCloudAuthMode('signin');
+            setPlannerStatus('Check your email to confirm your account', 'info');
+            alert('Your account has been created. Check your email to confirm it, then come back and sign in.');
         }
 
         async function signInCloudPassword() {
             const { email, password } = getCloudCredentials();
             if (!email || !password) {
-                alert('Nhập đủ email và password.');
+                alert('Enter both email and password.');
                 return;
             }
             await initPlannerSupabaseClient();
             if (!plannerSupabase) {
-                alert('File này chưa có đủ Supabase URL + publishable key.');
+                alert('Account sync is not ready on this device yet.');
                 return;
             }
             const { data, error } = await plannerSupabase.auth.signInWithPassword({ email, password });
             if (error) {
-                alert('Không đăng nhập được: ' + error.message);
+                alert('Could not sign in: ' + error.message);
                 return;
             }
             plannerCloudUser = data?.user || data?.session?.user || null;
-            renderCloudUserStatus();
-            updatePlannerStatusBadge();
-            setPlannerStatus('Đã đăng nhập');
-            await loadPlannerStateFromCloud({ silentWhenEmpty: true });
+            resetCloudAuthFields({ keepEmail: true });
+            setPlannerStatus('Signed in', 'success');
+            await handlePlannerAuthenticatedState({ silent: true });
+        }
+
+        async function requestCloudPasswordReset() {
+            const email = document.getElementById('cloud-email-input')?.value.trim() || '';
+            if (!email) {
+                alert('Enter your email first to receive a reset link.');
+                return;
+            }
+            await initPlannerSupabaseClient();
+            if (!plannerSupabase) {
+                alert('Account sync is not ready on this device yet.');
+                return;
+            }
+            const redirectTo = `${window.location.origin}${window.location.pathname}`;
+            const { error } = await plannerSupabase.auth.resetPasswordForEmail(email, { redirectTo });
+            if (error) {
+                alert('Could not send reset email: ' + error.message);
+                return;
+            }
+            setPlannerStatus('Password reset email sent', 'info');
+            alert('A password reset email has been sent. Open your email and follow the instructions.');
+        }
+
+        async function completeCloudPasswordRecovery() {
+            const { password } = getCloudCredentials();
+            if (!password) {
+                alert('Enter your new password.');
+                return;
+            }
+            if (password.length < 6) {
+                alert('Password must be at least 6 characters.');
+                return;
+            }
+            await initPlannerSupabaseClient();
+            if (!plannerSupabase) {
+                alert('Account sync is not ready on this device yet.');
+                return;
+            }
+            const { error } = await plannerSupabase.auth.updateUser({ password });
+            if (error) {
+                alert('Could not update password: ' + error.message);
+                return;
+            }
+            plannerCloudRecoveryMode = false;
+            plannerCloudAuthMode = 'signin';
+            resetCloudAuthFields({ keepEmail: true });
+            setPlannerStatus('Password updated', 'success');
+            if (plannerCloudUser) {
+                await handlePlannerAuthenticatedState({ silent: true });
+            } else {
+                renderCloudPanel();
+                updatePlannerAccountChip();
+                updatePlannerStatusBadge();
+            }
+            alert('Your new password has been saved. You can keep using the app normally.');
         }
 
         async function signOutCloud() {
             if (!plannerSupabase) return;
             const { error } = await plannerSupabase.auth.signOut();
             if (error) {
-                alert('Không đăng xuất được: ' + error.message);
+                alert('Could not sign out: ' + error.message);
                 return;
             }
             plannerCloudUser = null;
-            renderCloudUserStatus();
+            plannerCloudRecoveryMode = false;
+            plannerCloudAuthMode = 'signin';
+            plannerCloudHydrated = false;
+            plannerCloudSyncing = false;
+            resetCloudAuthFields();
+            renderCloudPanel();
+            updatePlannerAccountChip();
             updatePlannerStatusBadge();
-            setPlannerStatus('Đã đăng xuất');
+            setPlannerStatus('Signed out', 'success');
         }
 
         async function fetchPlannerStateFromCloud() {
             await initPlannerSupabaseClient();
-            if (!plannerSupabase) throw new Error('File này chưa có đủ Supabase URL + publishable key.');
-            if (!plannerCloudUser) throw new Error('Bạn cần đăng nhập trước.');
+            if (!plannerSupabase) throw new Error('Account sync is not ready on this device yet.');
+            if (!plannerCloudUser) throw new Error('You need to sign in first.');
             const { data, error } = await plannerSupabase
                 .from('user_app_state')
                 .select('app_state')
@@ -2895,37 +3352,127 @@
             try {
                 const cloudState = await fetchPlannerStateFromCloud();
                 if (!cloudState) {
-                    setPlannerStatus('Cloud chưa có dữ liệu');
-                    if (!options.silentWhenEmpty) {
-                        alert('Cloud chưa có dữ liệu. Bạn có thể bấm Save cloud để đẩy dữ liệu hiện tại lên.');
+                    if (!options.silent) setPlannerStatus('Account is ready', 'info');
+                    if (options.seedCloudWhenEmpty !== false && plannerCloudUser) {
+                        queuePlannerCloudSync(collectCurrentPlannerState());
                     }
-                    return;
+                    return null;
                 }
                 applyPlannerState(cloudState, { persistLocal: true });
-                setPlannerStatus('Đã load cloud');
+                if (!options.silent) setPlannerStatus('Cloud synced', 'success');
+                return cloudState;
             } catch (error) {
-                if (!options.silent) alert('Không load được cloud: ' + error.message);
+                console.error('Could not load cloud', error);
+                if (!options.silent) {
+                    alert('Could not sync data: ' + error.message);
+                }
+                setPlannerStatus('On this device', 'warning');
+                return null;
             }
         }
 
-        async function savePlannerStateToCloud() {
+        async function savePlannerStateToCloud(options = {}) {
             try {
                 await initPlannerSupabaseClient();
                 if (!plannerSupabase || !plannerCloudUser) {
-                    alert('Bạn cần đăng nhập tài khoản trước.');
-                    return;
+                    if (!options.silent) {
+                        alert('Sign in to sync your data.');
+                    }
+                    return false;
                 }
-                const appState = collectCurrentPlannerState();
+                if (!plannerCloudHydrated && options.force !== true) {
+                    return false;
+                }
+                const appState = options.appState || collectCurrentPlannerState();
                 const { error } = await plannerSupabase.from('user_app_state').upsert({
                     user_id: plannerCloudUser.id,
                     app_state: appState,
                     updated_at: new Date().toISOString()
                 });
                 if (error) throw error;
-                persistPlannerStateLocally(false);
-                setPlannerStatus('Đã save cloud');
+                if (!options.silent) {
+                    setPlannerStatus('Cloud synced', 'success');
+                }
+                updatePlannerStatusBadge();
+                renderCloudPanel();
+                return true;
             } catch (error) {
-                alert('Không save được cloud: ' + error.message);
+                console.error('Could not save cloud', error);
+                if (!options.silent) {
+                    alert('Could not sync data: ' + error.message);
+                }
+                setPlannerStatus('On this device', 'warning');
+                return false;
+            }
+        }
+
+        function queuePlannerCloudSync(appState = null) {
+            if (plannerCloudConfig.autoSyncEnabled === false) return;
+            if (plannerIsApplyingState || !plannerSupabase || !plannerCloudUser || !plannerCloudHydrated) return;
+            clearTimeout(plannerCloudSyncTimer);
+            plannerCloudSyncing = true;
+            updatePlannerStatusBadge();
+            renderCloudPanel();
+            plannerCloudSyncTimer = setTimeout(async () => {
+                try {
+                    await savePlannerStateToCloud({ silent: true, appState: appState || collectCurrentPlannerState(), force: true });
+                } finally {
+                    plannerCloudSyncing = false;
+                    updatePlannerStatusBadge();
+                    renderCloudPanel();
+                }
+            }, 1200);
+        }
+
+        function togglePlannerCloudAutosave() {
+            const nextEnabled = plannerCloudConfig.autoSyncEnabled === false;
+            clearTimeout(plannerCloudSyncTimer);
+            plannerCloudSyncing = false;
+            saveCloudConfigToLocal({ autoSyncEnabled: nextEnabled });
+
+            if (nextEnabled) {
+                setPlannerStatus('Cloud auto save turned on', 'success');
+                if (plannerCloudUser && plannerCloudHydrated) {
+                    queuePlannerCloudSync(collectCurrentPlannerState());
+                }
+            } else {
+                setPlannerStatus('Cloud auto save turned off', 'info');
+                updatePlannerStatusBadge();
+                renderCloudPanel();
+            }
+        }
+
+        async function manualLoadPlannerCloud() {
+            if (!plannerCloudUser || !plannerSupabase || plannerCloudSyncing || !plannerCloudHydrated) return;
+            const confirmed = window.confirm('Load data from cloud? This will replace the current data on this device with the cloud version.');
+            if (!confirmed) return;
+            plannerCloudSyncing = true;
+            updatePlannerStatusBadge();
+            renderCloudPanel();
+            try {
+                const cloudState = await loadPlannerStateFromCloud({ silent: false, seedCloudWhenEmpty: false });
+                if (!cloudState) {
+                    setPlannerStatus('No cloud data found', 'info');
+                    alert('No cloud data was found for this account.');
+                }
+            } finally {
+                plannerCloudSyncing = false;
+                updatePlannerStatusBadge();
+                renderCloudPanel();
+            }
+        }
+
+        async function manualSavePlannerCloud() {
+            if (!plannerCloudUser || !plannerSupabase || plannerCloudSyncing) return;
+            plannerCloudSyncing = true;
+            updatePlannerStatusBadge();
+            renderCloudPanel();
+            try {
+                await savePlannerStateToCloud({ silent: false, force: true });
+            } finally {
+                plannerCloudSyncing = false;
+                updatePlannerStatusBadge();
+                renderCloudPanel();
             }
         }
 
@@ -2943,7 +3490,7 @@
             a.download = `planner-backup-${dateKey}.json`;
             a.click();
             URL.revokeObjectURL(url);
-            setPlannerStatus('Đã export backup');
+            setPlannerStatus('Backup exported');
         }
 
         function importPlannerBackup(event) {
@@ -2954,9 +3501,9 @@
                 try {
                     const imported = JSON.parse(reader.result);
                     applyPlannerState(imported, { persistLocal: true });
-                    setPlannerStatus('Đã import backup');
+                    setPlannerStatus('Backup imported');
                 } catch (error) {
-                    alert('File backup không hợp lệ.');
+                    alert('Invalid backup file.');
                 } finally {
                     event.target.value = '';
                 }
