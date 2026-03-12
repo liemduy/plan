@@ -1098,7 +1098,23 @@
 
         const SUPABASE_URL = 'https://csodklxqlpoandmyvjpt.supabase.co';
         const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_yNOpvvmR7i04GUzD2i1Mww_qE4mXuMb';
-        const supabaseClient = window.supabase?.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) : null;
+        const supabaseClient = window.supabase?.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }) : null;
+        async function getPersistedAuthUser() {
+            if (!supabaseClient) return null;
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (session?.user) return session.user;
+            } catch (err) {
+                console.warn('getSession failed', err);
+            }
+            try {
+                const { data: { user } } = await supabaseClient.auth.getUser();
+                return user || null;
+            } catch (err) {
+                console.warn('getUser failed', err);
+                return null;
+            }
+        }
         function safeLucide(){ try { window.lucide?.createIcons?.(); } catch (e) { console.warn('Lucide render skipped', e); } }
         let currentAuthUser = null;
         let backupExportConfirmedThisSession = false;
@@ -1457,13 +1473,27 @@
         });
 
         function attachNavEvents() {}
+
+        async function goToToday(btn = null) {
+            const todayFull = formatDateParts(new Date()).full;
+            try {
+                await openDateRecord(todayFull, btn || document.getElementById('go-today-btn'));
+            } catch (err) {
+                console.error('Go to Today failed', err);
+                currentRecentDate = todayFull;
+                updateCreatePageForDate(todayFull);
+                openCreateState(todayFull, btn || document.getElementById('go-today-btn'));
+                showStatusInfo('Today fallback', ['Could not fully load Today, so the app opened the Create state for today instead.']);
+            }
+        }
+
         // delegated navigation so newly-added projects work without rebinding
-        document.addEventListener('click', (e) => {
+        document.addEventListener('click', async (e) => {
             const navBtn = e.target.closest('.nav-btn');
             if (navBtn) {
                 if (navBtn.id === 'go-today-btn') {
                     e.preventDefault();
-                    openDateRecord(formatDateParts(new Date()).full, navBtn);
+                    await goToToday(navBtn);
                     return;
                 }
                 const target = navBtn.getAttribute('data-target');
@@ -2962,7 +2992,7 @@
         });
 
         // ================= Supabase Auth + Cloud Snapshot =================
-        async function refreshAuthUI() {
+        async function refreshAuthUI(userOverride = undefined) {
             const signedOut = document.getElementById('auth-signed-out');
             const signedIn = document.getElementById('auth-signed-in');
             const label = document.getElementById('auth-state-label');
@@ -2974,8 +3004,8 @@
                 if (cloudStatus) cloudStatus.textContent = 'Supabase client failed to load';
                 return;
             }
-            const { data: { user } } = await supabaseClient.auth.getUser();
-            currentAuthUser = user || null;
+            const resolvedUser = userOverride === undefined ? await getPersistedAuthUser() : (userOverride || null);
+            currentAuthUser = resolvedUser || null;
             if (signedOut) signedOut.classList.toggle('hidden', !!currentAuthUser);
             if (signedIn) signedIn.classList.toggle('hidden', !currentAuthUser);
             if (label) label.textContent = currentAuthUser ? 'Signed in · cloud available' : 'Signed out · local only';
@@ -3061,18 +3091,27 @@
                 showStatusInfo('Sign in required', ['Please sign in before saving to cloud.']);
                 return;
             }
-            const snapshot = buildWorkspaceSnapshot();
-            const { error } = await supabaseClient.from('workspace_snapshots').upsert({
-                user_id: currentAuthUser.id,
-                snapshot_json: snapshot,
-                updated_at: new Date().toISOString()
-            });
-            if (error) {
-                showStatusInfo('Cloud save failed', [error.message]);
-                return;
+            const cloudStatus = document.getElementById('cloud-status-text');
+            try {
+                if (cloudStatus) cloudStatus.textContent = 'Saving cloud snapshot…';
+                const snapshot = buildWorkspaceSnapshot();
+                const { error } = await supabaseClient.from('workspace_snapshots').upsert({
+                    user_id: currentAuthUser.id,
+                    snapshot_json: snapshot,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'user_id' });
+                if (error) {
+                    if (cloudStatus) cloudStatus.textContent = 'Cloud save failed.';
+                    showStatusInfo('Cloud save failed', [error.message]);
+                    return;
+                }
+                if (cloudStatus) cloudStatus.textContent = 'Cloud snapshot saved successfully.';
+                showStatusInfo('Saved to cloud', ['Your current workspace snapshot has been saved to Supabase.']);
+            } catch (err) {
+                console.error('saveSnapshotToCloud failed', err);
+                if (cloudStatus) cloudStatus.textContent = 'Cloud save failed.';
+                showStatusInfo('Cloud save failed', [err?.message || 'Unknown error while saving snapshot to cloud.']);
             }
-            document.getElementById('cloud-status-text').textContent = 'Cloud snapshot saved successfully.';
-            showStatusInfo('Saved to cloud', ['Your current workspace snapshot has been saved to Supabase.']);
         }
 
         async function loadSnapshotFromCloud() {
@@ -3081,17 +3120,28 @@
                 return;
             }
             if (!confirm('Load from cloud will replace the current local workspace in this browser. Continue?')) return;
-            const { data, error } = await supabaseClient.from('workspace_snapshots').select('snapshot_json').eq('user_id', currentAuthUser.id).maybeSingle();
-            if (error) {
-                showStatusInfo('Cloud load failed', [error.message]);
-                return;
+            const cloudStatus = document.getElementById('cloud-status-text');
+            try {
+                if (cloudStatus) cloudStatus.textContent = 'Loading cloud snapshot…';
+                const { data, error } = await supabaseClient.from('workspace_snapshots').select('snapshot_json').eq('user_id', currentAuthUser.id).maybeSingle();
+                if (error) {
+                    if (cloudStatus) cloudStatus.textContent = 'Cloud load failed.';
+                    showStatusInfo('Cloud load failed', [error.message]);
+                    return;
+                }
+                if (!data?.snapshot_json) {
+                    if (cloudStatus) cloudStatus.textContent = 'No cloud snapshot found.';
+                    showStatusInfo('No cloud snapshot', ['No saved snapshot was found for this account yet.']);
+                    return;
+                }
+                restoreWorkspaceSnapshot(data.snapshot_json);
+                if (cloudStatus) cloudStatus.textContent = 'Cloud snapshot loaded successfully.';
+                showStatusInfo('Loaded from cloud', ['Cloud snapshot restored into the current workspace.']);
+            } catch (err) {
+                console.error('loadSnapshotFromCloud failed', err);
+                if (cloudStatus) cloudStatus.textContent = 'Cloud load failed.';
+                showStatusInfo('Cloud load failed', [err?.message || 'Unknown error while loading snapshot from cloud.']);
             }
-            if (!data?.snapshot_json) {
-                showStatusInfo('No cloud snapshot', ['No saved snapshot was found for this account yet.']);
-                return;
-            }
-            restoreWorkspaceSnapshot(data.snapshot_json);
-            showStatusInfo('Loaded from cloud', ['Cloud snapshot restored into the current workspace.']);
         }
 
         async function importBackupFile(file) {
@@ -3130,7 +3180,9 @@
         });
 
         if (supabaseClient) {
-            supabaseClient.auth.onAuthStateChange(async () => { await refreshAuthUI(); });
+            supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+                await refreshAuthUI(session?.user || null);
+            });
         }
 
         (async () => {
@@ -3140,8 +3192,9 @@
                 openPage('page-create', document.getElementById('go-today-btn'));
                 document.getElementById('dynamic-date-title').innerText = todayDateParts.full;
                 currentRecentDate = todayDateParts.full;
-                await refreshAuthUI();
-                await openDateRecord(todayDateParts.full, document.getElementById('go-today-btn'));
+                const bootUser = await getPersistedAuthUser();
+                await refreshAuthUI(bootUser);
+                await goToToday(document.getElementById('go-today-btn'));
             } catch (err) {
                 console.error('Startup init failed', err);
                 currentRecentDate = todayDateParts.full;
