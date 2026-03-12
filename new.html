@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Liem's Planner</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -40,6 +40,11 @@
         ::-webkit-scrollbar-thumb { background: #2C2C2E; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #4d4d4f; }
         
+        :root {
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
         .popup-anim { transition: all 0.2s ease-out; opacity: 0; transform: translateY(10px) scale(0.95); pointer-events: none; }
         .popup-active { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
         
@@ -178,6 +183,14 @@
 
             body {
                 overflow-x: hidden;
+                min-height: 100dvh;
+                padding-top: 0;
+                padding-bottom: var(--safe-bottom);
+            }
+
+            #main-scroll-area {
+                min-height: 100dvh;
+                -webkit-overflow-scrolling: touch;
             }
 
             #main-scroll-area,
@@ -228,8 +241,9 @@
             .page-header {
                 padding-left: 1.5rem !important;
                 padding-right: 1.5rem !important;
-                padding-top: 1rem !important;
+                padding-top: calc(0.875rem + var(--safe-top)) !important;
                 padding-bottom: 0.875rem !important;
+                top: 0 !important;
             }
 
             .page-header > .project-header-inner,
@@ -261,7 +275,7 @@
             }
 
             .project-header {
-                padding-top: 1rem !important;
+                padding-top: calc(0.875rem + var(--safe-top)) !important;
             }
 
             .project-header-inner {
@@ -622,8 +636,8 @@
                     <div class="flex items-center gap-3">
                         <div class="w-9 h-9 rounded-full bg-[#2C2C2E] flex items-center justify-center text-textSecondary font-bold text-xs tracking-wider border border-borderColor">TN</div>
                         <div class="text-left">
-                            <div class="text-[14px] font-semibold text-white">Thanh Nam</div>
-                            <div class="text-[12px] text-textSecondary">Pro Member</div>
+                            <div class="text-[14px] font-semibold text-white">Account</div>
+                            <div class="text-[12px] text-textSecondary">Local mode</div>
                         </div>
                     </div>
                     <i data-lucide="settings" class="w-4 h-4 text-textSecondary"></i>
@@ -1125,9 +1139,10 @@
             const avatarEl = cardBtn?.querySelector('.w-9.h-9');
             const largeAvatarEl = document.getElementById('profile-avatar-large');
             const email = currentAuthUser?.email || '';
-            const initials = (email ? email.slice(0, 2) : 'TN').toUpperCase();
-            if (textNodes[0]) textNodes[0].textContent = email || 'Guest user';
-            if (textNodes[1]) textNodes[1].textContent = currentAuthUser ? 'Cloud connected' : 'Local mode';
+            const initials = (email ? email.slice(0, 2) : 'AC').toUpperCase();
+            const shortEmail = email && email.length > 24 ? `${email.slice(0, 21)}…` : email;
+            if (textNodes[0]) textNodes[0].textContent = currentAuthUser ? (shortEmail || 'Signed in') : 'Account';
+            if (textNodes[1]) textNodes[1].textContent = currentAuthUser ? 'Signed in' : 'Local mode';
             if (avatarEl) avatarEl.textContent = initials;
             if (largeAvatarEl) largeAvatarEl.textContent = initials;
         }
@@ -3058,12 +3073,21 @@
 
         async function signOutUser() {
             if (!supabaseClient) return;
-            const { error } = await supabaseClient.auth.signOut();
-            if (error) {
-                showStatusInfo('Sign out failed', [error.message]);
-                return;
+            try {
+                const { error } = await supabaseClient.auth.signOut();
+                if (error) {
+                    showStatusInfo('Log out failed', [error.message]);
+                    return;
+                }
+                currentAuthUser = null;
+                recentDatesDbStore = [];
+                currentDayRecordId = null;
+                await refreshAuthUI(null);
+                showStatusInfo('Logged out', ['You are now back in local mode.']);
+            } catch (err) {
+                console.error('signOutUser failed', err);
+                showStatusInfo('Log out failed', [err?.message || 'Unknown error while logging out.']);
             }
-            await refreshAuthUI();
         }
 
         function downloadJsonFile(filename, data) {
@@ -3181,7 +3205,7 @@
 
         if (supabaseClient) {
             supabaseClient.auth.onAuthStateChange(async (_event, session) => {
-                await refreshAuthUI(session?.user || null);
+                await refreshAuthUI(session?.user ?? null);
             });
         }
 
