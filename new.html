@@ -1,0 +1,3155 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liem's Planner</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        window.tailwind = window.tailwind || {};
+        window.tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#000000',
+                        cardBg: '#1C1C1E',
+                        listBg: '#111111',
+                        itemHover: '#2C2C2E',
+                        textPrimary: '#FFFFFF',
+                        textSecondary: '#8E8E93',
+                        borderColor: '#2C2C2E',
+                        accentOrange: '#FF4500',
+                        accentBlue: '#0A84FF'
+                    },
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', 'Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #2C2C2E; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4d4d4f; }
+        
+        .popup-anim { transition: all 0.2s ease-out; opacity: 0; transform: translateY(10px) scale(0.95); pointer-events: none; }
+        .popup-active { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+        
+        /* Gradient Text */
+        .text-gradient { background: linear-gradient(90deg, #FF4500, #FF8A65); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        /* Custom Input styles */
+        .editable-title[contenteditable="true"]:empty:before {
+            content: attr(data-placeholder);
+            color: #8E8E93;
+            pointer-events: none;
+            display: block;
+        }
+        
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none; margin: 0;
+        }
+        
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%238E8E93%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.4rem top 50%;
+            background-size: 0.65rem auto;
+            padding-right: 1.5rem;
+        }
+
+        .item-completed { text-decoration: line-through; color: #8E8E93; }
+
+        .notion-row { transition: background-color 0.15s ease; }
+        .notion-row select { opacity: 0.5; }
+        .notion-row:hover select, .notion-row select:focus { opacity: 1; background-color: #2C2C2E; }
+
+        .output-row { display:flex; align-items:center; gap:0.5rem; }
+        .output-cue { flex:0 0 auto; color:#ff6b57; display:flex; align-items:center; justify-content:center; margin-top:0.125rem; }
+        .output-delete-btn { flex:0 0 auto; color:#8E8E93; transition:color 0.2s ease; }
+        .output-delete-btn:hover { color:#ef4444; }
+        .action-status-wrap { display:inline-flex; align-items:center; gap:6px; }
+        .action-pending-badge { display:inline-flex; align-items:center; height:24px; padding:0 8px; border-radius:999px; background:rgba(245,158,11,0.12); color:#FBBF24; border:1px solid rgba(245,158,11,0.18); font-size:11px; font-weight:700; line-height:1; white-space:nowrap; }
+        .pending-help-btn { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:999px; background:rgba(255,255,255,0.08); color:#fff; font-size:10px; font-weight:700; line-height:1; transition:all 0.18s ease; flex:0 0 auto; }
+        .pending-help-btn:hover { background: rgba(255,255,255,0.14); }
+        .action-block.is-pending { border-color: rgba(245,158,11,0.28); }
+        .output-input { min-width:0; }
+
+        /* ================= MINT THEME (REST DAY) ================= */
+        body.theme-mint {
+            --mint-color: #34D399; /* Tailwind emerald-400 */
+            --mint-glow: rgba(52, 211, 153, 0.25);
+        }
+        body.theme-mint .text-accentOrange { color: var(--mint-color) !important; }
+        body.theme-mint .bg-accentOrange { background-color: var(--mint-color) !important; }
+        body.theme-mint .fill-accentOrange { fill: var(--mint-color) !important; }
+        body.theme-mint .border-accentOrange { border-color: var(--mint-color) !important; }
+        body.theme-mint .shadow-\[0_0_8px_rgba\(255\,69\,0\,0\.6\)\] { box-shadow: 0 0 10px var(--mint-glow) !important; }
+        body.theme-mint .shadow-accentOrange\/20 { box-shadow: 0 4px 14px 0 var(--mint-glow) !important; }
+        body.theme-mint .hover\:text-accentOrange:hover { color: var(--mint-color) !important; }
+        body.theme-mint .focus\:text-accentOrange:focus { color: var(--mint-color) !important; }
+        body.theme-mint .focus\:border-accentOrange:focus { border-color: var(--mint-color) !important; }
+        body.theme-mint .text-gradient {
+            background: linear-gradient(90deg, #34D399, #6EE7B7) !important;
+            -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important;
+        }
+        body.theme-mint .from-\[\#4A1C0E\] { --tw-gradient-from: #002e20 !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(0,46,32,0)) !important; }
+        body.theme-mint .via-\[\#1A0A05\] { --tw-gradient-stops: var(--tw-gradient-from), #00120d, var(--tw-gradient-to, rgba(0,18,13,0)) !important; }
+
+
+        /* ================= OCEAN THEME (DONE DAY) ================= */
+        body.theme-ocean {
+            --ocean-color: #38BDF8;
+            --ocean-glow: rgba(56, 189, 248, 0.25);
+        }
+        body.theme-ocean .text-accentOrange { color: var(--ocean-color) !important; }
+        body.theme-ocean .bg-accentOrange { background-color: var(--ocean-color) !important; }
+        body.theme-ocean .fill-accentOrange { fill: var(--ocean-color) !important; }
+        body.theme-ocean .border-accentOrange { border-color: var(--ocean-color) !important; }
+        body.theme-ocean .shadow-\[0_0_8px_rgba\(255\,69\,0\,0\.6\)\] { box-shadow: 0 0 10px var(--ocean-glow) !important; }
+        body.theme-ocean .shadow-accentOrange\/20 { box-shadow: 0 4px 14px 0 var(--ocean-glow) !important; }
+        body.theme-ocean .hover\:text-accentOrange:hover { color: var(--ocean-color) !important; }
+        body.theme-ocean .focus\:text-accentOrange:focus { color: var(--ocean-color) !important; }
+        body.theme-ocean .focus\:border-accentOrange:focus { border-color: var(--ocean-color) !important; }
+        body.theme-ocean .text-gradient {
+            background: linear-gradient(90deg, #38BDF8, #7DD3FC) !important;
+            -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important;
+        }
+        body.theme-ocean .from-\[\#4A1C0E\] { --tw-gradient-from: #08263a !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(8,38,58,0)) !important; }
+        body.theme-ocean .via-\[\#1A0A05\] { --tw-gradient-stops: var(--tw-gradient-from), #03131d, var(--tw-gradient-to, rgba(3,19,29,0)) !important; }
+
+        .recent-day-done-check {
+            margin-left: auto;
+            flex: 0 0 auto;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #38BDF8;
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1;
+            opacity: 0.95;
+        }
+
+        /* Smooth Collapse Overview */
+        .overview-grid-container {
+            transition: max-height 0.4s ease, opacity 0.3s ease, margin 0.4s ease;
+            max-height: 1000px;
+            opacity: 1;
+            overflow: hidden;
+        }
+        .overview-grid-container.collapsed {
+            max-height: 0;
+            opacity: 0;
+            margin-top: 0;
+        }
+
+
+        /* ================= RESPONSIVE / MOBILE ================= */
+        #sidebar-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+            z-index: 35;
+        }
+
+        .page-shell {
+            width: 100%;
+            min-width: 0;
+        }
+
+        @media (max-width: 767px) {
+            html, body {
+                background: #000 !important;
+            }
+
+            body {
+                overflow-x: hidden;
+            }
+
+            #main-scroll-area,
+            .page-shell,
+            .page-view,
+            .page-header,
+            .project-header,
+            .project-header-inner,
+            .page-content,
+            .project-content {
+                width: 100% !important;
+                max-width: none !important;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                min-width: 0 !important;
+                box-sizing: border-box !important;
+            }
+
+            #sidebar-container {
+                position: fixed;
+                inset: 0 auto 0 0;
+                width: min(86vw, 320px) !important;
+                max-width: 320px;
+                border-right-width: 1px !important;
+                transform: translateX(-100%);
+                transition: transform 0.28s ease;
+                box-shadow: 24px 0 60px rgba(0, 0, 0, 0.4);
+            }
+
+            #sidebar-container > div {
+                width: 100%;
+            }
+
+            body.sidebar-open #sidebar-container {
+                transform: translateX(0);
+            }
+
+            body.sidebar-open #sidebar-backdrop {
+                opacity: 1;
+                pointer-events: auto;
+            }
+
+            #main-scroll-area {
+                width: 100%;
+                min-width: 0;
+            }
+
+            .page-header {
+                padding-left: 1.5rem !important;
+                padding-right: 1.5rem !important;
+                padding-top: 1rem !important;
+                padding-bottom: 0.875rem !important;
+            }
+
+            .page-header > .project-header-inner,
+            .page-header > .page-content,
+            .project-header-inner {
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
+
+            .page-header h1 {
+                font-size: 1.5rem !important;
+                line-height: 1.15 !important;
+            }
+
+            .page-header .header-avatar {
+                width: 2.25rem !important;
+                height: 2.25rem !important;
+                font-size: 0.75rem !important;
+            }
+
+            .page-content,
+            .project-content {
+                padding-left: 1.5rem !important;
+                padding-right: 1.5rem !important;
+            }
+
+            .page-content {
+                padding-top: 1rem !important;
+            }
+
+            .project-header {
+                padding-top: 1rem !important;
+            }
+
+            .project-header-inner {
+                gap: 0.5rem !important;
+            }
+
+            .project-title {
+                font-size: 1.65rem !important;
+                line-height: 1.15 !important;
+                white-space: normal !important;
+                overflow: visible !important;
+                text-overflow: initial !important;
+            }
+
+            .project-meta-row {
+                padding-left: 0 !important;
+                gap: 0.625rem 1rem !important;
+                margin-top: 0.875rem !important;
+            }
+
+            .project-meta-row > div {
+                min-width: 0;
+            }
+
+            .project-content {
+                padding-top: 1.25rem !important;
+                padding-left: 1.5rem !important;
+                padding-right: 1.5rem !important;
+            }
+
+            .project-offset {
+                padding-left: 1.25rem !important;
+                padding-right: 1.25rem !important;
+            }
+
+            .project-header .flex.items-start.gap-3 {
+                align-items: flex-start !important;
+                width: 100% !important;
+                min-width: 0 !important;
+            }
+
+            .project-header .flex.items-start.gap-3 > div:last-child {
+                min-width: 0 !important;
+                flex: 1 1 auto !important;
+            }
+
+            .project-header .toggle-sidebar-btn {
+                flex: 0 0 auto !important;
+                margin-left: 0 !important;
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+            }
+
+            .project-header .flex.items-start.gap-3 {
+                gap: 0.75rem !important;
+            }
+
+            .project-content > section {
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
+
+            .phase-block,
+            .targets-container,
+            .daily-actions-list {
+                min-width: 0 !important;
+            }
+
+            .project-content > section,
+            .page-content > section,
+            .project-content .bg-cardBg,
+            .page-content .bg-cardBg {
+                max-width: 100% !important;
+            }
+
+            .project-content .add-phase-btn,
+            .project-content .add-daily-action-btn,
+            .project-content .targets-container,
+            .project-content .phases-list,
+            .project-content .daily-actions-list {
+                width: 100% !important;
+                min-width: 0 !important;
+            }
+
+            #calendar-popup {
+                right: 0 !important;
+                left: auto !important;
+                width: min(78vw, 280px) !important;
+            }
+
+            .recent-day-btn {
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+            }
+
+            .checkable-row {
+                padding-top: 0.85rem !important;
+                padding-bottom: 0.85rem !important;
+                gap: 0.5rem !important;
+            }
+
+            .checkable-row .item-input {
+                font-size: 14px !important;
+                line-height: 1.35 !important;
+            }
+
+            .checkable-row .toggle-done-btn i,
+            .checkable-row .delete-btn i {
+                width: 15px !important;
+                height: 15px !important;
+            }
+
+            .project-meta-row {
+                flex-wrap: nowrap !important;
+                align-items: center !important;
+                overflow-x: auto !important;
+                overflow-y: hidden !important;
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+
+            .project-meta-row::-webkit-scrollbar {
+                display: none;
+            }
+
+            .project-meta-row > * {
+                flex: 0 0 auto !important;
+            }
+
+            .time-range-trigger {
+                white-space: nowrap !important;
+                flex: 0 0 auto !important;
+            }
+
+            .time-range-text {
+                display: inline-block;
+                white-space: nowrap !important;
+                font-size: 13px !important;
+            }
+
+            .prop-importance {
+                white-space: nowrap !important;
+                gap: 0.4rem !important;
+            }
+
+            .prop-importance input {
+                width: 1.7rem !important;
+                text-align: left !important;
+            }
+        }
+
+        .time-range-trigger {
+            white-space: nowrap;
+        }
+
+        .time-range-text {
+            white-space: nowrap;
+        }
+
+        .time-range-modal-card input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            opacity: 0.85;
+            cursor: pointer;
+        }
+        .project-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.22rem 0.5rem;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            line-height: 1;
+            white-space: nowrap;
+        }
+        .project-status-badge.is-active {
+            background: rgba(52, 211, 153, 0.14);
+            color: #6EE7B7;
+            border: 1px solid rgba(52, 211, 153, 0.24);
+        }
+        .project-status-badge.is-draft {
+            background: rgba(255,255,255,0.06);
+            color: #C7C7CC;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .project-status-badge.is-done {
+            background: rgba(59,130,246,0.16);
+            color: #7DD3FC;
+            border: 1px solid rgba(59,130,246,0.26);
+        }
+        .project-status-badge { flex-shrink: 0; }
+        .draft-help-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.08);
+            color: #FFFFFF;
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1;
+            transition: all 0.18s ease;
+            flex: 0 0 auto;
+            margin-left: 2px;
+            cursor: pointer;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+        .draft-help-btn:hover { background: rgba(255,255,255,0.14); }
+        .sidebar-project-item { align-items: flex-start; }
+        .sidebar-project-meta {
+            font-size: 11px;
+            color: rgba(255,255,255,0.6);
+            margin-top: 2px;
+            line-height: 1.25;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .sidebar-project-range {
+            font-size: 11px;
+            color: rgba(255,255,255,0.42);
+            margin-top: 1px;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .sidebar-project-name-row {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            min-width: 0;
+            flex-wrap: nowrap;
+        }
+        .sidebar-project-name-row .project-name {
+            min-width: 0;
+            flex: 1 1 auto;
+        }
+
+    </style>
+</head>
+<body class="bg-darkBg text-textPrimary h-screen w-screen overflow-hidden flex font-sans selection:bg-accentOrange/30 relative transition-colors duration-500">
+
+    <div class="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-[#4A1C0E] via-[#1A0A05] to-darkBg opacity-80 pointer-events-none z-0 transition-colors duration-500"></div>
+
+    <!-- SIDEBAR CONTAINER -->
+    <nav id="sidebar-container" class="transition-all duration-300 ease-in-out w-64 md:w-72 shrink-0 h-full border-r border-borderColor bg-darkBg/60 backdrop-blur-2xl relative z-40 overflow-hidden">
+        <div class="w-64 md:w-72 h-full flex flex-col absolute top-0 left-0">
+            <div class="px-4 pt-6 pb-4 shrink-0">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <div class="w-9 h-9 shrink-0 rounded-xl bg-gradient-to-br from-accentOrange to-red-600 text-white flex items-center justify-center shadow-lg shadow-accentOrange/20 transition-all duration-500">
+                            <i data-lucide="zap" class="w-5 h-5 fill-white/20"></i>
+                        </div>
+                        <h1 class="font-bold text-xl tracking-tight truncate">Liem's Planner</h1>
+                    </div>
+                    <button class="toggle-sidebar-btn shrink-0 p-1.5 hover:bg-itemHover rounded-lg transition-colors text-textSecondary hover:text-white">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <div class="flex-1 flex items-center bg-cardBg rounded-xl px-3 py-2.5 border border-transparent focus-within:border-accentOrange/50 transition-all shadow-sm">
+                        <i data-lucide="search" class="w-4 h-4 text-textSecondary shrink-0"></i>
+                        <input type="text" placeholder="Search..." class="bg-transparent border-none outline-none text-sm ml-2 w-full text-textPrimary placeholder-textSecondary">
+                    </div>
+                    <button class="nav-btn p-2.5 bg-cardBg hover:bg-itemHover rounded-xl text-accentOrange transition-colors shrink-0 shadow-sm tooltip-trigger" id="go-today-btn" data-target="page-create" title="Create Today's Plan">
+                        <i data-lucide="edit-3" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto px-3 py-2 space-y-2">
+                <div>
+                    <button class="nav-btn w-full flex items-center justify-between p-3 rounded-xl hover:bg-itemHover text-textPrimary transition-all group" data-target="page-overall">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="layout-dashboard" class="w-5 h-5 text-accentOrange group-hover:scale-110 transition-transform"></i>
+                            <span class="text-[15px] font-bold tracking-wide">Overall</span>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-textSecondary opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                    </button>
+                </div>
+
+                <div class="mt-4">
+                    <div class="flex items-center justify-between p-3 rounded-xl text-textPrimary group">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="folder-kanban" class="w-5 h-5 text-accentOrange group-hover:scale-110 transition-transform"></i>
+                            <span class="text-[15px] font-bold tracking-wide">Projects</span>
+                        </div>
+                        <button id="add-project-btn" class="text-textSecondary hover:text-accentOrange hover:bg-itemHover p-1.5 -mr-1.5 rounded-lg transition-colors tooltip-trigger" title="New Project">
+                            <i data-lucide="plus" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="space-y-1 pl-2" id="sidebar-projects-list">
+
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button class="nav-btn w-full flex items-center justify-between p-3 rounded-xl hover:bg-itemHover text-textPrimary transition-all group" data-target="page-extra">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="sparkles" class="w-5 h-5 text-purple-400 group-hover:scale-110 transition-transform"></i>
+                            <span class="text-[15px] font-bold tracking-wide">Extra</span>
+                        </div>
+                    </button>
+                </div>
+
+                <div class="relative mt-4">
+                    <div class="flex items-center justify-between p-3 rounded-xl text-textPrimary group">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="calendar-days" class="w-5 h-5 text-accentOrange group-hover:scale-110 transition-transform"></i>
+                            <span class="text-[15px] font-bold tracking-wide">Recent days</span>
+                        </div>
+                        <button id="calendar-toggle" class="text-textSecondary hover:text-accentOrange hover:bg-itemHover p-1.5 -mr-1.5 rounded-lg transition-colors tooltip-trigger" title="Open Calendar">
+                            <i data-lucide="calendar" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    
+                    <div id="calendar-popup" class="popup-anim absolute top-12 right-2 bg-cardBg border border-borderColor rounded-2xl p-4 w-64 shadow-2xl z-50">
+                        <div class="text-center font-bold text-sm mb-3 pb-3 border-b border-borderColor text-white">Open date record</div>
+                        <div class="space-y-3">
+                            <div class="text-[12px] text-textSecondary">Choose any date to open that day's record. If it doesn't exist yet, a new record will be created for you.</div>
+                            <input id="calendar-date-input" type="date" class="w-full bg-[#1C1C1E] border border-borderColor rounded-xl px-3 py-2.5 text-[14px] text-white outline-none focus:border-accentOrange">
+                            <div class="flex items-center gap-2">
+                                <button id="calendar-open-date-btn" type="button" class="flex-1 px-3 py-2.5 rounded-xl bg-accentOrange text-black font-semibold text-[13px] hover:opacity-90 transition-opacity">Open record</button>
+                                <button id="calendar-open-today-btn" type="button" class="px-3 py-2.5 rounded-xl bg-[#2C2C2E] text-textPrimary font-semibold text-[13px] hover:bg-[#3C3C3E] transition-colors">Today</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-1 pl-2" id="recent-plans-list"></div>
+                </div>
+
+                <div class="mt-4">
+                    <div class="flex items-center justify-between p-3 rounded-xl text-textPrimary group">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="wrench" class="w-5 h-5 text-accentOrange group-hover:scale-110 transition-transform"></i>
+                            <span class="text-[15px] font-bold tracking-wide">Tools</span>
+                        </div>
+                    </div>
+                    <div class="space-y-1 pl-2">
+                        <button class="nav-btn w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-itemHover text-[14px] text-textSecondary hover:text-textPrimary transition-all" data-target="page-tool-schedule">
+                            <i data-lucide="calendar-clock" class="w-4 h-4"></i> Make Schedule
+                        </button>
+                        <button class="nav-btn w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-itemHover text-[14px] text-textSecondary hover:text-textPrimary transition-all" data-target="page-tool-review">
+                            <i data-lucide="activity" class="w-4 h-4"></i> Review Process
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-borderColor shrink-0 bg-darkBg/80">
+                <button class="nav-btn w-full flex items-center justify-between p-2 rounded-xl hover:bg-cardBg transition-all" data-target="page-user">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-full bg-[#2C2C2E] flex items-center justify-center text-textSecondary font-bold text-xs tracking-wider border border-borderColor">TN</div>
+                        <div class="text-left">
+                            <div class="text-[14px] font-semibold text-white">Thanh Nam</div>
+                            <div class="text-[12px] text-textSecondary">Pro Member</div>
+                        </div>
+                    </div>
+                    <i data-lucide="settings" class="w-4 h-4 text-textSecondary"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+    <button id="sidebar-backdrop" aria-label="Close sidebar"></button>
+
+    <!-- MAIN CONTENT AREA -->
+    <main id="main-scroll-area" class="page-shell flex-1 relative overflow-y-auto z-10 scroll-smooth bg-transparent">
+        
+        <!-- ================= OVERALL PAGE ================= -->
+        <div id="page-overall" class="page-view hidden pb-20">
+            <div class="page-header sticky top-0 z-30 bg-darkBg/90 backdrop-blur-xl border-b border-borderColor px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <button class="toggle-sidebar-btn p-2 -ml-2 hover:bg-itemHover rounded-xl text-textSecondary hover:text-white transition-colors tooltip-trigger" title="Toggle Sidebar">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                    <h1 class="text-3xl font-bold tracking-tight">Overall</h1>
+                </div>
+                <div class="header-avatar w-10 h-10 rounded-full bg-[#2C2C2E] flex items-center justify-center text-textSecondary font-bold text-sm shadow-md cursor-pointer hover:bg-borderColor transition-colors" onclick="document.querySelector('[data-target=\'page-user\']').click()">TN</div>
+            </div>
+            <div class="page-content max-w-4xl mx-auto px-6 py-8">
+                <div class="flex items-center justify-between mb-4 px-1">
+                    <h2 class="text-[20px] font-bold text-white tracking-wide">Projects</h2>
+                    <button class="text-accentBlue hover:text-blue-400 text-[15px] font-medium transition-colors">Edit</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    <!-- Card 1 -->
+                    <div class="bg-cardBg rounded-[28px] p-5 hover:bg-itemHover transition-colors cursor-pointer group shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-2 text-accentOrange font-semibold text-[15px]">
+                                <i data-lucide="flame" class="w-5 h-5 fill-accentOrange"></i> Tasks Completed
+                            </div>
+                            <div class="text-textSecondary text-[13px] flex items-center gap-1 group-hover:text-textPrimary transition-colors">
+                                Yesterday <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex items-end justify-between">
+                            <div class="flex items-baseline gap-1">
+                                <span class="text-[40px] leading-none font-bold tracking-tight">18</span>
+                                <span class="text-textSecondary font-medium text-sm">tasks</span>
+                            </div>
+                            <div class="flex items-end gap-[5px] h-10 opacity-90">
+                                <div class="w-2 bg-textSecondary rounded-sm h-4"></div><div class="w-2 bg-textSecondary rounded-sm h-6"></div><div class="w-2 bg-textSecondary rounded-sm h-5"></div><div class="w-2 bg-textSecondary rounded-sm h-8"></div><div class="w-2 bg-textSecondary rounded-sm h-7"></div><div class="w-2 bg-accentOrange rounded-sm h-10 shadow-[0_0_8px_rgba(255,69,0,0.6)]"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 2 -->
+                    <div class="bg-cardBg rounded-[28px] p-5 hover:bg-itemHover transition-colors cursor-pointer group shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-2 text-accentOrange font-semibold text-[15px]">
+                                <i data-lucide="flame" class="w-5 h-5 fill-accentOrange"></i> Focus Time
+                            </div>
+                            <div class="text-textSecondary text-[13px] flex items-center gap-1 group-hover:text-textPrimary transition-colors">
+                                10:29 <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex items-end justify-between">
+                            <div class="flex items-baseline gap-1">
+                                <span class="text-[40px] leading-none font-bold tracking-tight">215</span>
+                                <span class="text-textSecondary font-medium text-sm">mins</span>
+                            </div>
+                            <div class="flex items-end gap-[5px] h-10 opacity-90">
+                                <div class="w-2 bg-textSecondary rounded-sm h-2"></div><div class="w-2 bg-textSecondary rounded-sm h-7"></div><div class="w-2 bg-textSecondary rounded-sm h-4"></div><div class="w-2 bg-textSecondary rounded-sm h-9"></div><div class="w-2 bg-textSecondary rounded-sm h-3"></div><div class="w-2 bg-accentOrange rounded-sm h-1"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button class="w-full bg-cardBg hover:bg-itemHover rounded-[20px] p-4 flex items-center justify-between transition-colors mb-10 group shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                            <i data-lucide="heart" class="w-5 h-5 text-red-500 fill-red-500"></i>
+                        </div>
+                        <span class="font-semibold text-[15px]">Show All Planner Data</span>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-5 h-5 text-textSecondary group-hover:text-textPrimary"></i>
+                </button>
+                <h2 class="text-[20px] font-bold text-white tracking-wide mb-4 px-1">Recent days</h2>
+                <div class="bg-cardBg rounded-[28px] p-5 hover:bg-itemHover transition-colors cursor-pointer shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2 text-accentOrange font-semibold text-[15px]">
+                            <i data-lucide="flame" class="w-5 h-5 fill-accentOrange"></i> Active Productivity
+                        </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-textSecondary"></i>
+                    </div>
+                    <p class="text-[16px] font-medium leading-snug mb-8 max-w-[280px]">On average, you completed fewer tasks over the last 15 days.</p>
+                    <div class="relative w-full h-[70px] border-b border-borderColor flex items-end justify-between px-1 pb-1">
+                        <span class="absolute top-0 left-0 text-textSecondary font-semibold text-xs">35 tasks</span>
+                        <div class="w-3 bg-textSecondary rounded-t-sm h-[40%]"></div><div class="w-3 bg-textSecondary rounded-t-sm h-[50%]"></div><div class="w-3 bg-textSecondary rounded-t-sm h-[45%]"></div><div class="w-3 bg-textSecondary rounded-t-sm h-[60%]"></div><div class="w-3 bg-textSecondary rounded-t-sm h-[30%]"></div><div class="w-3 bg-textSecondary rounded-t-sm h-[40%]"></div><div class="w-3 bg-textSecondary rounded-t-sm h-[20%]"></div><div class="w-3 bg-textSecondary rounded-t-sm h-[25%]"></div><div class="w-3 bg-textSecondary rounded-t-sm h-[5%]"></div><div class="w-3 bg-accentOrange rounded-t-sm h-[10%] opacity-90 shadow-[0_0_8px_rgba(255,69,0,0.6)]"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= CREATE PAGE ================= -->
+        <div id="page-create" class="page-view pb-20">
+            <div class="page-header sticky top-0 z-30 bg-darkBg/90 backdrop-blur-xl border-b border-borderColor px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <button class="toggle-sidebar-btn p-2 -ml-2 hover:bg-itemHover rounded-xl text-textSecondary hover:text-white transition-colors"><i data-lucide="menu" class="w-6 h-6"></i></button>
+                    <h1 class="text-3xl font-bold tracking-tight" id="create-page-title">Create Plan</h1>
+                </div>
+            </div>
+            <div class="page-content max-w-2xl mx-auto px-6 py-12">
+                <div class="bg-cardBg rounded-[28px] p-10 text-center shadow-lg border border-borderColor">
+                    <div class="w-20 h-20 mx-auto bg-accentOrange/10 rounded-full flex items-center justify-center text-accentOrange mb-6">
+                        <i data-lucide="edit-3" class="w-10 h-10"></i>
+                    </div>
+                    <h2 id="create-plan-heading" class="text-3xl font-bold mb-3 tracking-tight">Create Today's Plan</h2>
+                    <p id="create-plan-subtext" class="text-textSecondary mb-8 text-lg">Start fresh and set your goals for an energetic day!</p>
+                    <button id="create-today-plan-btn" class="bg-accentOrange hover:bg-[#ff5c1a] text-white font-bold text-lg py-3.5 px-10 rounded-full transition-all shadow-lg shadow-accentOrange/20">Create Today's Plan</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= PROJECT TEMPLATE ================= -->
+        <div id="project-page-template" class="page-view pb-32 hidden template-project">
+            <div class="page-header project-header sticky top-0 z-30 bg-darkBg/95 backdrop-blur-xl border-b border-borderColor pt-8 pb-4 px-6 md:px-8">
+                <div class="project-header-inner max-w-4xl mx-auto w-full">
+                    <div class="flex items-start gap-3">
+                        <button class="toggle-sidebar-btn p-2 -ml-2 hover:bg-itemHover rounded-xl text-textSecondary hover:text-white transition-colors mt-1"><i data-lucide="menu" class="w-6 h-6"></i></button>
+                        <div class="flex flex-col flex-1 min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap min-w-0">
+                                <h1 class="text-3xl md:text-4xl font-bold tracking-tight truncate editable-title outline-none focus:text-accentOrange project-title min-w-0" contenteditable="true" data-placeholder="Project Name">App Development Plan</h1>
+                                <div class="project-status-slot"></div>
+                            </div>
+                            <p class="text-[14px] text-textSecondary mt-1 editable-title outline-none focus:text-white project-desc" contenteditable="true" data-placeholder="Add project description..."></p>
+                        </div>
+                    </div>
+                    <div class="project-meta-row flex flex-wrap items-center gap-x-8 gap-y-2 mt-4 pl-[44px]">
+                        <button class="time-range-trigger flex items-center gap-2 text-[13px] text-textSecondary group cursor-pointer" type="button">
+                            <i data-lucide="calendar" class="w-4 h-4"></i>
+                            <span class="time-range-text text-white hover:bg-[#2C2C2E]/60 px-2 py-1 rounded transition-colors">Set time range...</span>
+                        </button>
+                        <div class="prop-importance flex items-center gap-2 text-[13px] text-textSecondary group cursor-pointer"><i data-lucide="pie-chart" class="w-4 h-4"></i> Importance:
+                            <div class="flex items-center text-white hover:bg-[#2C2C2E]/60 px-2 py-1 rounded transition-colors">
+                                <input type="number" class="bg-transparent border-none outline-none text-white w-7 font-medium importance-input" value="80">%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="project-content max-w-4xl mx-auto w-full px-6 md:px-8 py-8 pl-[68px] md:pl-[76px] project-offset">
+                <div class="mb-10">
+                    <div class="flex items-center gap-3 mb-3">
+                        <h2 class="text-[17px] font-bold text-white tracking-wide flex items-center gap-2"><i data-lucide="target" class="w-5 h-5 text-accentOrange"></i> Main goals</h2>
+                        <button class="add-goal-btn-top text-[12px] font-medium text-textSecondary hover:text-white bg-[#2C2C2E] px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1"><i data-lucide="plus" class="w-3 h-3"></i> goal</button>
+                    </div>
+                    <div class="bg-listBg border border-borderColor rounded-lg overflow-hidden">
+                        <div class="goal-list flex flex-col divide-y divide-borderColor"></div>
+                    </div>
+                </div>
+                <div class="mb-10 relative">
+                    <div class="phases-list space-y-8 mb-4"></div>
+                    <button class="add-phase-btn w-full flex items-center justify-center gap-2 text-[15px] font-bold text-textSecondary hover:text-accentOrange hover:bg-accentOrange/10 bg-cardBg border border-borderColor hover:border-accentOrange border-dashed py-3.5 rounded-xl transition-all shadow-sm"><i data-lucide="layers" class="w-5 h-5"></i> Add new phase</button>
+                </div>
+                <div class="mb-10 border-t border-borderColor/50 pt-8">
+                    <div class="flex items-center gap-3 mb-3">
+                        <h2 class="text-[17px] font-bold text-white tracking-wide flex items-center gap-2"><i data-lucide="check-square" class="w-5 h-5 text-accentBlue"></i> Daily Actions</h2>
+                        <button class="add-action-btn-top text-[12px] font-medium text-textSecondary hover:text-white bg-[#2C2C2E] px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1"><i data-lucide="plus" class="w-3 h-3"></i> daily action</button>
+                    </div>
+                    <div class="bg-listBg border border-borderColor rounded-lg overflow-hidden mb-3">
+                        <div class="actions-list flex flex-col divide-y divide-borderColor"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= EXTRA PAGE ================= -->
+        <div id="page-extra" class="page-view pb-32 hidden">
+            <div class="page-header project-header sticky top-0 z-30 bg-darkBg/95 backdrop-blur-xl border-b border-borderColor pt-8 pb-4 px-6 md:px-8">
+                <div class="project-header-inner max-w-4xl mx-auto w-full">
+                    <div class="flex items-start gap-3">
+                        <button class="toggle-sidebar-btn p-2 -ml-2 hover:bg-itemHover rounded-xl text-textSecondary hover:text-white transition-colors mt-1"><i data-lucide="menu" class="w-6 h-6"></i></button>
+                        <div class="flex flex-col flex-1">
+                            <h1 class="text-3xl md:text-4xl font-bold tracking-tight truncate project-title text-white">Extra</h1>
+                            <p class="text-[14px] text-textSecondary mt-1 project-desc">Extra content and modules...</p>
+                        </div>
+                    </div>
+                    <div class="project-meta-row flex flex-wrap items-center gap-x-8 gap-y-2 mt-4 pl-[44px]">
+                        <button class="time-range-trigger flex items-center gap-2 text-[13px] text-textSecondary group cursor-pointer" type="button">
+                            <i data-lucide="calendar" class="w-4 h-4"></i>
+                            <span class="time-range-text text-white hover:bg-[#2C2C2E]/60 px-2 py-1 rounded transition-colors">Set time range...</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="project-content max-w-4xl mx-auto w-full px-6 md:px-8 py-8 pl-[68px] md:pl-[76px] project-offset">
+                <div class="mb-10">
+                    <div class="flex items-center gap-3 mb-3">
+                        <h2 class="text-[17px] font-bold text-white tracking-wide flex items-center gap-2"><i data-lucide="target" class="w-5 h-5 text-accentOrange"></i> Main goals</h2>
+                        <button class="add-goal-btn-top text-[12px] font-medium text-textSecondary hover:text-white bg-[#2C2C2E] px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1"><i data-lucide="plus" class="w-3 h-3"></i> goal</button>
+                    </div>
+                    <div class="bg-listBg border border-borderColor rounded-lg overflow-hidden">
+                        <div class="goal-list flex flex-col divide-y divide-borderColor"></div>
+                    </div>
+                </div>
+                <div class="mb-10 relative">
+                    <div class="phases-list space-y-8 mb-4"></div>
+                    <button class="add-phase-btn w-full flex items-center justify-center gap-2 text-[15px] font-bold text-textSecondary hover:text-accentOrange hover:bg-accentOrange/10 bg-cardBg border border-borderColor hover:border-accentOrange border-dashed py-3.5 rounded-xl transition-all shadow-sm"><i data-lucide="layers" class="w-5 h-5"></i> Add new phase</button>
+                </div>
+                <div class="mb-10 border-t border-borderColor/50 pt-8">
+                    <div class="flex items-center gap-3 mb-3">
+                        <h2 class="text-[17px] font-bold text-white tracking-wide flex items-center gap-2"><i data-lucide="check-square" class="w-5 h-5 text-accentBlue"></i> Daily Actions</h2>
+                        <button class="add-action-btn-top text-[12px] font-medium text-textSecondary hover:text-white bg-[#2C2C2E] px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1"><i data-lucide="plus" class="w-3 h-3"></i> daily action</button>
+                    </div>
+                    <div class="bg-listBg border border-borderColor rounded-lg overflow-hidden mb-3">
+                        <div class="actions-list flex flex-col divide-y divide-borderColor"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= TOOLS & USER PAGES ================= -->
+        <div id="page-tool-schedule" class="page-view hidden pb-20">
+            <div class="page-header sticky top-0 z-30 bg-darkBg/90 backdrop-blur-xl border-b border-borderColor px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <button class="toggle-sidebar-btn p-2 -ml-2 hover:bg-itemHover rounded-xl text-textSecondary hover:text-white transition-colors"><i data-lucide="menu" class="w-6 h-6"></i></button>
+                    <h1 class="text-3xl font-bold tracking-tight">Make Schedule</h1>
+                </div>
+            </div>
+            <div class="page-content max-w-4xl mx-auto px-6 py-8">
+                <div class="bg-cardBg rounded-[28px] p-8 shadow-sm min-h-[400px] flex flex-col items-center justify-center text-center">
+                    <div class="w-16 h-16 bg-[#2C2C2E] rounded-full flex items-center justify-center mb-4"><i data-lucide="calendar-clock" class="w-8 h-8 text-textSecondary"></i></div>
+                    <p class="text-textSecondary text-lg">Drag and drop interface to build detailed schedules...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-tool-review" class="page-view hidden pb-20">
+            <div class="page-header sticky top-0 z-30 bg-darkBg/90 backdrop-blur-xl border-b border-borderColor px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <button class="toggle-sidebar-btn p-2 -ml-2 hover:bg-itemHover rounded-xl text-textSecondary hover:text-white transition-colors"><i data-lucide="menu" class="w-6 h-6"></i></button>
+                    <h1 class="text-3xl font-bold tracking-tight">Review Process</h1>
+                </div>
+            </div>
+            <div class="page-content max-w-4xl mx-auto px-6 py-8">
+                <div class="bg-cardBg rounded-[28px] p-8 shadow-sm min-h-[400px] flex flex-col items-center justify-center text-center">
+                    <div class="w-16 h-16 bg-[#2C2C2E] rounded-full flex items-center justify-center mb-4"><i data-lucide="activity" class="w-8 h-8 text-textSecondary"></i></div>
+                    <p class="text-textSecondary text-lg">Review the progress of completed tasks...</p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="page-user" class="page-view hidden pb-20">
+            <div class="page-header sticky top-0 z-30 bg-darkBg/90 backdrop-blur-xl border-b border-borderColor px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <button class="toggle-sidebar-btn p-2 -ml-2 hover:bg-itemHover rounded-xl text-textSecondary hover:text-white transition-colors"><i data-lucide="menu" class="w-6 h-6"></i></button>
+                    <h1 class="text-3xl font-bold tracking-tight">Profile & Cloud</h1>
+                </div>
+            </div>
+            <div class="page-content max-w-4xl mx-auto px-6 py-10">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <section class="bg-cardBg rounded-[28px] p-6 shadow-sm border border-borderColor/70">
+                        <div class="flex items-center gap-3 mb-5">
+                            <div id="profile-avatar-large" class="w-14 h-14 rounded-full bg-[#2C2C2E] flex items-center justify-center text-textSecondary font-bold text-lg border border-borderColor">TN</div>
+                            <div>
+                                <div class="text-lg font-bold text-white">Account</div>
+                                <div id="auth-state-label" class="text-[13px] text-textSecondary">Signed out · local only</div>
+                            </div>
+                        </div>
+                        <div id="auth-signed-out" class="space-y-3">
+                            <label class="block">
+                                <div class="text-[12px] text-textSecondary mb-1.5">Email</div>
+                                <input id="auth-email-input" type="email" placeholder="you@example.com" class="w-full bg-[#2C2C2E] border border-borderColor rounded-xl px-4 py-3 text-white placeholder-textSecondary outline-none focus:border-accentOrange">
+                            </label>
+                            <label class="block">
+                                <div class="text-[12px] text-textSecondary mb-1.5">Password</div>
+                                <input id="auth-password-input" type="password" placeholder="At least 6 characters" class="w-full bg-[#2C2C2E] border border-borderColor rounded-xl px-4 py-3 text-white placeholder-textSecondary outline-none focus:border-accentOrange">
+                            </label>
+                            <div class="flex gap-3 pt-1">
+                                <button id="sign-in-btn" class="flex-1 px-4 py-3 rounded-xl font-bold bg-accentOrange text-white hover:bg-[#ff5c1a] transition-colors shadow-lg shadow-accentOrange/20">Sign in</button>
+                                <button id="sign-up-btn" class="flex-1 px-4 py-3 rounded-xl font-semibold text-textPrimary bg-[#2C2C2E] hover:bg-[#3C3C3E] transition-colors">Sign up</button>
+                            </div>
+                            <p class="text-[12px] text-textSecondary leading-relaxed">Dùng email + password của Supabase Auth. Khi chưa đăng nhập, app vẫn chạy local nhưng sẽ không sync cloud.</p>
+                        </div>
+                        <div id="auth-signed-in" class="hidden space-y-4">
+                            <div class="rounded-2xl border border-borderColor bg-[#141414] px-4 py-3">
+                                <div class="text-[12px] text-textSecondary mb-1">Signed in as</div>
+                                <div id="auth-user-email" class="text-[15px] font-semibold text-white break-all">-</div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <button id="cloud-save-btn" class="px-4 py-3 rounded-xl font-semibold bg-[#2C2C2E] hover:bg-[#3C3C3E] transition-colors text-textPrimary">Save to cloud</button>
+                                <button id="cloud-load-btn" class="px-4 py-3 rounded-xl font-semibold bg-[#2C2C2E] hover:bg-[#3C3C3E] transition-colors text-textPrimary">Load from cloud</button>
+                            </div>
+                            <button id="sign-out-btn" class="w-full px-4 py-3 rounded-xl font-semibold text-textPrimary bg-[#2C2C2E] hover:bg-[#3C3C3E] transition-colors">Log out</button>
+                        </div>
+                    </section>
+                    <section class="bg-cardBg rounded-[28px] p-6 shadow-sm border border-borderColor/70 space-y-5">
+                        <div>
+                            <div class="text-lg font-bold text-white">Backup</div>
+                            <div class="text-[13px] text-textSecondary mt-1">Export current workspace or import a backup file. Import sẽ ghi đè local state và nếu đã đăng nhập thì sẽ ghi đè cloud snapshot sau khi confirm.</div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <button id="export-backup-btn" class="px-4 py-3 rounded-xl font-semibold bg-[#2C2C2E] hover:bg-[#3C3C3E] transition-colors text-textPrimary">Export backup</button>
+                            <button id="import-backup-btn" class="px-4 py-3 rounded-xl font-semibold bg-[#2C2C2E] hover:bg-[#3C3C3E] transition-colors text-textPrimary">Import backup</button>
+                        </div>
+                        <div class="rounded-2xl border border-borderColor bg-[#141414] px-4 py-3">
+                            <div class="text-[12px] text-textSecondary mb-1">Cloud status</div>
+                            <div id="cloud-status-text" class="text-[14px] text-white">Not connected</div>
+                        </div>
+                        <div class="rounded-2xl border border-borderColor bg-[#141414] px-4 py-3">
+                            <div class="text-[12px] text-textSecondary mb-1">Review-ready note</div>
+                            <div class="text-[13px] text-textSecondary leading-relaxed">File này được chuẩn bị để sync auth + cloud snapshot. Muốn tab Review mạnh đúng như đã bàn, bước tiếp theo là map day records / day actions / outputs / supports sang schema Supabase chi tiết.</div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= DYNAMIC DATE PAGE (RECENT DAYS) ================= -->
+        <div id="page-dynamic-date" class="page-view hidden pb-32">
+            <div class="page-header sticky top-0 z-30 bg-darkBg/90 backdrop-blur-xl border-b border-borderColor px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <button class="toggle-sidebar-btn p-2 -ml-2 hover:bg-itemHover rounded-xl text-textSecondary hover:text-white transition-colors"><i data-lucide="menu" class="w-6 h-6"></i></button>
+                    <h1 class="text-3xl font-bold tracking-tight flex items-center gap-3">
+                        <i data-lucide="calendar" class="text-accentOrange w-7 h-7 transition-colors duration-300"></i>
+                        <span id="dynamic-date-title" class="font-bold">dd-mm-yyyy</span>
+                    </h1>
+                </div>
+                <!-- Rest Day Toggle -->
+                <label class="flex items-center gap-3 cursor-pointer group select-none">
+                    <span class="text-sm font-semibold text-textSecondary group-hover:text-white transition-colors tracking-wide">Mark as rest day</span>
+                    <div class="w-12 h-6 bg-[#2C2C2E] rounded-full relative transition-colors duration-300 shadow-inner" id="rest-day-track">
+                        <div class="w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-transform duration-300 shadow-sm" id="rest-day-thumb"></div>
+                    </div>
+                    <input type="checkbox" id="rest-day-checkbox" class="hidden">
+                </label>
+            </div>
+            
+            <div class="page-content max-w-4xl mx-auto px-6 py-8">
+                <!-- Section 1: Overview -->
+                <div class="bg-cardBg rounded-[28px] p-6 shadow-sm mb-10 transition-all duration-300 border border-transparent hover:border-borderColor" id="overview-section">
+                    <div class="flex justify-between items-center cursor-pointer group" id="overview-toggle">
+                        <h2 class="text-[18px] font-bold text-white flex items-center gap-2 tracking-wide">
+                            <i data-lucide="bar-chart-2" class="w-5 h-5 text-accentOrange transition-colors"></i> Overview Focus
+                        </h2>
+                        <div class="p-1.5 rounded-lg group-hover:bg-itemHover transition-colors">
+                            <i data-lucide="chevron-up" class="w-5 h-5 text-textSecondary transition-transform duration-300" id="overview-chevron"></i>
+                        </div>
+                    </div>
+                    <div class="overview-grid-container mt-5" id="overview-grid-wrapper">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6" id="overview-grid">
+                            <!-- JS will populate columns here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Today's Action -->
+                <div class="mb-4">
+                    <div class="flex items-center justify-between mb-4 px-1">
+                        <h2 class="text-[18px] font-bold text-white tracking-wide flex items-center gap-2">
+                            <i data-lucide="check-square" class="w-5 h-5 text-accentBlue"></i> Today's action
+                        </h2>
+                        <button id="add-dynamic-action-btn" class="text-[13px] font-medium text-textSecondary hover:text-white bg-[#2C2C2E] hover:bg-[#3C3C3E] px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 shadow-sm">
+                            <i data-lucide="plus" class="w-4 h-4"></i> action
+                        </button>
+                    </div>
+                    
+                    <div id="dynamic-actions-list" class="space-y-4">
+                        <!-- Actions generated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- NEW PROJECT MODAL -->
+    <div id="new-project-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-cardBg border border-borderColor rounded-[24px] p-6 w-full max-w-sm shadow-2xl transform scale-95 transition-transform duration-300" id="new-project-modal-content">
+            <h3 class="text-xl font-bold mb-4 text-white">Create New Project</h3>
+            <input type="text" id="new-project-input" placeholder="Project Name..." class="w-full bg-[#2C2C2E] border border-borderColor rounded-xl px-4 py-3 text-white placeholder-textSecondary mb-6 outline-none focus:border-accentOrange">
+            <div class="flex gap-3 justify-end">
+                <button id="cancel-project-btn" class="px-5 py-2.5 rounded-xl font-medium text-textSecondary hover:bg-itemHover hover:text-white transition-colors">Cancel</button>
+                <button id="save-project-btn" class="px-5 py-2.5 rounded-xl font-bold bg-accentOrange text-white hover:bg-[#ff5c1a] transition-colors shadow-lg shadow-accentOrange/20">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DATE PICKER MODAL -->
+    <div id="date-picker-popup" class="fixed hidden bg-cardBg border border-borderColor rounded-xl p-3 shadow-2xl z-50 flex-col gap-2 transition-opacity">
+        <div class="text-[12px] font-semibold text-textSecondary px-1">Mark as done on:</div>
+        <input type="date" id="done-date-input" class="bg-[#2C2C2E] text-white text-sm border border-borderColor rounded-lg px-3 py-2 outline-none focus:border-accentOrange">
+        <div class="flex justify-end gap-2 mt-1">
+            <button id="cancel-date-btn" class="text-xs px-3 py-1.5 rounded-lg text-textSecondary hover:bg-itemHover">Cancel</button>
+            <button id="save-date-btn" class="text-xs px-3 py-1.5 rounded-lg bg-accentOrange text-white font-semibold hover:bg-[#ff5c1a]">Save</button>
+        </div>
+    </div>
+
+    <!-- TIME RANGE MODAL -->
+    <div id="time-range-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <div id="time-range-modal-content" class="time-range-modal-card bg-cardBg border border-borderColor rounded-[24px] p-5 w-[calc(100%-24px)] max-w-md shadow-2xl transform scale-95 transition-transform duration-300">
+            <div class="flex items-center justify-between gap-3 mb-4">
+                <div>
+                    <div class="text-base font-semibold text-white">Set time range</div>
+                    <div class="text-[12px] text-textSecondary mt-1">Pick dates or type them quickly.</div>
+                </div>
+                <button id="close-time-range-btn" class="p-2 rounded-lg text-textSecondary hover:text-white hover:bg-itemHover" type="button">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                <label class="flex flex-col gap-1.5">
+                    <span class="text-[12px] text-textSecondary">Start</span>
+                    <input type="date" id="time-range-start-date" class="bg-[#2C2C2E] text-white text-sm border border-borderColor rounded-lg px-3 py-2.5 outline-none focus:border-accentOrange">
+                </label>
+                <label class="flex flex-col gap-1.5">
+                    <span class="text-[12px] text-textSecondary">End</span>
+                    <input type="date" id="time-range-end-date" class="bg-[#2C2C2E] text-white text-sm border border-borderColor rounded-lg px-3 py-2.5 outline-none focus:border-accentOrange">
+                </label>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                <label class="flex flex-col gap-1.5">
+                    <span class="text-[12px] text-textSecondary">Quick input start</span>
+                    <input type="text" id="time-range-start-text" placeholder="dd-mm-yyyy" class="bg-[#2C2C2E] text-white text-sm border border-borderColor rounded-lg px-3 py-2.5 outline-none focus:border-accentOrange placeholder:text-textSecondary/60">
+                </label>
+                <label class="flex flex-col gap-1.5">
+                    <span class="text-[12px] text-textSecondary">Quick input end</span>
+                    <input type="text" id="time-range-end-text" placeholder="dd-mm-yyyy" class="bg-[#2C2C2E] text-white text-sm border border-borderColor rounded-lg px-3 py-2.5 outline-none focus:border-accentOrange placeholder:text-textSecondary/60">
+                </label>
+            </div>
+
+            <div class="flex items-center justify-between gap-3">
+                <button id="clear-time-range-btn" class="text-xs px-3 py-2 rounded-lg text-textSecondary hover:bg-itemHover" type="button">Clear</button>
+                <div class="flex items-center gap-2">
+                    <button id="cancel-time-range-btn" class="text-xs px-3 py-2 rounded-lg text-textSecondary hover:bg-itemHover" type="button">Cancel</button>
+                    <button id="save-time-range-btn" class="text-xs px-3 py-2 rounded-lg bg-accentOrange text-white font-semibold hover:bg-[#ff5c1a]" type="button">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DELETE CONFIRM MODAL -->
+    <div id="delete-confirm-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-cardBg border border-borderColor rounded-[24px] p-6 w-full max-w-sm shadow-2xl transform scale-95 transition-transform duration-300 text-center" id="delete-modal-content">
+            <div class="w-12 h-12 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Xác nhận xóa?</h3>
+            <p class="text-[14px] text-textSecondary mb-6">Bạn có chắc chắn muốn xóa mục này không? Hành động này không thể hoàn tác.</p>
+            <div class="flex gap-3 justify-center">
+                <button id="cancel-delete-btn" class="px-5 py-2 rounded-xl font-medium text-textSecondary hover:bg-itemHover hover:text-white transition-colors">Hủy</button>
+                <button id="confirm-delete-btn" class="px-5 py-2 rounded-xl font-bold bg-red-500 text-white hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20">Xóa</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- STATUS INFO MODAL -->
+    <div id="status-info-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-cardBg border border-borderColor rounded-[24px] p-6 w-full max-w-sm shadow-2xl transform scale-95 transition-transform duration-300" id="status-info-modal-content">
+            <div class="w-12 h-12 rounded-full bg-accentOrange/15 text-accentOrange flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="info" class="w-6 h-6"></i>
+            </div>
+            <h3 id="status-info-title" class="text-lg font-bold text-white mb-2 text-center">Notice</h3>
+            <div id="status-info-body" class="text-[14px] text-textSecondary mb-6 space-y-2 text-left"></div>
+            <div class="flex justify-center">
+                <button id="status-info-ok-btn" class="px-5 py-2 rounded-xl font-bold bg-accentOrange text-white hover:bg-[#ff5c1a] transition-colors shadow-lg shadow-accentOrange/20">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="import-backup-file" accept="application/json" class="hidden">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        safeLucide();
+
+        const SUPABASE_URL = 'https://csodklxqlpoandmyvjpt.supabase.co';
+        const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_yNOpvvmR7i04GUzD2i1Mww_qE4mXuMb';
+        const supabaseClient = window.supabase?.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) : null;
+        function safeLucide(){ try { window.lucide?.createIcons?.(); } catch (e) { console.warn('Lucide render skipped', e); } }
+        let currentAuthUser = null;
+        let backupExportConfirmedThisSession = false;
+
+        function updateSidebarProfileCard() {
+            const cardBtn = document.querySelector('[data-target="page-user"]');
+            const textNodes = cardBtn?.querySelectorAll('.text-left > div') || [];
+            const avatarEl = cardBtn?.querySelector('.w-9.h-9');
+            const largeAvatarEl = document.getElementById('profile-avatar-large');
+            const email = currentAuthUser?.email || '';
+            const initials = (email ? email.slice(0, 2) : 'TN').toUpperCase();
+            if (textNodes[0]) textNodes[0].textContent = email || 'Guest user';
+            if (textNodes[1]) textNodes[1].textContent = currentAuthUser ? 'Cloud connected' : 'Local mode';
+            if (avatarEl) avatarEl.textContent = initials;
+            if (largeAvatarEl) largeAvatarEl.textContent = initials;
+        }
+        
+        // --- Core UI Toggles ---
+        const sidebarContainer = document.getElementById('sidebar-container');
+        const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+
+        function isMobileViewport() {
+            return window.innerWidth < 768;
+        }
+
+        function openSidebar() {
+            if (isMobileViewport()) {
+                document.body.classList.add('sidebar-open');
+            } else {
+                sidebarContainer.classList.remove('w-0', 'md:w-0', 'border-r-0');
+            }
+        }
+
+        function closeSidebar() {
+            if (isMobileViewport()) {
+                document.body.classList.remove('sidebar-open');
+            } else {
+                sidebarContainer.classList.add('w-0', 'md:w-0', 'border-r-0');
+            }
+        }
+
+        function toggleSidebar() {
+            if (isMobileViewport()) {
+                document.body.classList.toggle('sidebar-open');
+            } else {
+                sidebarContainer.classList.toggle('w-0');
+                sidebarContainer.classList.toggle('md:w-0');
+                sidebarContainer.classList.toggle('border-r-0');
+            }
+        }
+
+        // delegated sidebar toggle so newly-created project pages work too
+        document.addEventListener('click', (e) => {
+            const toggleBtn = e.target.closest('.toggle-sidebar-btn');
+            if (toggleBtn) {
+                e.preventDefault();
+                toggleSidebar();
+                return;
+            }
+        });
+
+        sidebarBackdrop?.addEventListener('click', closeSidebar);
+
+        window.addEventListener('resize', () => {
+            if (!isMobileViewport()) {
+                document.body.classList.remove('sidebar-open');
+            }
+        });
+
+        // --- Navigation Logic ---
+        function getPageViews() {
+            return document.querySelectorAll('.page-view');
+        }
+        
+        function openPage(targetId, clickedBtn = null) {
+            getPageViews().forEach(page => {
+                page.classList.add('hidden');
+                page.style.display = 'none';
+            });
+            const targetPage = document.getElementById(targetId);
+            if (targetPage) { 
+                targetPage.classList.remove('hidden');
+                targetPage.style.display = 'block';
+                document.getElementById('main-scroll-area').scrollTop = 0; 
+            }
+
+            if (isMobileViewport()) {
+                document.body.classList.remove('sidebar-open');
+            }
+            
+            const navBtns = document.querySelectorAll('.nav-btn, .nav-btn-date');
+            navBtns.forEach(btn => btn.classList.remove('bg-itemHover', 'text-textPrimary'));
+            
+            if (clickedBtn) {
+                clickedBtn.classList.add('bg-itemHover', 'text-textPrimary');
+            } else {
+                const firstMatch = Array.from(navBtns).find(btn => btn.getAttribute('data-target') === targetId || btn.id === targetId);
+                if(firstMatch) firstMatch.classList.add('bg-itemHover', 'text-textPrimary');
+            }
+        }
+
+        function getUserProjectPages() {
+            return Array.from(document.querySelectorAll('.user-project-page'));
+        }
+
+        function getFilledGoalRows(page) {
+            return Array.from(page.querySelectorAll('.goal-list .checkable-row')).filter(row => {
+                const input = row.querySelector('.item-input');
+                return input && input.value.trim();
+            });
+        }
+
+        function getFilledTargetRows(page) {
+            return Array.from(page.querySelectorAll('.targets-container .checkable-row')).filter(row => {
+                const input = row.querySelector('.item-input');
+                return input && input.value.trim();
+            });
+        }
+
+        function getFilledActionRows(page) {
+            return Array.from(page.querySelectorAll('.actions-list .checkable-row')).filter(row => {
+                const input = row.querySelector('.item-input');
+                return input && input.value.trim();
+            });
+        }
+
+        function parseProjectImportance(page) {
+            const input = page.querySelector('.importance-input, .prop-importance input');
+            if (!input) return 0;
+            const raw = String(input.value || '').trim();
+            if (!raw) return 0;
+            const num = Number(raw);
+            return Number.isFinite(num) ? num : 0;
+        }
+
+        function getProjectRangeText(page) {
+            const trigger = page.querySelector('.time-range-trigger');
+            if (!trigger) return '';
+            const start = trigger.dataset.start || '';
+            const end = trigger.dataset.end || '';
+            if (start && end) return `${formatDateForDisplay(start)} – ${formatDateForDisplay(end)}`;
+            if (start) return `${formatDateForDisplay(start)} – ...`;
+            if (end) return `... – ${formatDateForDisplay(end)}`;
+            return '';
+        }
+
+        function getProjectValidation(page) {
+            const reasons = [];
+            const filledGoals = getFilledGoalRows(page);
+            const filledTargets = getFilledTargetRows(page);
+            const filledActions = getFilledActionRows(page);
+            const validGoalIds = new Set(filledGoals.map(row => `goal-${row.dataset.id}`));
+            if (filledGoals.length < 1) reasons.push('Need at least 1 main goal.');
+            const unsupportedTargets = filledTargets.filter(row => {
+                const val = row.querySelector('.support-dropdown')?.value || '';
+                return !val || !validGoalIds.has(val);
+            });
+            if (unsupportedTargets.length > 0) reasons.push(`${unsupportedTargets.length} phase target${unsupportedTargets.length > 1 ? 's' : ''} must support a main goal.`);
+            const validTargetIds = new Set(filledTargets.filter(row => {
+                const val = row.querySelector('.support-dropdown')?.value || '';
+                return val && validGoalIds.has(val);
+            }).map(row => `target-${row.dataset.id}`));
+            const unsupportedActions = filledActions.filter(row => {
+                const val = row.querySelector('.tree-dropdown')?.value || '';
+                if (!val) return true;
+                if (validGoalIds.has(val)) return false;
+                if (validTargetIds.has(val)) return false;
+                return true;
+            });
+            if (unsupportedActions.length > 0) reasons.push(`${unsupportedActions.length} daily action${unsupportedActions.length > 1 ? 's' : ''} must support a main goal.`);
+            const goalDoneCount = filledGoals.filter(row => row.dataset.done === 'true').length;
+            return {
+                isValid: reasons.length === 0,
+                reasons,
+                goalTotal: filledGoals.length,
+                goalDone: goalDoneCount,
+                isDone: filledGoals.length > 0 && goalDoneCount === filledGoals.length,
+                phaseCount: Array.from(page.querySelectorAll('.phase-block')).length
+            };
+        }
+
+        function buildStatusBadgeHtml(page) {
+            const validation = getProjectValidation(page);
+            if (validation.isDone) {
+                return `<span class="project-status-badge is-done"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i>Done</span>`;
+            }
+            if (validation.isValid) {
+                return `<span class="project-status-badge is-active"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>Active</span>`;
+            }
+            return `<span class="project-status-badge is-draft">Draft <span class="draft-help-btn" role="button" tabindex="0" data-project-id="${page.id}" aria-label="Why draft?">?</span></span>`;
+        }
+
+        function getSidebarProjectMeta(page) {
+            const validation = getProjectValidation(page);
+            return {
+                id: page.id,
+                name: page.querySelector('.project-title')?.innerText.trim() || 'Untitled Project',
+                importance: parseProjectImportance(page),
+                done: validation.goalDone,
+                total: validation.goalTotal,
+                rangeText: getProjectRangeText(page),
+                isValid: validation.isValid,
+                isDone: validation.isDone,
+                reasons: validation.reasons,
+                createdAt: Number(page.dataset.createdAt || page.id.replace(/\D/g, '') || 0)
+            };
+        }
+
+        function refreshProjectState(page) {
+            if (!page || !page.classList.contains('user-project-page')) return;
+            const slot = page.querySelector('.project-status-slot');
+            if (slot) slot.innerHTML = buildStatusBadgeHtml(page);
+            safeLucide();
+            refreshSidebarProjects();
+        }
+
+        function refreshSidebarProjects() {
+            const container = document.getElementById('sidebar-projects-list');
+            if (!container) return;
+            const currentActiveId = Array.from(getPageViews()).find(page => !page.classList.contains('hidden') && page.style.display !== 'none')?.id;
+            const metas = getUserProjectPages().map(getSidebarProjectMeta).sort((a, b) => {
+                if (a.isDone !== b.isDone) return a.isDone ? 1 : -1;
+                if (b.importance !== a.importance) return b.importance - a.importance;
+                if (a.done !== b.done) return a.done - b.done;
+                if (b.createdAt !== a.createdAt) return b.createdAt - a.createdAt;
+                return a.name.localeCompare(b.name);
+            });
+            container.innerHTML = metas.map(meta => {
+                const safeName = meta.name.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const line1 = `${meta.importance}% - ${meta.done}/${meta.total} done`;
+                const badgeHtml = meta.isDone
+                    ? '<span class="project-status-badge is-done"><i data-lucide="badge-check" class="w-3.5 h-3.5"></i>Done</span>'
+                    : (meta.isValid
+                        ? '<span class="project-status-badge is-active"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>Active</span>'
+                        : `<span class="project-status-badge is-draft">Draft <span class="draft-help-btn" role="button" tabindex="0" data-project-id="${meta.id}" aria-label="Why draft?">?</span></span>`);
+                return `<button class="nav-btn sidebar-project-item w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-itemHover transition-all text-left group ${currentActiveId === meta.id ? 'bg-itemHover text-textPrimary' : ''}" data-target="${meta.id}">
+                        <div class="w-2 h-2 shrink-0 rounded-full ${meta.isDone ? 'bg-sky-400/90' : (meta.isValid ? 'bg-emerald-400/80' : 'bg-accentOrange/60')} mt-1.5"></div>
+                        <div class="overflow-hidden flex-1 min-w-0">
+                            <div class="sidebar-project-name-row">
+                                <div class="text-[14px] text-textPrimary transition-colors truncate font-medium project-name">${safeName}</div>
+                                ${badgeHtml}
+                            </div>
+                            <div class="sidebar-project-meta">${line1}</div>
+                            ${meta.rangeText ? `<div class="sidebar-project-range">${meta.rangeText}</div>` : ''}
+                        </div>
+                    </button>`;
+            }).join('');
+            safeLucide();
+        }
+
+        function showStatusInfo(title, lines) {
+            const modal = document.getElementById('status-info-modal');
+            const content = document.getElementById('status-info-modal-content');
+            document.getElementById('status-info-title').textContent = title;
+            document.getElementById('status-info-body').innerHTML = (lines || []).map(line => `<div>• ${line}</div>`).join('');
+            modal.classList.remove('hidden');
+            void modal.offsetWidth;
+            modal.classList.remove('opacity-0');
+            content.classList.remove('scale-95');
+        }
+
+        function closeStatusInfo() {
+            const modal = document.getElementById('status-info-modal');
+            const content = document.getElementById('status-info-modal-content');
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        function validateImportanceInput(input, showDialog = false) {
+            const page = input?.closest('.user-project-page');
+            if (!page) return true;
+            const raw = String(input.value || '').trim();
+            if (raw === '') {
+                input.dataset.prevValid = '';
+                refreshProjectState(page);
+                return true;
+            }
+            const value = Number(raw);
+            if (!Number.isFinite(value) || value < 0 || value > 100) {
+                const prev = input.dataset.prevValid || '';
+                input.value = prev;
+                if (showDialog) showStatusInfo('Importance is invalid', ['Importance must be between 0 and 100. Please enter it again.']);
+                refreshProjectState(page);
+                return false;
+            }
+            const total = getUserProjectPages().reduce((sum, proj) => {
+                const projInput = proj.querySelector('.importance-input, .prop-importance input');
+                if (!projInput) return sum;
+                if (proj === page) return sum + value;
+                const projVal = Number(String(projInput.value || '').trim() || 0);
+                return sum + (Number.isFinite(projVal) ? projVal : 0);
+            }, 0);
+            if (total > 100) {
+                const over = Math.round((total - 100) * 10) / 10;
+                const prev = input.dataset.prevValid || '';
+                input.value = prev;
+                if (showDialog) showStatusInfo('Total importance exceeds 100%', [`You are over by ${over}%. Please enter a lower value.`]);
+                refreshProjectState(page);
+                return false;
+            }
+            input.dataset.prevValid = String(value);
+            refreshProjectState(page);
+            return true;
+        }
+
+        document.addEventListener('click', (e) => {
+            const helpBtn = e.target.closest('.draft-help-btn');
+            if (helpBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                const page = document.getElementById(helpBtn.dataset.projectId);
+                if (page) {
+                    const validation = getProjectValidation(page);
+                    showStatusInfo('Why is this project draft?', validation.reasons.length ? validation.reasons : ['This project is still missing setup data.']);
+                }
+                return;
+            }
+        });
+        document.getElementById('status-info-ok-btn')?.addEventListener('click', closeStatusInfo);
+        document.getElementById('status-info-modal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'status-info-modal') closeStatusInfo();
+        });
+        document.getElementById('main-scroll-area').addEventListener('input', (e) => {
+            if (e.target.closest('#dynamic-actions-list')) {
+                updateDynamicActionStates();
+            }
+            const page = e.target.closest('.user-project-page');
+            if (!page) return;
+            if (e.target.matches('.importance-input, .prop-importance input')) return;
+            refreshProjectState(page);
+        });
+        document.getElementById('main-scroll-area').addEventListener('change', (e) => {
+            if (e.target.closest('#dynamic-actions-list')) {
+                updateDynamicActionStates();
+            }
+            const page = e.target.closest('.user-project-page');
+            if (!page) return;
+            if (e.target.matches('.importance-input, .prop-importance input')) {
+                validateImportanceInput(e.target, true);
+                return;
+            }
+            refreshProjectState(page);
+        });
+        document.getElementById('main-scroll-area').addEventListener('focusin', (e) => {
+            if (e.target.matches('.importance-input, .prop-importance input')) {
+                e.target.dataset.prevValid = String(e.target.value || '').trim();
+            }
+        });
+        document.getElementById('main-scroll-area').addEventListener('focusout', (e) => {
+            if (e.target.matches('.importance-input, .prop-importance input')) {
+                validateImportanceInput(e.target, true);
+            }
+            const page = e.target.closest('.user-project-page');
+            if (page) refreshProjectState(page);
+        });
+
+        function attachNavEvents() {}
+        // delegated navigation so newly-added projects work without rebinding
+        document.addEventListener('click', (e) => {
+            const navBtn = e.target.closest('.nav-btn');
+            if (navBtn) {
+                if (navBtn.id === 'go-today-btn') {
+                    e.preventDefault();
+                    openDateRecord(formatDateParts(new Date()).full, navBtn);
+                    return;
+                }
+                const target = navBtn.getAttribute('data-target');
+                if (target) {
+                    e.preventDefault();
+                    openPage(target, navBtn);
+                }
+            }
+        });
+
+        // --- Popup Calendar Logic ---
+        const calendarToggle = document.getElementById('calendar-toggle');
+        const calendarPopup = document.getElementById('calendar-popup');
+        const calendarDateInput = document.getElementById('calendar-date-input');
+        const calendarOpenDateBtn = document.getElementById('calendar-open-date-btn');
+        const calendarOpenTodayBtn = document.getElementById('calendar-open-today-btn');
+
+        function fullDateToIso(fullDate) {
+            if (!fullDate || !fullDate.includes('-')) return '';
+            const [dd, mm, yyyy] = fullDate.split('-');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        function isoDateToFull(isoDate) {
+            if (!isoDate || !isoDate.includes('-')) return '';
+            const [yyyy, mm, dd] = isoDate.split('-');
+            return `${dd}-${mm}-${yyyy}`;
+        }
+
+        calendarToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const activeDate = currentRecentDate || formatDateParts(new Date()).full;
+            if (calendarDateInput) calendarDateInput.value = fullDateToIso(activeDate);
+            calendarPopup.classList.toggle('popup-active');
+        });
+
+        calendarOpenDateBtn?.addEventListener('click', async () => {
+            const isoDate = calendarDateInput?.value;
+            if (!isoDate) return;
+            calendarPopup.classList.remove('popup-active');
+            await openDateRecord(isoDateToFull(isoDate));
+        });
+
+        calendarOpenTodayBtn?.addEventListener('click', async () => {
+            const todayFull = formatDateParts(new Date()).full;
+            if (calendarDateInput) calendarDateInput.value = fullDateToIso(todayFull);
+            calendarPopup.classList.remove('popup-active');
+            await openDateRecord(todayFull);
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!calendarPopup.contains(e.target) && e.target !== calendarToggle && !calendarToggle.contains(e.target)) {
+                calendarPopup.classList.remove('popup-active');
+            }
+        });
+
+        // --- New Project Modal Logic ---
+        const newProjModal = document.getElementById('new-project-modal');
+        const newProjModalContent = document.getElementById('new-project-modal-content');
+        const addProjectBtn = document.getElementById('add-project-btn');
+        const cancelProjBtn = document.getElementById('cancel-project-btn');
+        const saveProjBtn = document.getElementById('save-project-btn');
+        const projectInput = document.getElementById('new-project-input');
+
+        function openProjModal() {
+            newProjModal.classList.remove('hidden');
+            void newProjModal.offsetWidth; 
+            newProjModal.classList.remove('opacity-0');
+            newProjModalContent.classList.remove('scale-95');
+            projectInput.value = '';
+            projectInput.focus();
+        }
+
+        function closeProjModal() {
+            newProjModal.classList.add('opacity-0');
+            newProjModalContent.classList.add('scale-95');
+            setTimeout(() => { newProjModal.classList.add('hidden'); }, 300);
+        }
+
+        addProjectBtn.addEventListener('click', openProjModal);
+        cancelProjBtn.addEventListener('click', closeProjModal);
+        saveProjBtn.addEventListener('click', () => {
+            const name = projectInput.value.trim();
+            if (name) {
+                const newId = `page-proj-${Date.now()}`;
+                const templateHtml = document.getElementById('project-page-template').cloneNode(true);
+                templateHtml.id = newId;
+                templateHtml.dataset.createdAt = String(Date.now());
+                templateHtml.classList.remove('template-project');
+                templateHtml.classList.add('user-project-page', 'hidden');
+                templateHtml.style.display = 'none';
+                templateHtml.querySelector('.project-title').innerText = name;
+                templateHtml.querySelector('.project-desc').innerText = "Add project description...";
+                templateHtml.querySelector('.goal-list').innerHTML = '';
+                templateHtml.querySelector('.phases-list').innerHTML = '';
+                templateHtml.querySelector('.actions-list').innerHTML = '';
+                templateHtml.querySelectorAll('.date-badge-container').forEach(el => el.innerHTML = '');
+                templateHtml.querySelectorAll('input[type="number"]').forEach(inp => {
+                    inp.value = '';
+                    inp.dataset.prevValid = '';
+                });
+                templateHtml.querySelectorAll('.time-range-trigger').forEach(trigger => {
+                    trigger.dataset.start = '';
+                    trigger.dataset.end = '';
+                });
+                document.getElementById('main-scroll-area').appendChild(templateHtml);
+                refreshProjectState(templateHtml);
+                refreshSidebarProjects();
+                closeProjModal();
+                openPage(newId);
+            }
+        });
+
+        newProjModal.addEventListener('click', (e) => {
+            if (e.target === newProjModal) closeProjModal();
+        });
+
+
+        // ==========================================================
+        // KHU VỰC 1: STATELESS LOGIC DÀNH CHO CÁC TRANG PROJECT
+        // ==========================================================
+
+        let activeCheckableRow = null; 
+        let itemToDelete = null;
+
+        const datePickerPopup = document.getElementById('date-picker-popup');
+        const dateInput = document.getElementById('done-date-input');
+        const timeRangeModal = document.getElementById('time-range-modal');
+        const timeRangeModalContent = document.getElementById('time-range-modal-content');
+        const timeRangeStartDate = document.getElementById('time-range-start-date');
+        const timeRangeEndDate = document.getElementById('time-range-end-date');
+        const timeRangeStartText = document.getElementById('time-range-start-text');
+        const timeRangeEndText = document.getElementById('time-range-end-text');
+        let activeTimeRangeTrigger = null;
+
+        function formatDateForDisplay(value) {
+            if (!value) return '';
+            const parts = value.split('-');
+            if (parts.length !== 3) return '';
+            const [yyyy, mm, dd] = parts;
+            return `${dd}-${mm}-${yyyy}`;
+        }
+
+        function parseQuickDate(value) {
+            const raw = (value || '').trim();
+            if (!raw) return '';
+            const match = raw.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+            if (!match) return null;
+            const dd = match[1].padStart(2, '0');
+            const mm = match[2].padStart(2, '0');
+            const yyyy = match[3];
+            const iso = `${yyyy}-${mm}-${dd}`;
+            const check = new Date(`${iso}T00:00:00`);
+            if (Number.isNaN(check.getTime())) return null;
+            if (check.getFullYear() !== Number(yyyy) || (check.getMonth() + 1) !== Number(mm) || check.getDate() !== Number(dd)) return null;
+            return iso;
+        }
+
+        function syncQuickInputsFromDateInputs() {
+            timeRangeStartText.value = timeRangeStartDate.value ? formatDateForDisplay(timeRangeStartDate.value) : '';
+            timeRangeEndText.value = timeRangeEndDate.value ? formatDateForDisplay(timeRangeEndDate.value) : '';
+        }
+
+        function updateTimeRangeLabel(trigger, start, end) {
+            if (!trigger) return;
+            const textEl = trigger.querySelector('.time-range-text');
+            if (!textEl) return;
+            trigger.dataset.start = start || '';
+            trigger.dataset.end = end || '';
+            if (start && end) {
+                textEl.textContent = `${formatDateForDisplay(start)} → ${formatDateForDisplay(end)}`;
+            } else if (start) {
+                textEl.textContent = `${formatDateForDisplay(start)} → ...`;
+            } else if (end) {
+                textEl.textContent = `... → ${formatDateForDisplay(end)}`;
+            } else {
+                textEl.textContent = 'Set time range...';
+            }
+            const page = trigger.closest('.user-project-page');
+            if (page) refreshProjectState(page);
+        }
+
+        function openTimeRangeModal(trigger) {
+            activeTimeRangeTrigger = trigger;
+            timeRangeStartDate.value = trigger.dataset.start || '';
+            timeRangeEndDate.value = trigger.dataset.end || '';
+            syncQuickInputsFromDateInputs();
+            timeRangeModal.classList.remove('hidden');
+            void timeRangeModal.offsetWidth;
+            timeRangeModal.classList.remove('opacity-0');
+            timeRangeModalContent.classList.remove('scale-95');
+        }
+
+        function closeTimeRangeModal() {
+            timeRangeModal.classList.add('opacity-0');
+            timeRangeModalContent.classList.add('scale-95');
+            setTimeout(() => {
+                timeRangeModal.classList.add('hidden');
+                activeTimeRangeTrigger = null;
+            }, 300);
+        }
+
+        function isContainerValid(container) {
+            const rows = container.querySelectorAll('.checkable-row');
+            for (let row of rows) {
+                const input = row.querySelector('.item-input');
+                const select = row.querySelector('select');
+                let isValid = true;
+                
+                if (!input.value.trim()) {
+                    input.focus();
+                    row.classList.add('bg-red-500/20');
+                    setTimeout(() => row.classList.remove('bg-red-500/20'), 800);
+                    isValid = false;
+                } else if (select && select.value === '') {
+                    select.focus();
+                    select.classList.remove('border-transparent');
+                    select.classList.add('border-red-500', 'text-red-500');
+                    setTimeout(() => {
+                        select.classList.add('border-transparent');
+                        select.classList.remove('border-red-500', 'text-red-500');
+                    }, 800);
+                    isValid = false;
+                }
+                if(!isValid) return false;
+            }
+            return true;
+        }
+
+        function createCheckableRow(placeholderText, type, pageContainer) {
+            const rowId = Date.now() + Math.floor(Math.random() * 1000);
+            const row = document.createElement('div');
+            const isGoal = type === 'goal';
+            row.className = isGoal
+                ? 'checkable-row notion-row group flex items-center gap-3 px-4 py-3 hover:bg-[#2C2C2E]/40 transition-colors'
+                : 'checkable-row notion-row group flex items-start md:items-center flex-col md:flex-row gap-2 md:gap-3 px-4 py-3 hover:bg-[#2C2C2E]/40 transition-colors';
+            row.dataset.type = type; 
+            row.dataset.id = rowId;
+            row.dataset.done = "false";
+            
+            const indentIcon = type === 'action' ? `<i data-lucide="corner-down-right" class="w-4 h-4 text-textSecondary/50 mt-1 md:mt-0"></i>` : '';
+
+            let dropdownHTML = '';
+            if (type === 'target') {
+                dropdownHTML = `<select class="support-dropdown text-[12px] bg-[#111111] text-textSecondary rounded-md px-2 py-1 outline-none w-full md:w-auto md:max-w-[160px] cursor-pointer border border-transparent transition-colors"><option value="">Support for...</option></select>`;
+            } else if (type === 'action') {
+                dropdownHTML = `<select class="tree-dropdown text-[12px] bg-[#111111] text-textSecondary rounded-md px-2 py-1 outline-none w-full md:w-auto md:max-w-[160px] cursor-pointer border border-transparent transition-colors"><option value="">Support for...</option></select>`;
+            }
+
+            if (isGoal) {
+                row.innerHTML = `
+                    <button class="toggle-done-btn shrink-0 outline-none text-textSecondary hover:text-accentOrange transition-colors">
+                        <i data-lucide="circle" class="w-4 h-4"></i>
+                    </button>
+                    <input type="text" placeholder="${placeholderText}" class="item-input flex-1 min-w-0 bg-transparent border-none outline-none text-[14px] text-white placeholder-textSecondary/70 transition-colors truncate">
+                    <div class="date-badge-container flex items-center shrink-0"></div>
+                    <button class="delete-btn shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 text-textSecondary hover:text-red-500 hover:bg-red-500/10 p-1.5 rounded-lg transition-all" title="Delete">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                `;
+            } else {
+                row.innerHTML = `
+                    <div class="flex items-center gap-3 flex-1 w-full">
+                        ${indentIcon}
+                        <button class="toggle-done-btn shrink-0 outline-none text-textSecondary hover:text-accentOrange transition-colors">
+                            <i data-lucide="circle" class="w-4 h-4"></i>
+                        </button>
+                        <input type="text" placeholder="${placeholderText}" class="item-input flex-1 min-w-0 bg-transparent border-none outline-none text-[14px] md:text-[15px] text-white placeholder-textSecondary/70 transition-colors">
+                        <div class="date-badge-container flex items-center"></div>
+                    </div>
+                    <div class="flex items-center gap-2 w-full md:w-auto mt-2 md:mt-0 md:justify-end">
+                        ${dropdownHTML}
+                        <button class="delete-btn shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 text-textSecondary hover:text-red-500 hover:bg-red-500/10 p-1.5 rounded-lg transition-all" title="Delete">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                `;
+            }
+            
+            row.querySelector('.item-input').addEventListener('change', () => updateAllDropdowns(pageContainer));
+            if(dropdownHTML) {
+                row.querySelector('select').addEventListener('change', () => updateAllDropdowns(pageContainer));
+            }
+            
+            row.querySelector('.item-input').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (type === 'goal') pageContainer.querySelector('.add-goal-btn-top').click();
+                    if (type === 'target') row.closest('.phase-block').querySelector('.add-target-btn').click();
+                    if (type === 'action') pageContainer.querySelector('.add-action-btn-top').click();
+                }
+            });
+            return row;
+        }
+
+        // Lắng nghe sự kiện toàn cục TRONG CÁC TRANG PROJECT VÀ DYNAMIC DATE
+        document.getElementById('main-scroll-area').addEventListener('click', (e) => {
+            const pageContainer = e.target.closest('.page-view');
+            if(!pageContainer) return; 
+
+            // 5. Nút Tick hoàn thành (Xử lý cho cả Project và Dynamic Date)
+            const btnDone = e.target.closest('.toggle-done-btn');
+            if(btnDone) {
+                const row = btnDone.closest('.checkable-row');
+                
+                // --- Trang Dynamic Date: Tick thẳng không hỏi ngày ---
+                if (pageContainer.id === 'page-dynamic-date') {
+                    if(row.dataset.done === "true") {
+                        row.dataset.done = "false";
+                        btnDone.innerHTML = `<i data-lucide="circle" class="w-4 h-4 text-textSecondary hover:text-accentOrange transition-colors"></i>`;
+                        row.querySelector('.item-input').classList.remove('item-completed');
+                        row.querySelector('.item-input').classList.add('text-white');
+                    } else {
+                        row.dataset.done = "true";
+                        btnDone.innerHTML = `<i data-lucide="check-circle-2" class="w-4 h-4 text-accentOrange fill-accentOrange/20"></i>`;
+                        row.querySelector('.item-input').classList.add('item-completed');
+                        row.querySelector('.item-input').classList.remove('text-white');
+                    }
+                    safeLucide();
+                    updateDynamicActionStates();
+                    return;
+                }
+
+                // --- Trang Project: Mở bảng chọn ngày ---
+                if(row.dataset.done === "true") {
+                    row.dataset.done = "false";
+                    btnDone.innerHTML = `<i data-lucide="circle" class="w-4 h-4 text-textSecondary hover:text-accentOrange transition-colors"></i>`;
+                    row.querySelector('.item-input').classList.remove('item-completed');
+                    row.querySelector('.item-input').classList.add('text-white');
+                    row.querySelector('.date-badge-container').innerHTML = '';
+                    safeLucide();
+                } else {
+                    activeCheckableRow = row;
+                    dateInput.valueAsDate = new Date(); 
+                    const rect = btnDone.getBoundingClientRect();
+                    datePickerPopup.style.top = `${rect.bottom + window.scrollY + 8}px`;
+                    datePickerPopup.style.left = `${rect.left + window.scrollX}px`;
+                    datePickerPopup.classList.remove('hidden');
+                }
+                return;
+            }
+
+            // Xóa Output ở Dynamic Date
+            const btnDelOut = e.target.closest('.delete-output-btn');
+            if (btnDelOut) {
+                const outputsContainer = btnDelOut.closest('.outputs-container');
+                if (outputsContainer.children.length > 1) {
+                    btnDelOut.closest('.group\\/output').remove();
+                }
+                return;
+            }
+
+            // --- Bỏ qua thêm/xóa cấu trúc Project nếu đang ở Dynamic Date ---
+            if(pageContainer.id === 'page-dynamic-date') return;
+
+            // 1. Thêm Goal
+            const addGoalBtn = e.target.closest('.add-goal-btn-top');
+            if (addGoalBtn) {
+                const list = pageContainer.querySelector('.goal-list');
+                if (!isContainerValid(list)) return;
+                const row = createCheckableRow("Add a new goal...", "goal", pageContainer);
+                list.appendChild(row);
+                safeLucide();
+                updateAllDropdowns(pageContainer);
+                refreshProjectState(pageContainer);
+                row.querySelector('.item-input').focus();
+                return;
+            }
+
+            // 2. Thêm Phase
+            const addPhaseBtn = e.target.closest('.add-phase-btn');
+            if (addPhaseBtn) {
+                const list = pageContainer.querySelector('.phases-list');
+                const phaseIndex = list.children.length + 1;
+                const phaseBlock = document.createElement('div');
+                phaseBlock.className = 'phase-block';
+                phaseBlock.dataset.phaseId = Date.now();
+                phaseBlock.innerHTML = `
+                    <div class="flex items-center gap-3 mb-3 group/phase-header">
+                        <h3 class="text-[16px] font-bold text-white editable-title outline-none focus:text-accentOrange phase-title-input" contenteditable="true" data-placeholder="Phase Name">Phase ${phaseIndex}</h3>
+                        <button class="add-target-btn text-[12px] font-medium text-textSecondary hover:text-white bg-[#2C2C2E] px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+                            <i data-lucide="plus" class="w-3 h-3"></i> target
+                        </button>
+                        <button class="delete-phase-btn ml-auto opacity-100 md:opacity-0 md:group-hover/phase-header:opacity-100 text-textSecondary hover:text-red-500 hover:bg-red-500/10 p-1.5 rounded-lg transition-all" title="Delete phase">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <div class="bg-listBg border border-borderColor rounded-lg overflow-hidden">
+                        <div class="targets-container flex flex-col divide-y divide-borderColor"></div>
+                    </div>
+                `;
+                list.appendChild(phaseBlock);
+                safeLucide();
+                return;
+            }
+
+            // 3. Thêm Target
+            const addTargetBtn = e.target.closest('.add-target-btn');
+            if (addTargetBtn) {
+                const container = addTargetBtn.closest('.phase-block').querySelector('.targets-container');
+                if (!isContainerValid(container)) return;
+                const row = createCheckableRow("Target description...", "target", pageContainer);
+                container.appendChild(row);
+                safeLucide();
+                updateAllDropdowns(pageContainer);
+                row.querySelector('.item-input').focus();
+                return;
+            }
+
+            // 3b. Xóa Phase
+            const btnDelPhase = e.target.closest('.delete-phase-btn');
+            if (btnDelPhase) {
+                itemToDelete = btnDelPhase.closest('.phase-block');
+                const modal = document.getElementById('delete-confirm-modal');
+                const modalContent = document.getElementById('delete-modal-content');
+                const title = modal.querySelector('.delete-modal-title');
+                const desc = modal.querySelector('.delete-modal-desc');
+                if (title) title.textContent = 'Xóa phase này?';
+                if (desc) desc.textContent = 'Toàn bộ target trong phase này sẽ bị xóa. Hành động này không thể hoàn tác.';
+                modal.classList.remove('hidden');
+                void modal.offsetWidth;
+                modal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95');
+                return;
+            }
+
+            // 4. Thêm Action
+            const addActionBtn = e.target.closest('.add-action-btn-top');
+            if (addActionBtn) {
+                const list = pageContainer.querySelector('.actions-list');
+                if (!isContainerValid(list)) return;
+                const row = createCheckableRow("Action for today...", "action", pageContainer);
+                list.appendChild(row);
+                safeLucide();
+                updateAllDropdowns(pageContainer);
+                row.querySelector('.item-input').focus();
+                return;
+            }
+
+            // 6. Xóa Row
+            const btnDel = e.target.closest('.delete-btn');
+            if(btnDel) {
+                itemToDelete = btnDel.closest('.checkable-row');
+                const modal = document.getElementById('delete-confirm-modal');
+                const modalContent = document.getElementById('delete-modal-content');
+                const title = modal.querySelector('.delete-modal-title');
+                const desc = modal.querySelector('.delete-modal-desc');
+                if (title) title.textContent = 'Xóa mục này?';
+                if (desc) desc.textContent = 'Hành động này không thể hoàn tác.';
+                modal.classList.remove('hidden');
+                void modal.offsetWidth;
+                modal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95');
+                return;
+            }
+        });
+
+        document.getElementById('main-scroll-area').addEventListener('focusout', (e) => {
+            if (e.target.classList.contains('phase-title-input')) {
+                const page = e.target.closest('.page-view');
+                updateAllDropdowns(page);
+                refreshProjectState(page);
+            }
+        });
+
+        // Date Picker Actions
+        document.addEventListener('click', (e) => {
+            const trigger = e.target.closest('.time-range-trigger');
+            if (trigger) openTimeRangeModal(trigger);
+        });
+
+        timeRangeStartDate.addEventListener('change', syncQuickInputsFromDateInputs);
+        timeRangeEndDate.addEventListener('change', syncQuickInputsFromDateInputs);
+
+        document.getElementById('close-time-range-btn').addEventListener('click', closeTimeRangeModal);
+        document.getElementById('cancel-time-range-btn').addEventListener('click', closeTimeRangeModal);
+        document.getElementById('clear-time-range-btn').addEventListener('click', () => {
+            timeRangeStartDate.value = '';
+            timeRangeEndDate.value = '';
+            syncQuickInputsFromDateInputs();
+        });
+        document.getElementById('save-time-range-btn').addEventListener('click', () => {
+            let start = timeRangeStartDate.value;
+            let end = timeRangeEndDate.value;
+            const parsedStart = parseQuickDate(timeRangeStartText.value);
+            const parsedEnd = parseQuickDate(timeRangeEndText.value);
+            if (timeRangeStartText.value.trim() && parsedStart === null) {
+                timeRangeStartText.focus();
+                timeRangeStartText.classList.add('border-red-500');
+                setTimeout(() => timeRangeStartText.classList.remove('border-red-500'), 900);
+                return;
+            }
+            if (timeRangeEndText.value.trim() && parsedEnd === null) {
+                timeRangeEndText.focus();
+                timeRangeEndText.classList.add('border-red-500');
+                setTimeout(() => timeRangeEndText.classList.remove('border-red-500'), 900);
+                return;
+            }
+            if (parsedStart) start = parsedStart;
+            if (parsedEnd) end = parsedEnd;
+            if (start && end && start > end) {
+                timeRangeEndDate.focus();
+                timeRangeEndDate.classList.add('border-red-500');
+                setTimeout(() => timeRangeEndDate.classList.remove('border-red-500'), 900);
+                return;
+            }
+            updateTimeRangeLabel(activeTimeRangeTrigger, start, end);
+            closeTimeRangeModal();
+        });
+        timeRangeModal.addEventListener('click', (e) => {
+            if (e.target === timeRangeModal) closeTimeRangeModal();
+        });
+
+        document.getElementById('cancel-date-btn').addEventListener('click', () => {
+            datePickerPopup.classList.add('hidden'); activeCheckableRow = null;
+        });
+        document.getElementById('save-date-btn').addEventListener('click', () => {
+            if (activeCheckableRow) {
+                const d = new Date(dateInput.value);
+                const formattedDate = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth()+1).toString().padStart(2, '0')}`;
+                activeCheckableRow.dataset.done = "true";
+                const btn = activeCheckableRow.querySelector('.toggle-done-btn');
+                const input = activeCheckableRow.querySelector('.item-input');
+                const badge = activeCheckableRow.querySelector('.date-badge-container');
+
+                btn.innerHTML = `<i data-lucide="check-circle-2" class="w-4 h-4 text-accentOrange fill-accentOrange/20"></i>`;
+                input.classList.add('item-completed'); input.classList.remove('text-white');
+                badge.innerHTML = `<span class="text-[11px] bg-accentOrange/10 text-accentOrange px-2 py-0.5 rounded-md ml-auto flex items-center gap-1"><i data-lucide="calendar-check" class="w-3 h-3"></i> ${formattedDate}</span>`;
+                safeLucide();
+                const projectPage = activeCheckableRow.closest('.user-project-page');
+                if (projectPage) refreshProjectState(projectPage);
+            }
+            datePickerPopup.classList.add('hidden'); activeCheckableRow = null;
+        });
+
+        // Delete Confirm Actions
+        function closeDeleteModal() {
+            const modal = document.getElementById('delete-confirm-modal');
+            const modalContent = document.getElementById('delete-modal-content');
+            const title = modal.querySelector('.delete-modal-title');
+            const desc = modal.querySelector('.delete-modal-desc');
+            if (title) title.textContent = 'Xóa mục này?';
+            if (desc) desc.textContent = 'Hành động này không thể hoàn tác.';
+            modal.classList.add('opacity-0');
+            modalContent.classList.add('scale-95');
+            setTimeout(() => { modal.classList.add('hidden'); itemToDelete = null; }, 300);
+        }
+        document.getElementById('cancel-delete-btn').addEventListener('click', closeDeleteModal);
+        document.getElementById('confirm-delete-btn').addEventListener('click', () => {
+            if(itemToDelete) {
+                const pageContainer = itemToDelete.closest('.page-view');
+                itemToDelete.remove();
+                if(pageContainer) {
+                    updateAllDropdowns(pageContainer);
+                    refreshProjectState(pageContainer);
+                }
+            }
+            closeDeleteModal();
+        });
+
+        // Cập nhật Dropdowns TRONG NỘI BỘ MỖI PROJECT
+        function updateAllDropdowns(pageContainer) {
+            if(!pageContainer) return;
+            const supportSelects = pageContainer.querySelectorAll('.support-dropdown');
+            const treeSelects = pageContainer.querySelectorAll('.tree-dropdown');
+
+            const goals = Array.from(pageContainer.querySelectorAll('.checkable-row[data-type="goal"]')).map(row => {
+                return { id: row.dataset.id, text: row.querySelector('.item-input').value.trim() };
+            }).filter(g => g.text !== '');
+
+            const targets = Array.from(pageContainer.querySelectorAll('.checkable-row[data-type="target"]')).map(row => {
+                return { 
+                    id: row.dataset.id, 
+                    text: row.querySelector('.item-input').value.trim(),
+                    supportGoal: row.querySelector('.support-dropdown') ? row.querySelector('.support-dropdown').value : ''
+                };
+            }).filter(t => t.text !== '');
+
+            supportSelects.forEach(select => {
+                const currentVal = select.value;
+                select.innerHTML = '<option value="">Support for (Goal)...</option>';
+                goals.forEach(g => {
+                    const opt = new Option("🎯 " + (g.text.length > 20 ? g.text.substring(0, 20) + '...' : g.text), `goal-${g.id}`);
+                    select.add(opt);
+                });
+                select.value = currentVal;
+            });
+
+            treeSelects.forEach(select => {
+                const currentVal = select.value;
+                select.innerHTML = '<option value="">Support for...</option>';
+                goals.forEach(g => {
+                    const gOpt = new Option("🎯 " + (g.text.length > 25 ? g.text.substring(0, 25) + '...' : g.text), `goal-${g.id}`);
+                    select.add(gOpt);
+
+                    const supportingTargets = targets.filter(t => t.supportGoal === `goal-${g.id}`);
+                    supportingTargets.forEach(t => {
+                        const tOpt = new Option("\u00A0\u00A0\u00A0\u00A0↳ " + (t.text.length > 25 ? t.text.substring(0, 25) + '...' : t.text), `target-${t.id}`);
+                        select.add(tOpt);
+                    });
+                });
+                select.value = currentVal;
+            });
+        }
+
+
+        // ==========================================================
+        // KHU VỰC 2: DYNAMIC DATE PAGE LOGIC (RECENT DAYS)
+        // ==========================================================
+
+        // Khởi tạo Recent Days List
+        function formatDateParts(dateObj) {
+            const dd = dateObj.getDate().toString().padStart(2, '0');
+            const mm = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+            const yyyy = dateObj.getFullYear();
+            return {
+                full: `${dd}-${mm}-${yyyy}`,
+                short: `${dd}/${mm}`
+            };
+        }
+
+        let recentDatesStore = [];
+        let recentDatesDbStore = [];
+        let currentRecentDate = '';
+        let currentDayRecordId = null;
+        const dayStateStore = {};
+        const dayActionStore = {};
+
+        function getDayStatus(dateKey) {
+            const safeKey = dateKey || currentRecentDate || formatDateParts(new Date()).full;
+            if (!dayStateStore[safeKey]) dayStateStore[safeKey] = { rest: false, done: false };
+            return dayStateStore[safeKey];
+        }
+
+        function setRestDayToggleVisual(isRest) {
+            const restCheckbox = document.getElementById('rest-day-checkbox');
+            const track = document.getElementById('rest-day-track');
+            const thumb = document.getElementById('rest-day-thumb');
+            if (!restCheckbox || !track || !thumb) return;
+            restCheckbox.checked = !!isRest;
+            track.classList.toggle('bg-[#34D399]', !!isRest);
+            track.classList.toggle('bg-[#2C2C2E]', !isRest);
+            thumb.style.transform = isRest ? 'translateX(24px)' : 'translateX(0)';
+        }
+
+        function parseFullDate(fullDate) {
+            if (!fullDate || !fullDate.includes('-')) return new Date();
+            const [dd, mm, yyyy] = fullDate.split('-').map(Number);
+            return new Date(yyyy, mm - 1, dd);
+        }
+
+        function compareFullDatesDesc(a, b) {
+            return parseFullDate(b) - parseFullDate(a);
+        }
+
+        function getRecentDateLabel(dateStr) {
+            const today = formatDateParts(new Date()).full;
+            if (dateStr === today) return 'Today';
+            const yesterdayDate = new Date();
+            yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+            const yesterday = formatDateParts(yesterdayDate).full;
+            if (dateStr === yesterday) return 'Yesterday';
+            const [dd, mm] = dateStr.split('-');
+            return `Plan ${dd}/${mm}`;
+        }
+
+        function recomputeRecentDatesStore() {
+            const todayKey = formatDateParts(new Date()).full;
+            const localDates = [];
+            Object.entries(dayActionStore).forEach(([dateKey, actions]) => {
+                if ((actions || []).some(item => item.text || item.outputs?.length || item.supportVals?.length)) localDates.push(dateKey);
+            });
+            Object.entries(dayStateStore).forEach(([dateKey, state]) => {
+                if (state?.rest || state?.done) localDates.push(dateKey);
+            });
+            const merged = new Set([todayKey, currentRecentDate, ...recentDatesDbStore, ...localDates].filter(Boolean));
+            recentDatesStore = Array.from(merged).sort(compareFullDatesDesc).slice(0, 10);
+            renderRecentDaysList(recentDatesStore);
+        }
+
+        async function fetchRecentDatesFromDb(limit = 10) {
+            if (!supabaseClient || !currentAuthUser) {
+                recentDatesDbStore = [];
+                return [];
+            }
+            const { data, error } = await supabaseClient
+                .from('day_records')
+                .select('id, record_date, is_rest_day, is_done_day')
+                .order('record_date', { ascending: false })
+                .limit(limit);
+            if (error) {
+                console.error('Failed loading recent day records', error);
+                return recentDatesDbStore;
+            }
+            recentDatesDbStore = (data || []).map(row => {
+                const fullDate = isoDateToFull(row.record_date);
+                dayStateStore[fullDate] = { rest: !!row.is_rest_day, done: !!row.is_done_day };
+                return fullDate;
+            });
+            return recentDatesDbStore;
+        }
+
+        async function ensureDayRecordExists(fullDate) {
+            currentDayRecordId = null;
+            if (!supabaseClient || !currentAuthUser || !fullDate) return null;
+            const isoDate = fullDateToIso(fullDate);
+            let { data, error } = await supabaseClient
+                .from('day_records')
+                .select('id, record_date, is_rest_day, is_done_day')
+                .eq('record_date', isoDate)
+                .maybeSingle();
+            if (error) {
+                console.error('Failed checking day record', error);
+                return null;
+            }
+            if (!data) {
+                const inserted = await supabaseClient
+                    .from('day_records')
+                    .insert({ user_id: currentAuthUser.id, record_date: isoDate })
+                    .select('id, record_date, is_rest_day, is_done_day')
+                    .single();
+                if (inserted.error) {
+                    console.error('Failed creating day record', inserted.error);
+                    return null;
+                }
+                data = inserted.data;
+            }
+            currentDayRecordId = data.id;
+            dayStateStore[fullDate] = { rest: !!data.is_rest_day, done: !!data.is_done_day };
+            if (!recentDatesDbStore.includes(fullDate)) recentDatesDbStore.unshift(fullDate);
+            recentDatesDbStore = Array.from(new Set(recentDatesDbStore)).sort(compareFullDatesDesc).slice(0, 10);
+            return currentDayRecordId;
+        }
+
+        async function syncCurrentDayStateToDb() {
+            if (!supabaseClient || !currentAuthUser || !currentRecentDate) return;
+            const recordId = await ensureDayRecordExists(currentRecentDate);
+            if (!recordId) return;
+            const status = getDayStatus(currentRecentDate);
+            const themeState = status.rest ? 'rest' : status.done ? 'done' : 'normal';
+            const { error } = await supabaseClient
+                .from('day_records')
+                .update({
+                    is_rest_day: !!status.rest,
+                    is_done_day: !!status.done,
+                    theme_state: themeState,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', recordId);
+            if (error) console.error('Failed syncing day state', error);
+            if (!recentDatesDbStore.includes(currentRecentDate)) recentDatesDbStore.unshift(currentRecentDate);
+            recentDatesDbStore = Array.from(new Set(recentDatesDbStore)).sort(compareFullDatesDesc).slice(0, 10);
+        }
+
+        function getSeedActionsForDate(fullDate) {
+            return getDailyActionsFromProjects();
+        }
+
+        function hasMeaningfulTodayContent(fullDate) {
+            const status = getDayStatus(fullDate);
+            const storedActions = Array.isArray(dayActionStore[fullDate]) ? dayActionStore[fullDate] : [];
+            const hasStoredActions = storedActions.some(item => item.text || item.outputs?.length || item.supportVals?.length);
+            const hasSeedActions = getSeedActionsForDate(fullDate).length > 0;
+            return !!(status.rest || status.done || hasStoredActions || hasSeedActions);
+        }
+
+        function updateCreatePageForDate(fullDate) {
+            const title = document.getElementById('create-page-title');
+            const heading = document.getElementById('create-plan-heading');
+            const subtext = document.getElementById('create-plan-subtext');
+            if (title) title.textContent = `Today · ${fullDate}`;
+            if (heading) heading.textContent = `Create Today's Plan`;
+            if (subtext) subtext.textContent = `No plan yet for ${fullDate}. Create this day's record to start filling actions, outputs, and supports.`;
+        }
+
+        function openCreateState(fullDate, clickedBtn = null) {
+            updateCreatePageForDate(fullDate);
+            openPage('page-create', clickedBtn);
+            setThemeForCurrentDay();
+        }
+
+        function createTodayPlanForCurrentDate() {
+            const fullDate = currentRecentDate || formatDateParts(new Date()).full;
+            if (!dayActionStore[fullDate]) dayActionStore[fullDate] = [];
+            const hasStoredActions = dayActionStore[fullDate].some(item => item.text || item.outputs?.length || item.supportVals?.length);
+            if (!hasStoredActions) {
+                const seed = getSeedActionsForDate(fullDate);
+                if (seed.length > 0) {
+                    dayActionStore[fullDate] = seed.map(item => ({
+                        text: item.text || '',
+                        outputs: Array.isArray(item.outputs) ? [...item.outputs] : [],
+                        supportVals: Array.isArray(item.supportVals) ? [...item.supportVals] : [],
+                        done: false
+                    }));
+                }
+            }
+            openPage('page-dynamic-date', Array.from(document.querySelectorAll('.nav-btn-date')).find(btn => btn.getAttribute('data-fulldate') === fullDate) || null);
+            initDynamicDatePage();
+            setThemeForCurrentDay();
+            persistCurrentDayActions();
+        }
+
+        async function openDateRecord(fullDate, clickedBtn = null) {
+            persistCurrentDayActions();
+            currentRecentDate = fullDate;
+            document.getElementById('dynamic-date-title').innerText = fullDate;
+            getDayStatus(fullDate);
+            await ensureDayRecordExists(fullDate);
+            recomputeRecentDatesStore();
+            const matchedBtn = clickedBtn || Array.from(document.querySelectorAll('.nav-btn-date')).find(btn => btn.getAttribute('data-fulldate') === fullDate) || null;
+            if (hasMeaningfulTodayContent(fullDate)) {
+                openPage('page-dynamic-date', matchedBtn);
+                initDynamicDatePage();
+                setThemeForCurrentDay();
+            } else {
+                openCreateState(fullDate, matchedBtn || document.getElementById('go-today-btn'));
+            }
+        }
+
+        function renderRecentDaysList(dates = []) {
+            recentDatesStore = Array.from(dates);
+            const list = document.getElementById('recent-plans-list');
+            list.innerHTML = '';
+            dates.forEach((dateStr) => {
+                const label = getRecentDateLabel(dateStr);
+                const dayStatus = getDayStatus(dateStr);
+                const doneCheck = dayStatus.done ? '<span class="recent-day-done-check">✓</span>' : '';
+                const isActive = dateStr === currentRecentDate;
+                const btnHTML = `
+                    <button class="nav-btn-date recent-day-btn w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-itemHover text-[14px] transition-all group ${isActive ? 'bg-itemHover text-textPrimary' : 'text-textSecondary hover:text-textPrimary'}" data-fulldate="${dateStr}">
+                        <div class="w-6 h-6 rounded bg-[#2C2C2E] flex items-center justify-center shrink-0">
+                            <i data-lucide="file-text" class="w-3.5 h-3.5 text-textSecondary group-hover:text-accentOrange transition-colors"></i>
+                        </div>
+                        <span>${label}</span>
+                        ${doneCheck}
+                    </button>
+                `;
+                list.insertAdjacentHTML('beforeend', btnHTML);
+            });
+            safeLucide();
+            attachRecentDayEvents();
+        }
+
+        function setThemeForCurrentDay() {
+            const key = currentRecentDate || document.getElementById('dynamic-date-title')?.innerText?.trim() || formatDateParts(new Date()).full;
+            const status = getDayStatus(key);
+            document.body.classList.remove('theme-mint', 'theme-ocean');
+            if (status.rest) document.body.classList.add('theme-mint');
+            else if (status.done) document.body.classList.add('theme-ocean');
+            setRestDayToggleVisual(status.rest);
+            recomputeRecentDatesStore();
+        }
+
+        function evaluateCurrentDayCompletion() {
+            const key = currentRecentDate || document.getElementById('dynamic-date-title')?.innerText?.trim() || formatDateParts(new Date()).full;
+            const status = getDayStatus(key);
+            const readyBlocks = Array.from(document.querySelectorAll('#dynamic-actions-list .action-block')).filter(block => block.dataset.ready === 'true');
+            status.done = readyBlocks.length > 0 && readyBlocks.every(block => block.querySelector('.checkable-row')?.dataset.done === 'true');
+            setThemeForCurrentDay();
+            syncCurrentDayStateToDb().catch(console.error);
+        }
+
+        const todayDateParts = formatDateParts(new Date());
+        currentRecentDate = todayDateParts.full;
+        recomputeRecentDatesStore();
+        refreshSidebarProjects();
+
+        function attachRecentDayEvents() {
+            document.querySelectorAll('.nav-btn-date').forEach(btn => {
+                const newBtn = btn.cloneNode(true);
+                btn.parentNode.replaceChild(newBtn, btn);
+                newBtn.addEventListener('click', async () => {
+                    const fullDateStr = newBtn.getAttribute('data-fulldate');
+                    await openDateRecord(fullDateStr, newBtn);
+                });
+            });
+        }
+
+        // Toggle Rest Day Feature
+        document.getElementById('rest-day-checkbox').addEventListener('change', async (e) => {
+            const key = currentRecentDate || document.getElementById('dynamic-date-title')?.innerText?.trim();
+            const status = getDayStatus(key);
+            status.rest = e.target.checked;
+            setThemeForCurrentDay();
+            await syncCurrentDayStateToDb();
+        });
+
+        // Overview Expand/Collapse
+        const overviewToggle = document.getElementById('overview-toggle');
+        const overviewGridWrapper = document.getElementById('overview-grid-wrapper');
+        const overviewChevron = document.getElementById('overview-chevron');
+
+        overviewToggle.addEventListener('click', () => {
+            if (overviewGridWrapper.classList.contains('collapsed')) {
+                overviewGridWrapper.classList.remove('collapsed');
+                overviewChevron.style.transform = 'rotate(0deg)';
+            } else {
+                overviewGridWrapper.classList.add('collapsed');
+                overviewChevron.style.transform = 'rotate(180deg)';
+            }
+        });
+
+        // Lấy dữ liệu XUYÊN SUỐT các Projects (Dữ liệu thật mà User đã gõ)
+        function getProjectDataStructure() {
+            const projects = [];
+            document.querySelectorAll('.page-view').forEach(page => {
+                const includeProject = page.classList.contains('user-project-page') ? getProjectValidation(page).isValid : page.id === 'page-extra';
+                if(includeProject) {
+                    const id = page.id;
+                    const name = page.querySelector('.project-title')?.innerText.trim() || 'Untitled Project';
+                    const goals = [];
+                    page.querySelectorAll('.goal-list .checkable-row').forEach(row => {
+                        const input = row.querySelector('.item-input');
+                        if(input && input.value.trim()) goals.push({ id: `goal-${row.dataset.id}`, name: input.value.trim() });
+                    });
+                    const targets = [];
+                    page.querySelectorAll('.targets-container .checkable-row').forEach(row => {
+                        const input = row.querySelector('.item-input');
+                        if(input && input.value.trim()) targets.push({ id: `target-${row.dataset.id}`, name: input.value.trim(), supportGoal: row.querySelector('.support-dropdown')?.value });
+                    });
+                    projects.push({ id, name, goals, targets });
+                }
+            });
+            projects.sort((a, b) => {
+                const aExtra = a.id === 'page-extra' ? 1 : 0;
+                const bExtra = b.id === 'page-extra' ? 1 : 0;
+                return aExtra - bExtra;
+            });
+            return projects;
+        }
+
+        function renderOverviewGrid() {
+            const projects = getProjectDataStructure();
+            const grid = document.getElementById('overview-grid');
+            grid.innerHTML = '';
+
+            const half = Math.ceil(projects.length / 2);
+            const col1 = projects.slice(0, half);
+            const col2 = projects.slice(half);
+
+            const renderCol = (arr) => {
+                let colHtml = '<div class="space-y-3">';
+                arr.forEach(p => {
+                    colHtml += `
+                    <div class="project-stat-item group/stat flex items-center gap-3" data-proj-id="${p.id}">
+                        <span class="text-[13px] text-textSecondary group-hover/stat:text-white transition-colors truncate w-[110px] md:w-[130px] font-medium title-span" title="${p.name}">${p.name}</span>
+                        <div class="flex-1 bg-[#111111] border border-borderColor/50 h-2 rounded-full overflow-hidden">
+                            <div class="bg-accentOrange h-full w-0 transition-all duration-500 ease-out stat-bar rounded-full"></div>
+                        </div>
+                        <span class="text-[12px] text-white font-bold stat-count bg-[#2C2C2E] px-2 py-0.5 rounded-md shadow-sm shrink-0 min-w-[36px] text-center">0</span>
+                    </div>`;
+                });
+                colHtml += '</div>';
+                return colHtml;
+            };
+
+            grid.innerHTML = renderCol(col1) + renderCol(col2);
+            updateOverviewChart();
+        }
+
+        function updateOverviewChart() {
+            const counts = {};
+            let maxCount = 0;
+
+            document.querySelectorAll('#dynamic-actions-list .action-block').forEach(block => {
+                if (block.dataset.ready !== 'true') return;
+                block.querySelectorAll('.action-support-select').forEach(sel => {
+                    const val = sel.value;
+                    if (val) {
+                        const projId = val.split('|')[0];
+                        counts[projId] = (counts[projId] || 0) + 1;
+                        if (counts[projId] > maxCount) maxCount = counts[projId];
+                    }
+                });
+            });
+
+            const scaleMax = maxCount > 0 ? maxCount : 1;
+
+            document.querySelectorAll('.project-stat-item').forEach(item => {
+                const pid = item.dataset.projId;
+                const count = counts[pid] || 0;
+
+                item.querySelector('.stat-count').innerText = count;
+
+                const pct = (count / scaleMax) * 100;
+                item.querySelector('.stat-bar').style.width = pct + '%';
+
+                const titleSpan = item.querySelector('.title-span');
+                if(count > 0) {
+                    titleSpan.classList.add('text-white');
+                    titleSpan.classList.remove('text-textSecondary');
+                } else {
+                    titleSpan.classList.remove('text-white');
+                    titleSpan.classList.add('text-textSecondary');
+                }
+            });
+            refreshDynamicAddActionButtonState();
+        }
+
+        function getActionBlockValidation(block) {
+            const reasons = [];
+            const actionText = block.querySelector('.action-input')?.value.trim() || '';
+            const outputs = Array.from(block.querySelectorAll('.output-input')).map(input => input.value.trim()).filter(Boolean);
+            const supportValues = Array.from(block.querySelectorAll('.action-support-select')).map(select => select.value).filter(Boolean);
+
+            if (!actionText) reasons.push('Add action description.');
+            if (outputs.length === 0) reasons.push('Add at least 1 output.');
+            if (supportValues.length === 0) reasons.push('Choose at least 1 Support for.');
+
+            return {
+                isReady: reasons.length === 0,
+                reasons,
+                outputs,
+                supportValues
+            };
+        }
+
+        function renderActionBlockStatus(block) {
+            const statusSlot = block.querySelector('.action-status-slot');
+            const row = block.querySelector('.checkable-row');
+            const validation = getActionBlockValidation(block);
+            block.dataset.ready = validation.isReady ? 'true' : 'false';
+
+            if (!validation.isReady && row.dataset.done === 'true') {
+                row.dataset.done = 'false';
+                const input = row.querySelector('.action-input');
+                if (input) {
+                    input.classList.remove('item-completed');
+                    input.classList.add('text-white');
+                }
+                const dateBadge = row.querySelector('.date-badge-container');
+                if (dateBadge) dateBadge.innerHTML = '';
+            }
+
+            block.classList.toggle('is-pending', !validation.isReady);
+
+            if (validation.isReady) {
+                statusSlot.innerHTML = row.dataset.done === 'true'
+                    ? `<button class="toggle-done-btn shrink-0 outline-none text-textSecondary hover:text-accentOrange transition-colors"><i data-lucide="check-circle-2" class="w-4 h-4 text-accentOrange fill-accentOrange/20"></i></button>`
+                    : `<button class="toggle-done-btn shrink-0 outline-none text-textSecondary hover:text-accentOrange transition-colors"><i data-lucide="circle" class="w-4 h-4"></i></button>`;
+            } else {
+                statusSlot.innerHTML = `<span class="action-status-wrap"><span class="action-pending-badge">Pending</span><button class="pending-help-btn" type="button" aria-label="Why pending?">?</button></span>`;
+            }
+            safeLucide();
+        }
+
+
+        function serializeActionBlock(block) {
+            return {
+                text: block.querySelector('.action-input')?.value?.trim() || '',
+                outputs: Array.from(block.querySelectorAll('.output-input')).map(input => input.value.trim()).filter(Boolean),
+                supportVals: Array.from(block.querySelectorAll('.action-support-select')).map(select => select.value).filter(Boolean),
+                done: block.querySelector('.checkable-row')?.dataset.done === 'true'
+            };
+        }
+
+        function persistCurrentDayActions() {
+            const key = currentRecentDate || document.getElementById('dynamic-date-title')?.innerText?.trim();
+            if (!key) return;
+            const blocks = Array.from(document.querySelectorAll('#dynamic-actions-list .action-block'));
+            dayActionStore[key] = blocks.map(serializeActionBlock).filter(item => item.text || item.outputs.length || item.supportVals.length);
+            recomputeRecentDatesStore();
+        }
+
+        function htmlToElement(htmlString) {
+            const template = document.createElement('template');
+            template.innerHTML = htmlString.trim();
+            return template.content.firstElementChild;
+        }
+
+        function buildWorkspaceSnapshot() {
+            persistCurrentDayActions();
+            return {
+                version: 1,
+                exportedAt: new Date().toISOString(),
+                userProjects: getUserProjectPages().map(page => page.outerHTML),
+                extraPageHtml: document.getElementById('page-extra')?.outerHTML || '',
+                recentDatesStore: [...recentDatesStore],
+                currentRecentDate,
+                dayStateStore: JSON.parse(JSON.stringify(dayStateStore)),
+                dayActionStore: JSON.parse(JSON.stringify(dayActionStore)),
+                activePageId: Array.from(getPageViews()).find(page => !page.classList.contains('hidden') && page.style.display !== 'none')?.id || 'page-dynamic-date'
+            };
+        }
+
+        function restoreWorkspaceSnapshot(snapshot) {
+            if (!snapshot || typeof snapshot !== 'object') return;
+            getUserProjectPages().forEach(page => page.remove());
+            const extraPageCurrent = document.getElementById('page-extra');
+            if (snapshot.extraPageHtml && extraPageCurrent) {
+                extraPageCurrent.replaceWith(htmlToElement(snapshot.extraPageHtml));
+            }
+            const extraPage = document.getElementById('page-extra');
+            const parent = document.getElementById('main-scroll-area');
+            (snapshot.userProjects || []).forEach(htmlString => {
+                const pageEl = htmlToElement(htmlString);
+                pageEl.classList.add('user-project-page');
+                pageEl.classList.remove('template-project');
+                parent.insertBefore(pageEl, extraPage);
+            });
+
+            Object.keys(dayStateStore).forEach(key => delete dayStateStore[key]);
+            Object.assign(dayStateStore, snapshot.dayStateStore || {});
+            Object.keys(dayActionStore).forEach(key => delete dayActionStore[key]);
+            Object.assign(dayActionStore, snapshot.dayActionStore || {});
+            recentDatesStore = Array.isArray(snapshot.recentDatesStore) && snapshot.recentDatesStore.length ? snapshot.recentDatesStore : [formatDateParts(new Date()).full];
+            currentRecentDate = snapshot.currentRecentDate || formatDateParts(new Date()).full;
+            document.getElementById('dynamic-date-title').innerText = currentRecentDate;
+
+            getUserProjectPages().forEach(page => refreshProjectState(page));
+            refreshSidebarProjects();
+            recomputeRecentDatesStore();
+            openPage(snapshot.activePageId || 'page-dynamic-date');
+            initDynamicDatePage();
+            setThemeForCurrentDay();
+            if (currentAuthUser) {
+                ensureDayRecordExists(currentRecentDate).catch(console.error);
+            }
+            safeLucide();
+        }
+
+        function refreshDynamicAddActionButtonState() {
+            const btn = document.getElementById('add-dynamic-action-btn');
+            const container = document.getElementById('dynamic-actions-list');
+            if (!btn || !container) return;
+            const blocks = Array.from(container.querySelectorAll('.action-block'));
+            const canAdd = blocks.every(block => getActionBlockValidation(block).isReady);
+            btn.disabled = !canAdd;
+            btn.classList.toggle('opacity-50', !canAdd);
+            btn.classList.toggle('cursor-not-allowed', !canAdd);
+        }
+
+        function updateDynamicActionStates() {
+            document.querySelectorAll('#dynamic-actions-list .action-block').forEach(renderActionBlockStatus);
+            updateOverviewChart();
+            evaluateCurrentDayCompletion();
+            persistCurrentDayActions();
+        }
+
+        function initDynamicDatePage() {
+            const actionsContainer = document.getElementById('dynamic-actions-list');
+            actionsContainer.innerHTML = '';
+            renderOverviewGrid();
+            addActionBlock(actionsContainer); // Mặc định có 1 block trống
+        }
+
+        // Tạo chuỗi HTML cho Dropdown "Support for..." dựa vào data thật
+        function buildActionSupportOptions() {
+            const projects = getProjectDataStructure();
+            let html = '<option value="">Support for...</option>';
+            projects.forEach(p => {
+                html += `<optgroup label="📦 ${p.name}">`;
+                html += `<option value="${p.id}">👉 Project: ${p.name}</option>`;
+                p.goals.forEach(g => {
+                    html += `<option value="${p.id}|${g.id}">&nbsp;&nbsp;🎯 Goal: ${g.name}</option>`;
+                    // Lọc Targets liên quan tới Goal này
+                    const relatedTargets = p.targets.filter(t => t.supportGoal === g.id);
+                    relatedTargets.forEach(t => {
+                        html += `<option value="${p.id}|${t.id}">&nbsp;&nbsp;&nbsp;&nbsp;↳ Target: ${t.name}</option>`;
+                    });
+                });
+                // Lọc Các targets chưa được gắn với goal nào
+                const orphanTargets = p.targets.filter(t => !t.supportGoal);
+                orphanTargets.forEach(t => {
+                    html += `<option value="${p.id}|${t.id}">&nbsp;&nbsp;↳ Target: ${t.name}</option>`;
+                });
+                html += `</optgroup>`;
+            });
+            return html;
+        }
+
+        // Hàm Tự động lấy các Daily Actions từ các dự án đang có
+        function getDailyActionsFromProjects() {
+            const actions = [];
+            document.querySelectorAll('.page-view').forEach(page => {
+                const includeProject = page.classList.contains('user-project-page') ? getProjectValidation(page).isValid : page.id === 'page-extra';
+                if(includeProject) {
+                    const projId = page.id;
+                    page.querySelectorAll('.actions-list .checkable-row').forEach(row => {
+                        const input = row.querySelector('.item-input');
+                        if(input && input.value.trim()) {
+                            const treeSelect = row.querySelector('.tree-dropdown');
+                            let supportVal = "";
+                            if (treeSelect && treeSelect.value) {
+                                supportVal = `${projId}|${treeSelect.value}`;
+                            }
+                            actions.push({
+                                text: input.value.trim(),
+                                supportVals: supportVal ? [supportVal] : []
+                            });
+                        }
+                    });
+                }
+            });
+            return actions;
+        }
+
+        function initDynamicDatePage() {
+            const actionsContainer = document.getElementById('dynamic-actions-list');
+            actionsContainer.innerHTML = '';
+            renderOverviewGrid();
+
+            const storedActions = Array.isArray(dayActionStore[currentRecentDate]) ? dayActionStore[currentRecentDate] : [];
+            if (storedActions.length > 0) {
+                storedActions.forEach(act => addActionBlock(actionsContainer, act));
+            } else {
+                const existingActions = getDailyActionsFromProjects();
+                if (existingActions.length > 0) {
+                    existingActions.forEach(act => addActionBlock(actionsContainer, act));
+                } else {
+                    addActionBlock(actionsContainer);
+                }
+            }
+            updateDynamicActionStates();
+            setThemeForCurrentDay();
+        }
+
+        // Tạo chuỗi HTML cho Dropdown "Support for..." dựa vào data thật
+        function buildActionSupportOptions() {
+            const projects = getProjectDataStructure();
+            let html = '<option value="">Support for...</option>';
+            projects.forEach(p => {
+                html += `<optgroup label="📦 ${p.name}">`;
+                html += `<option value="${p.id}">👉 Project: ${p.name}</option>`;
+                p.goals.forEach(g => {
+                    html += `<option value="${p.id}|${g.id}">&nbsp;&nbsp;🎯 Goal: ${g.name}</option>`;
+                    // Lọc Targets liên quan tới Goal này
+                    const relatedTargets = p.targets.filter(t => t.supportGoal === g.id);
+                    relatedTargets.forEach(t => {
+                        html += `<option value="${p.id}|${t.id}">&nbsp;&nbsp;&nbsp;&nbsp;↳ Target: ${t.name}</option>`;
+                    });
+                });
+                // Lọc Các targets chưa được gắn với goal nào
+                const orphanTargets = p.targets.filter(t => !t.supportGoal);
+                orphanTargets.forEach(t => {
+                    html += `<option value="${p.id}|${t.id}">&nbsp;&nbsp;↳ Target: ${t.name}</option>`;
+                });
+                html += `</optgroup>`;
+            });
+            return html;
+        }
+
+        function addActionBlock(container, initialData = null) {
+            if (!initialData) {
+                const blocks = Array.from(container.querySelectorAll('.action-block'));
+                const invalidBlock = blocks.find(block => !getActionBlockValidation(block).isReady);
+                if (invalidBlock) {
+                    invalidBlock.classList.add('border-amber-500');
+                    setTimeout(() => invalidBlock.classList.remove('border-amber-500'), 800);
+                    const focusTarget = invalidBlock.querySelector('.action-input') || invalidBlock.querySelector('.output-input') || invalidBlock.querySelector('.action-support-select');
+                    if (focusTarget) focusTarget.focus();
+                    updateDynamicActionStates();
+                    return;
+                }
+            }
+
+            const optionsHtml = buildActionSupportOptions();
+
+            const block = document.createElement('div');
+            block.className = 'action-block bg-[#111111] border border-borderColor rounded-xl p-4 flex flex-col gap-3 group relative transition-all shadow-sm';
+            block.innerHTML = `
+                <div class="checkable-row flex items-center gap-3 border-b border-borderColor/50 pb-3" data-done="false">
+                    <div class="action-status-slot shrink-0"></div>
+                    <input type="text" placeholder="Action description..." class="bg-transparent border-none outline-none text-[15px] font-semibold text-white w-full action-input item-input transition-colors">
+                    <div class="date-badge-container flex items-center shrink-0"></div>
+                    <button class="delete-action-btn text-textSecondary hover:text-red-500 transition-colors p-1.5 rounded-md hover:bg-red-500/10 shrink-0" title="Delete action"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>
+                
+                <div class="pl-7 space-y-2 outputs-container">
+                    <div class="output-row group/output">
+                        <span class="output-cue" aria-hidden="true">
+                            <i data-lucide="corner-down-right" class="w-3.5 h-3.5"></i>
+                        </span>
+                        <input type="text" placeholder="Output expected (Enter to add more)..." class="bg-transparent border-none outline-none text-[13px] text-textSecondary w-full output-input transition-colors focus:text-white">
+                        <button class="delete-output-btn output-delete-btn" title="Delete output">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="pl-7 mt-3 flex items-start justify-between gap-4">
+                    <div class="flex flex-wrap gap-2 items-center w-full support-selects-wrapper">
+                        <div class="flex items-center gap-1 support-select-item">
+                            <select class="action-support-select bg-[#2C2C2E] text-[12px] text-textSecondary px-2.5 py-1.5 rounded-lg border border-transparent outline-none cursor-pointer focus:border-accentOrange hover:bg-[#3C3C3E] transition-colors w-auto max-w-[200px] truncate">
+                                ${optionsHtml}
+                            </select>
+                        </div>
+                        <button class="add-support-btn text-textSecondary hover:text-white bg-[#2C2C2E] hover:bg-[#3C3C3E] p-1.5 rounded-lg transition-colors flex items-center justify-center shadow-sm" title="Add another support link">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(block);
+            safeLucide();
+
+            if (initialData) {
+                block.querySelector('.action-input').value = initialData.text || '';
+                if (Array.isArray(initialData.outputs) && initialData.outputs.length > 0) {
+                    const outputsContainer = block.querySelector('.outputs-container');
+                    const firstInput = outputsContainer.querySelector('.output-input');
+                    firstInput.value = initialData.outputs[0] || '';
+                    initialData.outputs.slice(1).forEach(val => {
+                        const newOutput = document.createElement('div');
+                        newOutput.className = 'output-row group/output';
+                        newOutput.innerHTML = `
+                            <span class="output-cue" aria-hidden="true">
+                                <i data-lucide="corner-down-right" class="w-3.5 h-3.5"></i>
+                            </span>
+                            <input type="text" placeholder="Output expected..." class="bg-transparent border-none outline-none text-[13px] text-textSecondary w-full output-input transition-colors focus:text-white">
+                            <button class="delete-output-btn output-delete-btn" title="Delete output">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>`;
+                        outputsContainer.appendChild(newOutput);
+                        newOutput.querySelector('.output-input').value = val || '';
+                    });
+                }
+                if (Array.isArray(initialData.supportVals) && initialData.supportVals.length > 0) {
+                    block.querySelector('.action-support-select').value = initialData.supportVals[0] || '';
+                }
+                if (Array.isArray(initialData.supportVals) && initialData.supportVals.length > 1) {
+                    initialData.supportVals.slice(1).forEach(val => {
+                        addSupportBtn.click();
+                        const selects = wrapper.querySelectorAll('.action-support-select');
+                        const lastSelect = selects[selects.length - 1];
+                        if (lastSelect) {
+                            lastSelect.value = val || '';
+                            lastSelect.dataset.prevValue = val || '';
+                        }
+                    });
+                }
+                const row = block.querySelector('.checkable-row');
+                if (initialData.done) {
+                    row.dataset.done = 'true';
+                    const input = row.querySelector('.action-input');
+                    if (input) {
+                        input.classList.add('item-completed');
+                        input.classList.remove('text-white');
+                    }
+                }
+            }
+
+            const wrapper = block.querySelector('.support-selects-wrapper');
+            const addSupportBtn = block.querySelector('.add-support-btn');
+
+            function updateLocalDropdowns() {
+                const selects = Array.from(wrapper.querySelectorAll('.action-support-select'));
+                const selectedValues = selects.map(s => s.value).filter(v => v !== '');
+
+                selects.forEach(select => {
+                    Array.from(select.options).forEach(opt => {
+                        if (opt.value === '') return;
+                        opt.disabled = selectedValues.includes(opt.value) && select.value !== opt.value;
+                    });
+                });
+                updateDynamicActionStates();
+            }
+
+            const primarySelect = block.querySelector('.action-support-select');
+            primarySelect.dataset.prevValue = primarySelect.value || '';
+            primarySelect.addEventListener('change', updateLocalDropdowns);
+
+            addSupportBtn.addEventListener('click', () => {
+                const wrapperDiv = document.createElement('div');
+                wrapperDiv.className = 'flex items-center gap-1 support-select-item';
+
+                const newSelect = document.createElement('select');
+                newSelect.className = 'action-support-select bg-[#2C2C2E] text-[12px] text-textSecondary px-2.5 py-1.5 rounded-lg border border-transparent outline-none cursor-pointer focus:border-accentOrange hover:bg-[#3C3C3E] transition-colors w-auto max-w-[200px] truncate';
+                newSelect.innerHTML = buildActionSupportOptions();
+
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'text-textSecondary hover:text-red-500 p-1 rounded-md transition-colors';
+                removeBtn.innerHTML = '<i data-lucide="x" class="w-3.5 h-3.5"></i>';
+
+                const selectedValues = Array.from(wrapper.querySelectorAll('.action-support-select')).map(s => s.value).filter(v => v !== '');
+                Array.from(newSelect.options).forEach(opt => {
+                    if (selectedValues.includes(opt.value)) opt.disabled = true;
+                });
+
+                wrapperDiv.appendChild(newSelect);
+                wrapperDiv.appendChild(removeBtn);
+                wrapper.insertBefore(wrapperDiv, addSupportBtn);
+                safeLucide();
+
+                newSelect.dataset.prevValue = '';
+                newSelect.addEventListener('change', updateLocalDropdowns);
+                removeBtn.addEventListener('click', () => {
+                    wrapperDiv.remove();
+                    updateLocalDropdowns();
+                });
+                updateLocalDropdowns();
+            });
+
+            block.querySelector('.delete-action-btn').addEventListener('click', () => {
+                block.remove();
+                updateDynamicActionStates();
+            });
+
+            if(!initialData) {
+                block.querySelector('.action-input').focus();
+            }
+            renderActionBlockStatus(block);
+            updateDynamicActionStates();
+        }
+
+        // REFRESH Dropdown mỗi khi người dùng click vào để luôn có Data mới nhất từ Project
+        document.getElementById('main-scroll-area').addEventListener('focusin', (e) => {
+            if(e.target.classList.contains('action-support-select')) {
+                const currentVal = e.target.value;
+                e.target.dataset.prevValue = currentVal || '';
+                e.target.innerHTML = buildActionSupportOptions();
+                e.target.value = currentVal;
+                const wrapper = e.target.closest('.support-selects-wrapper');
+                if (wrapper) {
+                    const selects = Array.from(wrapper.querySelectorAll('.action-support-select'));
+                    const selectedValues = selects.map(s => s.value).filter(Boolean);
+                    selects.forEach(select => {
+                        Array.from(select.options).forEach(opt => {
+                            if (!opt.value) return;
+                            opt.disabled = selectedValues.includes(opt.value) && select.value !== opt.value;
+                        });
+                    });
+                }
+            }
+        });
+
+        document.getElementById('main-scroll-area').addEventListener('change', (e) => {
+            if (e.target.classList.contains('action-support-select')) {
+                const select = e.target;
+                const wrapper = select.closest('.support-selects-wrapper');
+                if (wrapper) {
+                    const prevValue = select.dataset.prevValue || '';
+                    const duplicateExists = Array.from(wrapper.querySelectorAll('.action-support-select')).some(s => s !== select && s.value && s.value === select.value);
+                    if (select.value && duplicateExists) {
+                        select.value = prevValue;
+                    }
+                    const selects = Array.from(wrapper.querySelectorAll('.action-support-select'));
+                    const selectedValues = selects.map(s => s.value).filter(Boolean);
+                    selects.forEach(item => {
+                        Array.from(item.options).forEach(opt => {
+                            if (!opt.value) return;
+                            opt.disabled = selectedValues.includes(opt.value) && item.value !== opt.value;
+                        });
+                    });
+                    select.dataset.prevValue = select.value || '';
+                    updateDynamicActionStates();
+                }
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            const helpBtn = e.target.closest('.draft-help-btn');
+            if (helpBtn && (e.key === 'Enter' || e.key === ' ')) {
+                e.preventDefault();
+                helpBtn.click();
+            }
+        });
+
+        document.getElementById('create-today-plan-btn')?.addEventListener('click', () => {
+            createTodayPlanForCurrentDate();
+        });
+
+        // Nút `+ action` ở Recent Days
+        document.getElementById('add-dynamic-action-btn').addEventListener('click', () => {
+            const container = document.getElementById('dynamic-actions-list');
+            addActionBlock(container);
+        });
+
+        // Global Keydown: Enter sinh thêm dòng Output ở Recent Days
+        document.getElementById('main-scroll-area').addEventListener('keydown', (e) => {
+            if (e.target.classList.contains('output-input') && e.key === 'Enter') {
+                e.preventDefault();
+                const container = e.target.closest('.outputs-container');
+                const newOutput = document.createElement('div');
+                newOutput.className = 'output-row group/output';
+                newOutput.innerHTML = `
+                    <span class="output-cue" aria-hidden="true">
+                        <i data-lucide="corner-down-right" class="w-3.5 h-3.5"></i>
+                    </span>
+                    <input type="text" placeholder="Output expected..." class="bg-transparent border-none outline-none text-[13px] text-textSecondary w-full output-input transition-colors focus:text-white">
+                    <button class="delete-output-btn output-delete-btn" title="Delete output">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                `;
+                e.target.parentElement.insertAdjacentElement('afterend', newOutput);
+                safeLucide();
+                updateDynamicActionStates();
+                newOutput.querySelector('input').focus();
+            }
+        });
+
+        document.getElementById('main-scroll-area').addEventListener('input', (e) => {
+            if (e.target.closest('#dynamic-actions-list') && (e.target.classList.contains('action-input') || e.target.classList.contains('output-input'))) {
+                updateDynamicActionStates();
+            }
+        });
+
+        // ================= Supabase Auth + Cloud Snapshot =================
+        async function refreshAuthUI() {
+            const signedOut = document.getElementById('auth-signed-out');
+            const signedIn = document.getElementById('auth-signed-in');
+            const label = document.getElementById('auth-state-label');
+            const emailEl = document.getElementById('auth-user-email');
+            const cloudStatus = document.getElementById('cloud-status-text');
+
+            if (!supabaseClient) {
+                if (label) label.textContent = 'Supabase client failed to load';
+                if (cloudStatus) cloudStatus.textContent = 'Supabase client failed to load';
+                return;
+            }
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            currentAuthUser = user || null;
+            if (signedOut) signedOut.classList.toggle('hidden', !!currentAuthUser);
+            if (signedIn) signedIn.classList.toggle('hidden', !currentAuthUser);
+            if (label) label.textContent = currentAuthUser ? 'Signed in · cloud available' : 'Signed out · local only';
+            if (emailEl) emailEl.textContent = currentAuthUser?.email || '-';
+            if (cloudStatus) cloudStatus.textContent = currentAuthUser ? 'Connected. You can save/load snapshot from cloud.' : 'Local mode only. Sign in to use cloud save/load.';
+            if (currentAuthUser) {
+                await fetchRecentDatesFromDb();
+                await ensureDayRecordExists(currentRecentDate || formatDateParts(new Date()).full);
+            } else {
+                recentDatesDbStore = [];
+                currentDayRecordId = null;
+            }
+            recomputeRecentDatesStore();
+            updateSidebarProfileCard();
+        }
+
+        async function signUpWithEmail() {
+            if (!supabaseClient) return;
+            const email = document.getElementById('auth-email-input')?.value.trim();
+            const password = document.getElementById('auth-password-input')?.value || '';
+            if (!email || !password) {
+                showStatusInfo('Missing info', ['Please enter both email and password.']);
+                return;
+            }
+            const { error } = await supabaseClient.auth.signUp({ email, password });
+            if (error) {
+                showStatusInfo('Sign up failed', [error.message]);
+                return;
+            }
+            showStatusInfo('Sign up success', ['Your account has been created.', 'If email confirmation is enabled in Supabase, confirm your email before signing in.']);
+            refreshAuthUI();
+        }
+
+        async function signInWithEmail() {
+            if (!supabaseClient) return;
+            const email = document.getElementById('auth-email-input')?.value.trim();
+            const password = document.getElementById('auth-password-input')?.value || '';
+            if (!email || !password) {
+                showStatusInfo('Missing info', ['Please enter both email and password.']);
+                return;
+            }
+            const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) {
+                showStatusInfo('Sign in failed', [error.message]);
+                return;
+            }
+            await refreshAuthUI();
+            showStatusInfo('Signed in', ['Cloud save/load is now available.']);
+        }
+
+        async function signOutUser() {
+            if (!supabaseClient) return;
+            const { error } = await supabaseClient.auth.signOut();
+            if (error) {
+                showStatusInfo('Sign out failed', [error.message]);
+                return;
+            }
+            await refreshAuthUI();
+        }
+
+        function downloadJsonFile(filename, data) {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        }
+
+        function exportCurrentBackup() {
+            const snapshot = buildWorkspaceSnapshot();
+            const stamp = new Date().toISOString().slice(0,19).replace(/[T:]/g, '-');
+            downloadJsonFile(`liemplanner-backup-${stamp}.json`, snapshot);
+            backupExportConfirmedThisSession = true;
+            showStatusInfo('Backup exported', ['A JSON backup was downloaded.', 'You can now import another backup if needed.']);
+        }
+
+        async function saveSnapshotToCloud() {
+            if (!supabaseClient || !currentAuthUser) {
+                showStatusInfo('Sign in required', ['Please sign in before saving to cloud.']);
+                return;
+            }
+            const snapshot = buildWorkspaceSnapshot();
+            const { error } = await supabaseClient.from('workspace_snapshots').upsert({
+                user_id: currentAuthUser.id,
+                snapshot_json: snapshot,
+                updated_at: new Date().toISOString()
+            });
+            if (error) {
+                showStatusInfo('Cloud save failed', [error.message]);
+                return;
+            }
+            document.getElementById('cloud-status-text').textContent = 'Cloud snapshot saved successfully.';
+            showStatusInfo('Saved to cloud', ['Your current workspace snapshot has been saved to Supabase.']);
+        }
+
+        async function loadSnapshotFromCloud() {
+            if (!supabaseClient || !currentAuthUser) {
+                showStatusInfo('Sign in required', ['Please sign in before loading from cloud.']);
+                return;
+            }
+            if (!confirm('Load from cloud will replace the current local workspace in this browser. Continue?')) return;
+            const { data, error } = await supabaseClient.from('workspace_snapshots').select('snapshot_json').eq('user_id', currentAuthUser.id).maybeSingle();
+            if (error) {
+                showStatusInfo('Cloud load failed', [error.message]);
+                return;
+            }
+            if (!data?.snapshot_json) {
+                showStatusInfo('No cloud snapshot', ['No saved snapshot was found for this account yet.']);
+                return;
+            }
+            restoreWorkspaceSnapshot(data.snapshot_json);
+            showStatusInfo('Loaded from cloud', ['Cloud snapshot restored into the current workspace.']);
+        }
+
+        async function importBackupFile(file) {
+            if (!file) return;
+            if (!backupExportConfirmedThisSession) {
+                showStatusInfo('Export backup first', ['Before importing, export a backup of your current data first.', 'This protects you if you need to roll back.']);
+                return;
+            }
+            if (!confirm('Import will overwrite the current local workspace. If you are signed in, it will also overwrite your cloud snapshot after import. Continue?')) return;
+            const text = await file.text();
+            let parsed = null;
+            try {
+                parsed = JSON.parse(text);
+            } catch (err) {
+                showStatusInfo('Invalid backup file', ['The selected file is not valid JSON.']);
+                return;
+            }
+            restoreWorkspaceSnapshot(parsed);
+            if (currentAuthUser) {
+                await saveSnapshotToCloud();
+            }
+            showStatusInfo('Import complete', ['The backup was restored into the workspace.', currentAuthUser ? 'Cloud snapshot was overwritten too.' : 'You are currently in local mode.']);
+        }
+
+        document.getElementById('sign-up-btn')?.addEventListener('click', signUpWithEmail);
+        document.getElementById('sign-in-btn')?.addEventListener('click', signInWithEmail);
+        document.getElementById('sign-out-btn')?.addEventListener('click', signOutUser);
+        document.getElementById('cloud-save-btn')?.addEventListener('click', saveSnapshotToCloud);
+        document.getElementById('cloud-load-btn')?.addEventListener('click', loadSnapshotFromCloud);
+        document.getElementById('export-backup-btn')?.addEventListener('click', exportCurrentBackup);
+        document.getElementById('import-backup-btn')?.addEventListener('click', () => document.getElementById('import-backup-file')?.click());
+        document.getElementById('import-backup-file')?.addEventListener('change', async (e) => {
+            const file = e.target.files?.[0];
+            await importBackupFile(file);
+            e.target.value = '';
+        });
+
+        if (supabaseClient) {
+            supabaseClient.auth.onAuthStateChange(async () => { await refreshAuthUI(); });
+        }
+
+        (async () => {
+            try {
+                // Never start with a blank workspace on load.
+                updateCreatePageForDate(todayDateParts.full);
+                openPage('page-create', document.getElementById('go-today-btn'));
+                document.getElementById('dynamic-date-title').innerText = todayDateParts.full;
+                currentRecentDate = todayDateParts.full;
+                await refreshAuthUI();
+                await openDateRecord(todayDateParts.full, document.getElementById('go-today-btn'));
+            } catch (err) {
+                console.error('Startup init failed', err);
+                currentRecentDate = todayDateParts.full;
+                updateCreatePageForDate(todayDateParts.full);
+                openPage('page-create', document.getElementById('go-today-btn'));
+            }
+        })();
+        
+    </script>
+</body>
+</html>
