@@ -1231,7 +1231,38 @@
             }
         }
 
-        function getUserProjectPages() {
+        
+        function ensureTopVisible() {
+            try {
+                const scroller = document.getElementById('main-scroll-area');
+                if (scroller) scroller.scrollTop = 0;
+                window.scrollTo({ top: 0, behavior: 'auto' });
+                document.documentElement.scrollTop = 0;
+                document.body.scrollTop = 0;
+                if (document.activeElement && typeof document.activeElement.blur === 'function') {
+                    document.activeElement.blur();
+                }
+            } catch (err) {
+                console.warn('ensureTopVisible failed', err);
+            }
+        }
+
+        function openTodayAfterAuth() {
+            try {
+                if (typeof goToToday === 'function') {
+                    goToToday();
+                } else if (typeof openPage === 'function') {
+                    openPage('page-today-plan');
+                }
+            } catch (err) {
+                console.warn('openTodayAfterAuth failed', err);
+                try { openPage('page-today-plan'); } catch (_) {}
+            }
+            requestAnimationFrame(() => ensureTopVisible());
+            setTimeout(() => ensureTopVisible(), 120);
+        }
+
+function getUserProjectPages() {
             return Array.from(document.querySelectorAll('.user-project-page'));
         }
 
@@ -3068,6 +3099,8 @@
                 return;
             }
             await refreshAuthUI();
+            document.body.classList.remove('sidebar-open');
+            openTodayAfterAuth();
             showStatusInfo('Signed in', ['Cloud save/load is now available.']);
         }
 
