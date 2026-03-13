@@ -4668,17 +4668,17 @@ function getUserProjectPages() {
             const projects = getProjectDataStructure();
             let html = '<option value="">Support for...</option>';
             projects.forEach(p => {
-                html += `<option value="${p.id}">${p.name}</option>`;
+                html += `<option value="${p.id}">◆ ${p.name}</option>`;
                 p.goals.forEach(g => {
                     html += `<option value="${p.id}|${g.id}">↳ ${g.name}</option>`;
                     const relatedTargets = p.targets.filter(t => t.supportGoal === g.id);
                     relatedTargets.forEach(t => {
-                        html += `<option value="${p.id}|${t.id}">    ↳ ${t.name}</option>`;
+                        html += `<option value="${p.id}|${t.id}">  ↳ ${t.name}</option>`;
                     });
                 });
                 const orphanTargets = p.targets.filter(t => !t.supportGoal);
                 orphanTargets.forEach(t => {
-                    html += `<option value="${p.id}|${t.id}">    ↳ ${t.name}</option>`;
+                    html += `<option value="${p.id}|${t.id}">  ↳ ${t.name}</option>`;
                 });
             });
             actionSupportOptionsCache = html;
@@ -4737,17 +4737,17 @@ function getUserProjectPages() {
             const projects = getProjectDataStructure();
             let html = '<option value="">Support for...</option>';
             projects.forEach(p => {
-                html += `<option value="${p.id}">${p.name}</option>`;
+                html += `<option value="${p.id}">◆ ${p.name}</option>`;
                 p.goals.forEach(g => {
                     html += `<option value="${p.id}|${g.id}">↳ ${g.name}</option>`;
                     const relatedTargets = p.targets.filter(t => t.supportGoal === g.id);
                     relatedTargets.forEach(t => {
-                        html += `<option value="${p.id}|${t.id}">    ↳ ${t.name}</option>`;
+                        html += `<option value="${p.id}|${t.id}">  ↳ ${t.name}</option>`;
                     });
                 });
                 const orphanTargets = p.targets.filter(t => !t.supportGoal);
                 orphanTargets.forEach(t => {
-                    html += `<option value="${p.id}|${t.id}">    ↳ ${t.name}</option>`;
+                    html += `<option value="${p.id}|${t.id}">  ↳ ${t.name}</option>`;
                 });
             });
             return html;
