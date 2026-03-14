@@ -1,0 +1,2773 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Liem's Idea Pad" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <title>Liem's Idea Pad</title>
+    <!-- Import Google Fonts (Alternative to Spotify's Circular) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Montserrat:wght@500;700;800&display=swap" rel="stylesheet">
+    <!-- Import SortableJS for Drag and Drop functionality -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            /* Spotify Premium Theme Palette */
+            --bg-color: #121212;
+            --card-bg: #242424;
+            --card-hover: #2a2a2a;
+            --text-main: #ffffff;
+            --text-sub: #b3b3b3;
+            --accent: #ffc8d2; /* Soft Pink from your image */
+            --divider: #3e3e3e;
+            --black-text: #000000;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body, input, button, select, textarea, [contenteditable="true"] {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, sans-serif; /* Font nội dung */
+        }
+
+        h1, h2, h3, .font-heading {
+            font-family: 'Montserrat', sans-serif; /* Font tiêu đề giống Spotify */
+            letter-spacing: -0.5px;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        #app-container {
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+            min-height: 100vh;
+            background-color: var(--bg-color);
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- GLOBAL HEADER --- */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 20px 0 20px;
+            margin-bottom: 24px;
+            flex-shrink: 0;
+        }
+
+        /* --- SCREEN 1: MAIN --- */
+        #main-screen {
+            padding: 0 20px 80px 20px;
+            flex: 1;
+        }
+
+        .app-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 22px;
+            color: var(--text-main);
+        }
+
+        .app-logo b {
+            font-weight: 800;
+            color: var(--accent); /* Điểm nhấn hồng cho chữ Idea Pad */
+        }
+
+        .app-logo span {
+            font-weight: 500;
+        }
+
+        .auth-btn-header {
+            background: transparent;
+            border: 1px solid var(--text-sub);
+            color: var(--text-main);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .auth-btn-header:hover {
+            border-color: var(--text-main);
+            transform: scale(1.02);
+        }
+
+        .toolbar-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .search-bar {
+            background-color: var(--card-bg);
+            border-radius: 4px; /* Bo góc vuông nhẹ, giống ô tìm kiếm Spotify */
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            color: var(--text-sub);
+            flex: 1; 
+            border: 1px solid transparent;
+            transition: background-color 0.2s;
+        }
+        
+        .search-bar:focus-within {
+            background-color: #2a2a2a;
+            border-color: #444;
+        }
+
+        .search-bar input {
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            width: 100%;
+            margin-left: 12px;
+            font-size: 15px;
+            font-weight: 500;
+            outline: none;
+        }
+        
+        .search-bar input::placeholder {
+            color: var(--text-sub);
+        }
+
+        .header-icon-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background-color: transparent;
+            color: var(--text-sub);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+
+        .header-icon-btn:hover {
+            color: var(--text-main);
+            background-color: var(--card-bg);
+        }
+        
+        .header-icon-btn.primary-btn {
+            color: var(--accent);
+        }
+        
+        .header-icon-btn.primary-btn:hover {
+            color: #fff;
+            background-color: var(--card-bg);
+        }
+
+        body.selection-mode .header-icon-btn {
+            display: none;
+        }
+
+        /* --- REDESIGNED SPOTIFY BLOCKS (GROUP STYLES) --- */
+        .group-wrapper {
+            background-color: var(--card-bg);
+            border-radius: 8px; /* Bo góc khối giống ảnh Spotify */
+            padding: 24px 20px 8px 20px;
+            margin-bottom: 24px;
+            transition: background-color 0.2s;
+        }
+
+        .group-header {
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--divider); /* Line ngăn cách tiêu đề và list */
+            padding-bottom: 16px;
+        }
+        
+        .group-header-title {
+            display: flex;
+            align-items: center;
+        }
+
+        .group-name-editable {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent); /* Đã đổi sang màu Hồng theo Themes */
+            outline: none;
+            border-radius: 4px;
+            padding: 2px 4px;
+            margin-left: -4px; 
+            transition: all 0.2s;
+        }
+        
+        .group-name-editable[contenteditable="true"]:hover {
+            background-color: rgba(255,255,255,0.05);
+        }
+
+        .group-name-editable[contenteditable="true"]:focus {
+            background-color: #121212;
+        }
+
+        .group-drag-handle {
+            cursor: grab;
+            color: var(--text-sub);
+            font-size: 18px;
+            margin-right: 12px;
+            opacity: 0.3;
+            transition: opacity 0.2s;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .group-wrapper:hover .group-drag-handle {
+            opacity: 1;
+        }
+
+        .group-actions {
+            display: flex;
+            gap: 12px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .group-wrapper:hover .group-actions {
+            opacity: 1;
+        }
+
+        @media (hover: none) {
+            .group-actions { opacity: 1; }
+            .group-drag-handle { opacity: 0.7; }
+        }
+
+        .action-btn-mini {
+            background-color: transparent;
+            border: none;
+            color: var(--text-sub);
+            padding: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn-mini:hover {
+            color: var(--text-main);
+        }
+
+        .action-btn-mini.btn-trash:hover {
+            color: #ff453a;
+        }
+
+        .idea-list {
+            min-height: 10px; 
+        }
+
+        /* Empty group drop zone */
+        .idea-list:empty {
+            min-height: 60px;
+            border: 1px dashed var(--divider);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .idea-list:empty::after {
+            content: "Kéo thả ý tưởng vào đây";
+            color: var(--text-sub);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* Danh sách bên trong thẻ Group */
+        .idea-item {
+            padding: 16px 0;
+            border-bottom: 1px solid var(--divider);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+
+        .idea-item:last-child {
+            border-bottom: none;
+        }
+
+        .sortable-ghost {
+            opacity: 0.4;
+            background-color: #333333;
+        }
+        .sortable-drag {
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            cursor: grabbing !important;
+            border-radius: 8px;
+            background-color: var(--card-bg);
+            padding: 16px;
+        }
+
+        .idea-content {
+            flex: 1;
+            min-width: 0; 
+        }
+
+        .idea-title {
+            margin: 0 0 6px 0;
+            font-size: 15px; 
+            font-weight: 600;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .idea-sub {
+            margin: 0;
+            font-size: 13px;
+            color: var(--text-sub);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+
+        /* --- REDESIGNED STATUS DROPDOWN --- */
+        .status-dropdown {
+            background-color: transparent;
+            border: none;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 0;
+            outline: none;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            transition: opacity 0.2s;
+        }
+
+        .status-dropdown option {
+            background-color: var(--card-bg);
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        .status-dropdown:hover {
+            opacity: 0.8;
+            text-decoration: underline;
+        }
+
+        .drag-handle {
+            color: var(--divider);
+            font-size: 18px;
+            padding: 5px 0 5px 15px;
+            cursor: grab;
+            display: flex;
+            align-items: center;
+            transition: color 0.2s;
+        }
+
+        .idea-item:hover .drag-handle {
+            color: var(--text-sub);
+        }
+
+        body.selection-mode .drag-handle, body.selection-mode .group-drag-handle {
+            display: none;
+        }
+
+        /* Selection Mode Styles */
+        body.selection-mode .idea-item {
+            padding-left: 10px;
+        }
+        
+        .checkbox {
+            display: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 2px solid var(--text-sub);
+            margin-right: 15px;
+            flex-shrink: 0;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        body.selection-mode .checkbox {
+            display: flex;
+        }
+
+        .idea-item.selected .checkbox {
+            background-color: var(--text-main);
+            border-color: var(--text-main);
+        }
+
+        .idea-item.selected .checkbox::after {
+            content: "✓";
+            color: var(--black-text);
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .action-bar {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: var(--bg-color); /* Đồng bộ nền đen */
+            padding: 15px 20px;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--divider);
+            z-index: 11;
+        }
+
+        body.selection-mode .action-bar {
+            display: flex;
+        }
+
+        /* Nút chung */
+        .btn-text {
+            background: none;
+            border: none;
+            color: var(--text-sub);
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 5px 10px;
+            transition: color 0.2s;
+        }
+        
+        .btn-text:hover {
+            color: var(--text-main);
+        }
+
+        /* Nút chính dạng Pill (Get Started style) */
+        .btn-primary {
+            background-color: var(--accent); /* Hồng đào */
+            color: var(--black-text);
+            padding: 12px 32px;
+            border-radius: 24px; /* Pill shape */
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 15px;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.1s ease, background-color 0.2s;
+        }
+        
+        .btn-primary:active {
+            transform: scale(0.96);
+        }
+
+        /* --- SCREEN 2: EDIT --- */
+        #edit-screen {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            background-color: var(--bg-color);
+        }
+
+        .edit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px 15px 20px;
+            border-bottom: 1px solid var(--divider);
+        }
+
+        .editor-wrapper {
+            flex: 1;
+            padding: 24px 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .editor-title-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            font-size: 32px;
+            font-weight: 800;
+            font-family: 'Montserrat', sans-serif;
+            letter-spacing: -1px;
+            margin-bottom: 24px;
+            outline: none;
+        }
+
+        .editor-title-input::placeholder {
+            color: var(--divider);
+        }
+
+        .editor-container {
+            flex: 1;
+            outline: none;
+            font-size: 16px;
+            line-height: 1.6;
+            min-height: 150px; 
+            color: var(--text-main); /* Chữ thân bài trong Editor */
+        }
+
+        .editor-container[placeholder]:empty:before {
+            content: attr(placeholder);
+            color: #555555;
+        }
+
+        /* ------------------------------------- */
+        /* Custom Block (Simple Clean Style)     */
+        /* ------------------------------------- */
+        .custom-block {
+            background-color: transparent; /* Xóa nền Card */
+            padding: 8px 0 14px 0; /* Thu hẹp khoảng cách + chừa divider cuối block */
+            margin: 16px 0;
+            position: relative;
+        }
+
+        .custom-block::after {
+            content: '';
+            display: block;
+            height: 1px;
+            margin-top: 14px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.12), rgba(255,255,255,0.05));
+            border-radius: 999px;
+            pointer-events: none;
+        }
+
+        .block-actions-overlay {
+            position: absolute;
+            top: 8px;
+            right: 0;
+            display: flex;
+            gap: 8px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            user-select: none; 
+        }
+
+        .custom-block:hover .block-actions-overlay {
+            opacity: 1;
+        }
+
+        @media (hover: none) {
+            .block-actions-overlay { opacity: 1; }
+        }
+        
+        .custom-block .block-title, .custom-block h3 {
+            margin: 0 0 16px 0;
+            color: var(--accent); /* Màu Hồng đào */
+            font-family: 'Montserrat', sans-serif;
+            font-size: 24px;      /* Cỡ chữ to */
+            font-weight: 800;
+            outline: none;
+            padding-right: 60px; 
+            border-bottom: none; /* Bỏ gạch chân */
+            padding-bottom: 0;
+            transition: color 0.3s ease;
+            letter-spacing: -0.5px;
+        }
+        
+        .custom-block .block-content-body {
+            margin: 0;
+            outline: none;
+            color: var(--text-main); 
+            font-size: 16px;
+        }
+
+        .custom-block ul {
+            margin: 0;
+            padding-left: 24px; /* Lùi đầu dòng list vừa vặn */
+        }
+
+        .custom-block li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .custom-block.collapsed .block-content-body {
+            display: none;
+        }
+
+        .custom-block.collapsed .block-title, .custom-block.collapsed h3 {
+            color: var(--text-sub); 
+        }
+
+        .block-dropdown-wrap {
+            position: relative;
+        }
+
+        .block-dropdown-menu {
+            position: absolute;
+            top: calc(100% + 10px);
+            left: 0;
+            min-width: 240px;
+            background: #202020;
+            border: 1px solid var(--divider);
+            border-radius: 14px;
+            padding: 8px;
+            box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            z-index: 30;
+        }
+
+        .block-dropdown-menu.open {
+            display: flex;
+        }
+
+        .block-dropdown-item {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            text-align: left;
+            border-radius: 10px;
+            padding: 11px 12px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .block-dropdown-item:hover {
+            background: #2d2d2d;
+        }
+
+        .block-dropdown-item span {
+            color: var(--text-sub);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        @media (max-width: 640px) {
+            .block-dropdown-menu {
+                left: auto;
+                right: 0;
+                min-width: 220px;
+            }
+        }
+
+        /* Formatting Toolbar */
+        .format-toolbar {
+            background-color: #1a1a1a;
+            border-top: 1px solid var(--divider);
+            padding: 12px 16px;
+        }
+        
+        .format-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+        .format-row::-webkit-scrollbar { display: none; }
+
+        .fmt-btn {
+            background-color: transparent;
+            color: var(--text-sub);
+            border: 1px solid var(--divider);
+            border-radius: 20px; 
+            padding: 6px 16px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .fmt-btn:hover {
+            color: var(--text-main);
+            border-color: var(--text-sub);
+        }
+        .fmt-btn.active {
+            background-color: var(--text-main);
+            color: var(--bg-color);
+            border-color: var(--text-main);
+        }
+
+        /* --- MODALS --- */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(8px); 
+        }
+        .modal-content {
+            background-color: var(--card-bg);
+            padding: 32px 24px;
+            border-radius: 12px;
+            width: 85%;
+            max-width: 360px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        .modal-content h3.font-heading {
+            margin-top: 0;
+            font-size: 24px;
+            margin-bottom: 24px;
+        }
+        .modal-content input {
+            width: 100%;
+            padding: 14px 16px;
+            margin: 0 0 16px 0;
+            background: #333;
+            border: 1px solid transparent;
+            color: white;
+            border-radius: 4px;
+            font-size: 15px;
+            outline: none;
+            transition: border 0.2s;
+        }
+        .modal-content input:focus {
+            border-color: var(--text-sub);
+            background: #3e3e3e;
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            margin-top: 16px;
+        }
+        .modal-actions button {
+            flex: 1;
+        }
+        
+        /* Auth Modal Specifics */
+        .auth-form-group {
+            text-align: left;
+        }
+        .auth-form-group label {
+            font-size: 13px;
+            color: var(--text-sub);
+            margin-bottom: 8px;
+            display: block;
+            font-weight: 700;
+        }
+        .auth-tabs {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--divider);
+        }
+        .auth-tab {
+            background: none;
+            border: none;
+            color: var(--text-sub);
+            font-size: 18px;
+            font-weight: 700;
+            font-family: 'Montserrat', sans-serif;
+            cursor: pointer;
+            padding: 0 0 12px 0;
+            margin-bottom: -1px; 
+            transition: color 0.2s;
+        }
+        .auth-tab:hover {
+            color: var(--text-main);
+        }
+        .auth-tab.active {
+            color: var(--text-main);
+            border-bottom: 2px solid var(--accent); /* Điểm nhấn hồng đào */
+        }
+        .auth-links {
+            margin-top: 24px;
+            font-size: 13px;
+            color: var(--text-sub);
+            cursor: pointer;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+        .auth-links:hover {
+            color: var(--text-main);
+            text-decoration: underline;
+        }
+
+        .action-btn-mini:disabled {
+            opacity: 0.35;
+            cursor: default;
+        }
+
+        .filter-btn-active {
+            color: var(--accent);
+            background-color: var(--card-bg);
+        }
+
+        .session-line {
+            font-size: 13px;
+            color: var(--text-sub);
+            margin-top: 14px;
+            line-height: 1.45;
+        }
+
+        .cloud-status-text {
+            min-height: 18px;
+            margin-top: 14px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-sub);
+        }
+        .header-cloud-status {
+            min-width: 86px;
+            margin-top: 0;
+            margin-right: 2px;
+            text-align: right;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            width: 32px;
+            height: 32px;
+            border-radius: 999px;
+            border: 1px solid var(--divider);
+            background: rgba(255,255,255,0.04);
+            color: var(--text-sub);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close-btn:hover {
+            color: var(--text-main);
+            border-color: var(--text-sub);
+            background: rgba(255,255,255,0.08);
+        }
+
+        .confirm-copy {
+            margin-top: 10px;
+            color: var(--text-sub);
+            font-size: 14px;
+            line-height: 1.55;
+        }
+        @media (max-width: 640px) {
+            .header-cloud-status {
+                min-width: 72px;
+                font-size: 11px;
+            }
+        }
+
+        .autosave-row {
+            margin-top: 18px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .autosave-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .autosave-left input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--accent);
+            flex-shrink: 0;
+        }
+
+        .autosave-label {
+            color: var(--text-main);
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1.35;
+        }
+
+        .autosave-stepper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .autosave-stepper input {
+            width: 52px;
+            margin: 0 !important;
+            padding: 9px 8px !important;
+            text-align: center;
+            font-weight: 700;
+            background: #242424;
+        }
+
+        .autosave-unit {
+            color: var(--text-sub);
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .stepper-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1px solid var(--divider);
+            background: transparent;
+            color: var(--text-main);
+            font-size: 16px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .stepper-btn:hover {
+            border-color: var(--text-sub);
+            background: rgba(255,255,255,0.05);
+        }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    
+    <!-- GLOBAL HEADER (HIỂN THỊ MỌI MÀN HÌNH) -->
+    <div class="header">
+        <div class="app-logo">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent);">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                <line x1="15" y1="9" x2="15.01" y2="9"></line>
+            </svg>
+            <span class="font-heading">Liem's <b>Idea Pad</b></span>
+        </div>
+        <div style="display: flex; gap: 6px; align-items: center;">
+            <div id="cloud-save-status-header" class="cloud-status-text header-cloud-status"></div>
+            <button id="undo-btn" class="action-btn-mini" title="Undo" onclick="undoAction()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg>
+            </button>
+            <button id="redo-btn" class="action-btn-mini" title="Redo" onclick="redoAction()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"></path><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path></svg>
+            </button>
+            <button id="header-auth-btn" class="auth-btn-header" onclick="showAuthModal()" style="margin-left: 8px;">Log in</button>
+        </div>
+    </div>
+
+    <!-- SCREEN 1: MAIN LIST -->
+    <div id="main-screen">
+        <div class="toolbar-row">
+            <div class="search-bar">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.7;">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="searchInput" placeholder="Search ideas..." oninput="handleSearch(event)">
+            </div>
+            
+            <button class="header-icon-btn" onclick="showEmptyGroupModal()" title="Tạo Folder mới">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                    <line x1="12" y1="11" x2="12" y2="17"></line>
+                    <line x1="9" y1="14" x2="15" y2="14"></line>
+                </svg>
+            </button>
+            <button id="filter-btn" class="header-icon-btn" onclick="showFilterModal()" title="Filter theo status">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="3 4 21 4 14 12 14 19 10 21 10 12 3 4"></polygon>
+                </svg>
+            </button>
+            <button class="header-icon-btn primary-btn" onclick="createNewIdea()" title="Tạo Idea mới">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                </svg>
+            </button>
+        </div>
+
+        <div id="list-container">
+            <!-- Ideas will be injected here by JS -->
+        </div>
+
+        <div class="action-bar">
+            <button class="btn-text" style="color: var(--text-main);" onclick="exitSelectionMode()">Cancel</button>
+            <button class="btn-text" onclick="ungroupSelected()">Ungroup</button>
+            <button class="btn-primary" style="padding: 10px 24px;" onclick="showGroupModal()">Group ideas</button>
+        </div>
+    </div>
+
+    <!-- SCREEN 2: EDIT IDEA -->
+    <div id="edit-screen">
+        <div class="edit-header">
+            <button class="header-icon-btn" onclick="saveAndGoBack()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <div class="block-dropdown-wrap" id="block-dropdown-wrap">
+                <button class="auth-btn-header" id="add-block-btn" style="border-color: transparent; background: #333;" onclick="toggleBlockDropdown(event)">+ Add Block</button>
+                <div class="block-dropdown-menu" id="block-dropdown-menu">
+                    <button class="block-dropdown-item" onclick="insertCustomBlock('Quick Capture')">Quick Capture <span>Default</span></button>
+                    <button class="block-dropdown-item" onclick="insertCustomBlock('Pain Point')">Pain Point</button>
+                    <button class="block-dropdown-item" onclick="insertCustomBlock('Functions')">Functions</button>
+                    <button class="block-dropdown-item" onclick="insertCustomBlock('Potential Commercial Value')">Potential Commercial Value</button>
+                    <button class="block-dropdown-item" onclick="insertCustomBlock('Differentiation')">Differentiation</button>
+                    <button class="block-dropdown-item" onclick="insertCustomBlock('Difficulties')">Difficulties</button>
+                </div>
+            </div>
+            <button class="btn-primary" style="padding: 8px 24px; font-size: 14px;" onclick="saveAndGoBack()">Done</button>
+        </div>
+        
+        <div class="editor-wrapper">
+            <input type="text" id="editor-title" class="editor-title-input" placeholder="Idea Title..." autocomplete="off">
+            <div class="editor-container" id="editor" contenteditable="true" placeholder="Capture the core idea, target user, and next validation step..."></div>
+        </div>
+
+        <div class="format-toolbar">
+            <div class="format-row">
+                <button class="fmt-btn" onclick="formatDoc('formatBlock', 'H1')">Title</button>
+                <button class="fmt-btn" onclick="formatDoc('formatBlock', 'H2')">Heading</button>
+                <button class="fmt-btn" onclick="formatDoc('formatBlock', 'H3')">Subheading</button>
+                <button class="fmt-btn" onclick="formatDoc('formatBlock', 'P')">Body</button>
+            </div>
+            <div class="format-row">
+                <button class="fmt-btn" onclick="formatDoc('bold')" style="font-weight: bold;">B</button>
+                <button class="fmt-btn" onclick="formatDoc('italic')" style="font-style: italic;">I</button>
+                <button class="fmt-btn" onclick="formatDoc('underline')" style="text-decoration: underline;">U</button>
+                <button class="fmt-btn" onclick="formatDoc('strikeThrough')" style="text-decoration: line-through;">S</button>
+                <button class="fmt-btn" onclick="formatDoc('insertUnorderedList')">• List</button>
+                <button class="fmt-btn" onclick="formatDoc('insertOrderedList')">1. List</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- GROUP MODAL -->
+<div class="modal-overlay" id="group-modal">
+    <div class="modal-content">
+        <h3 class="font-heading">Tạo Folder Mới</h3>
+        <input type="text" id="group-name-input" placeholder="VD: Product Opportunities">
+        <div class="modal-actions">
+            <button class="btn-text" onclick="closeModal()">Hủy</button>
+            <button class="btn-primary" onclick="applyGroup()">Lưu folder</button>
+        </div>
+    </div>
+</div>
+
+<!-- FILTER MODAL -->
+<div class="modal-overlay" id="filter-modal">
+    <div class="modal-content">
+        <h3 class="font-heading">Filter Status</h3>
+        <div id="filter-options" style="display: flex; flex-direction: column; gap: 12px;"></div>
+        <div class="modal-actions" style="margin-top: 20px;">
+            <button class="btn-text" onclick="closeFilterModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- DELETE GROUP MODAL -->
+<div class="modal-overlay" id="delete-group-modal">
+    <div class="modal-content">
+        <h3 class="font-heading">Xóa Folder</h3>
+        <p style="font-size: 14px; color: var(--text-sub); margin-bottom: 24px;">Bạn muốn xử lý các ý tưởng bên trong như thế nào?</p>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <button class="btn-primary" style="background-color: #ff453a; color: white;" onclick="confirmDeleteGroup('delete_all')">Xóa tất cả Idea</button>
+            <button class="btn-text" style="background-color: #333; border-radius: 20px; padding: 12px; color: white;" onclick="confirmDeleteGroup('move_ungroup')">Chuyển ra ngoài</button>
+            <button class="btn-text" onclick="closeDeleteModal()">Hủy</button>
+        </div>
+    </div>
+</div>
+
+<!-- DELETE BLOCK MODAL -->
+<div class="modal-overlay" id="delete-block-modal">
+    <div class="modal-content">
+        <h3 class="font-heading">Delete Block</h3>
+        <p style="font-size: 14px; color: var(--text-sub); margin-bottom: 24px;">Delete this block completely, or convert everything inside it back into normal text.</p>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <button class="btn-primary" style="background-color: #ff453a; color: white;" onclick="confirmDeleteBlock()">Delete Block</button>
+            <button class="btn-text" style="background-color: #333; border-radius: 20px; padding: 12px; color: white;" onclick="convertBlockToNormalText()">Convert to Normal Text</button>
+            <button class="btn-text" onclick="closeDeleteBlockModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- AUTH MODAL -->
+<div class="modal-overlay" id="auth-modal">
+    <div class="modal-content" style="padding-top: 24px; position: relative;">
+        <button class="modal-close-btn" onclick="closeAuthModal()" aria-label="Close account dialog">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
+        <div class="auth-tabs" id="auth-tabs">
+            <button id="auth-tab-login" class="auth-tab active" onclick="setAuthMode('login')">Log in</button>
+            <button id="auth-tab-signup" class="auth-tab" onclick="setAuthMode('signup')">Sign up</button>
+        </div>
+
+        <div id="auth-form-panel">
+            <div class="auth-form-group">
+                <label>Email address</label>
+                <input type="email" id="auth-email" placeholder="name@domain.com" autocomplete="email">
+            </div>
+            <div class="auth-form-group">
+                <label>Password</label>
+                <input type="password" id="auth-password" placeholder="••••••••" autocomplete="current-password">
+            </div>
+            <button id="auth-submit-btn" class="btn-primary" style="width: 100%; margin-top: 12px; padding: 14px;" onclick="submitAuth()">Log In</button>
+            <div class="auth-links" id="auth-secondary-link" onclick="toggleAuthMode()">Need an account? Sign up</div>
+        </div>
+
+        <div id="auth-session-panel" style="display: none; text-align: left;">
+            <div class="auth-form-group">
+                <label>Signed in as</label>
+                <div id="auth-user-email" style="width: 100%; padding: 14px 16px; background: #333; border-radius: 4px; color: white; font-size: 15px; font-weight: 600;"></div>
+            </div>
+
+            <div class="autosave-row">
+                <div class="autosave-left">
+                    <input type="checkbox" id="autosave-enabled" onchange="handleAutoSaveToggle()">
+                    <label class="autosave-label" for="autosave-enabled">Auto Save cloud after x minutes</label>
+                </div>
+                <div class="autosave-stepper">
+                    <button class="stepper-btn" onclick="changeAutoSaveMinutes(-1)">−</button>
+                    <input type="number" id="autosave-minutes" min="1" max="60" value="1" onchange="handleAutoSaveMinutesInput()">
+                    <span class="autosave-unit">min</span>
+                    <button class="stepper-btn" onclick="changeAutoSaveMinutes(1)">+</button>
+                </div>
+            </div>
+
+            <div id="cloud-save-status" class="cloud-status-text"></div>
+            <div id="last-saved-line" class="session-line">Last saved at: Never</div>
+
+            <div id="auth-session-actions" class="modal-actions" style="display: flex; flex-direction: column; gap: 12px; margin-top: 18px;">
+                <button class="btn-primary" style="width: 100%;" onclick="requestSaveToCloud()">Save to Cloud</button>
+                <button class="btn-text" style="background-color: #333; border-radius: 20px; padding: 12px; color: white;" onclick="requestLoadFromCloud()">Load from Cloud</button>
+                <button class="btn-text" style="background-color: #333; border-radius: 20px; padding: 12px; color: white;" onclick="exportCurrentData()">Export Data</button>
+                <button class="btn-text" style="background-color: #333; border-radius: 20px; padding: 12px; color: white;" onclick="requestImportData()">Import Data</button>
+                <button class="btn-text" onclick="signOutUser()">Log out</button>
+            </div>
+
+            <div id="cloud-inline-confirm" style="display: none; margin-top: 18px; text-align: left; background: #333; border-radius: 12px; padding: 16px;">
+                <div id="cloud-confirm-title" class="font-heading" style="font-size: 18px; margin-bottom: 8px; color: var(--text-main);">Confirm action</div>
+                <div id="cloud-confirm-copy" class="confirm-copy" style="margin-top: 0;">This action will overwrite existing data.</div>
+                <div class="modal-actions" style="display: flex; flex-direction: column; gap: 12px; margin-top: 18px;">
+                    <button class="btn-primary" id="cloud-confirm-primary-btn" onclick="confirmCloudActionProceed()">Continue</button>
+                    <button class="btn-text" onclick="closeCloudConfirmModal()">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="auth-feedback" style="margin-top: 18px; min-height: 18px; font-size: 13px; color: var(--text-sub);"></div>
+    </div>
+</div>
+<input type="file" id="import-data-input" accept="application/json,.json" style="display:none;" onchange="handleImportFileSelected(event)">
+
+<script>
+
+    const SUPABASE_URL = 'https://khdxchmwvkcytsrmtogn.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_JK0iuLSJDvR5LKz9n-uK4Q_Q7aQ4h22';
+    const LOCAL_STORAGE_KEY = 'liems-idea-pad-state-v1';
+    const CLOUD_TABLE = 'idea_pad_state';
+
+    const DEFAULT_STATE = {
+        ideas: [
+            { id: 101, title: 'Micro app to validate real pain points quickly', content: '<p>A lightweight workflow to capture a problem, define the target user, and list one concrete validation signal.</p><p><strong>Next step:</strong> interview 5 users and log repeated pain patterns.</p>', status: 'Researching', groupId: 'g1', date: '14/3/26' },
+            { id: 102, title: 'Idea scoring sheet for commercial potential', content: '<p>Build a simple scoring model for pain intensity, willingness to pay, speed to MVP, and repeat usage.</p>', status: 'Clarifying', groupId: 'g1', date: '13/3/26' },
+            { id: 103, title: 'Weekly piano practice review flow', content: '<p>Create a review note that tracks bar range, target BPM, error type, and next focus block for the following session.</p>', status: 'Testing', groupId: 'g2', date: '12/3/26' },
+            { id: 104, title: 'Founder idea inbox with status pipeline', content: '<p>Notes app experience, but every idea must move through a clear status: Capture → Clarifying → Researching → Testing → Building.</p>', status: 'Building', groupId: 'default', date: '11/3/26' }
+        ],
+        groups: {
+            'default': 'Ungrouped',
+            'g1': 'Product Opportunities',
+            'g2': 'Systems & Practice'
+        },
+        groupOrder: ['g1', 'g2', 'default'],
+        collapsedGroupIds: [],
+        prefs: {
+            autoSaveEnabled: false,
+            autoSaveMinutes: 1,
+            lastCloudSavedAt: null
+        }
+    };
+
+    let ideas = [];
+    let groups = {};
+    let groupOrder = [];
+    const statuses = ['Capture', 'Clarifying', 'Researching', 'Testing', 'Building', 'Paused', 'Running', 'Archived'];
+
+    let currentEditId = null;
+    let isSelectionMode = false;
+    let selectedIdeas = new Set();
+    let searchQuery = '';
+    let selectedStatusFilter = 'All';
+    let groupToDeleteId = null;
+    let isCreatingEmptyGroup = false;
+    let collapsedGroups = new Set();
+    let blockToDeleteElement = null;
+
+    let pressTimer;
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    let listSortables = [];
+    let groupSortable = null;
+
+    let supabaseClient = null;
+    let currentUser = null;
+    let authMode = 'login';
+    let autoSaveEnabled = false;
+    let autoSaveMinutes = 1;
+    let lastCloudSavedAt = null;
+    let autoSaveIntervalId = null;
+    let cloudStatusTimer = null;
+    let isCloudSaving = false;
+    let pendingCloudAction = null;
+    let pendingImportAfterBackup = false;
+    let editorHistoryTimer = null;
+    let undoStack = [];
+    let redoStack = [];
+    let lastHistorySignature = '';
+    let isRestoringHistory = false;
+    const MAX_HISTORY_STEPS = 5;
+
+    const statusColors = {
+        'Capture': '#8e8e93',
+        'Clarifying': '#64d2ff',
+        'Researching': '#bf5af2',
+        'Testing': '#ff9f0a',
+        'Building': '#ffd60a',
+        'Paused': '#ff453a',
+        'Running': '#30d158',
+        'Archived': '#48484a'
+    };
+
+    function deepClone(value) {
+        return JSON.parse(JSON.stringify(value));
+    }
+
+    function getTodayDateString() {
+        const today = new Date();
+        return `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear().toString().slice(2)}`;
+    }
+
+    function htmlToText(html) {
+        const div = document.createElement('div');
+        div.innerHTML = html || '';
+        return (div.textContent || div.innerText || '').trim();
+    }
+
+    function clampAutoSaveMinutes(value) {
+        const parsed = parseInt(value, 10);
+        if (!Number.isFinite(parsed)) return 1;
+        return Math.min(60, Math.max(1, parsed));
+    }
+
+    function normalizeState(rawState) {
+        const state = rawState && typeof rawState === 'object' ? rawState : {};
+
+        const normalizedGroups = (state.groups && typeof state.groups === 'object' && !Array.isArray(state.groups))
+            ? { ...state.groups }
+            : { ...deepClone(DEFAULT_STATE).groups };
+
+        if (!normalizedGroups.default) {
+            normalizedGroups.default = 'Ungrouped';
+        }
+
+        const normalizedIdeas = Array.isArray(state.ideas)
+            ? state.ideas.map((idea, index) => ({
+                id: idea?.id ?? Date.now() + index,
+                title: typeof idea?.title === 'string' ? idea.title : '',
+                content: typeof idea?.content === 'string' ? idea.content : '',
+                status: statuses.includes(idea?.status) ? idea.status : 'Capture',
+                groupId: normalizedGroups[idea?.groupId] ? idea.groupId : 'default',
+                date: typeof idea?.date === 'string' && idea.date.trim() ? idea.date : getTodayDateString()
+            }))
+            : deepClone(DEFAULT_STATE).ideas;
+
+        let normalizedGroupOrder = Array.isArray(state.groupOrder)
+            ? state.groupOrder.filter(groupId => normalizedGroups[groupId])
+            : Object.keys(normalizedGroups);
+
+        Object.keys(normalizedGroups).forEach(groupId => {
+            if (!normalizedGroupOrder.includes(groupId)) {
+                normalizedGroupOrder.push(groupId);
+            }
+        });
+
+        if (!normalizedGroupOrder.includes('default')) {
+            normalizedGroupOrder.push('default');
+        }
+
+        const normalizedCollapsed = Array.isArray(state.collapsedGroupIds)
+            ? state.collapsedGroupIds.filter(groupId => normalizedGroups[groupId])
+            : [];
+
+        const prefs = state.prefs && typeof state.prefs === 'object' ? state.prefs : {};
+
+        return {
+            ideas: normalizedIdeas,
+            groups: normalizedGroups,
+            groupOrder: normalizedGroupOrder,
+            collapsedGroupIds: normalizedCollapsed,
+            prefs: {
+                autoSaveEnabled: !!prefs.autoSaveEnabled,
+                autoSaveMinutes: clampAutoSaveMinutes(prefs.autoSaveMinutes ?? 1),
+                lastCloudSavedAt: typeof prefs.lastCloudSavedAt === 'string' && prefs.lastCloudSavedAt ? prefs.lastCloudSavedAt : null
+            }
+        };
+    }
+
+    function applyState(rawState) {
+        const normalized = normalizeState(rawState);
+        ideas = normalized.ideas;
+        groups = normalized.groups;
+        groupOrder = normalized.groupOrder;
+        collapsedGroups = new Set(normalized.collapsedGroupIds);
+        autoSaveEnabled = normalized.prefs.autoSaveEnabled;
+        autoSaveMinutes = normalized.prefs.autoSaveMinutes;
+        lastCloudSavedAt = normalized.prefs.lastCloudSavedAt;
+        selectedIdeas = new Set();
+        isSelectionMode = false;
+        document.body.classList.remove('selection-mode');
+    }
+
+    function serializeState() {
+        return {
+            ideas: ideas.map(idea => ({
+                id: idea.id,
+                title: idea.title || '',
+                content: idea.content || '',
+                status: statuses.includes(idea.status) ? idea.status : 'Capture',
+                groupId: groups[idea.groupId] ? idea.groupId : 'default',
+                date: idea.date || getTodayDateString()
+            })),
+            groups: { ...groups },
+            groupOrder: [...groupOrder],
+            collapsedGroupIds: Array.from(collapsedGroups),
+            prefs: {
+                autoSaveEnabled,
+                autoSaveMinutes: clampAutoSaveMinutes(autoSaveMinutes),
+                lastCloudSavedAt
+            }
+        };
+    }
+
+    function persistLocalState() {
+        try {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(serializeState()));
+        } catch (error) {
+            console.error('Local save failed:', error);
+        }
+    }
+
+    function formatSavedAt(isoString) {
+        if (!isoString) return 'Never';
+        const date = new Date(isoString);
+        if (Number.isNaN(date.getTime())) return 'Never';
+        return date.toLocaleString();
+    }
+
+    function formatSavedAtShort(isoString) {
+        if (!isoString) return 'Never';
+        const date = new Date(isoString);
+        if (Number.isNaN(date.getTime())) return 'Never';
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function getPersistentCloudStatusText() {
+        return currentUser && lastCloudSavedAt ? `Last saved: ${formatSavedAtShort(lastCloudSavedAt)}` : '';
+    }
+
+    function renderPersistentCloudStatus() {
+        const headerStatus = document.getElementById('cloud-save-status-header');
+        if (!headerStatus) return;
+        headerStatus.textContent = getPersistentCloudStatusText();
+        headerStatus.style.color = 'var(--text-sub)';
+    }
+
+    function clearModalCloudStatus() {
+        const modalStatus = document.getElementById('cloud-save-status');
+        if (!modalStatus) return;
+        modalStatus.textContent = '';
+        modalStatus.style.color = 'var(--text-sub)';
+    }
+
+    function updateLastSavedLine() {
+        const lastSavedLine = document.getElementById('last-saved-line');
+        if (lastSavedLine) {
+            lastSavedLine.textContent = `Last saved at: ${formatSavedAt(lastCloudSavedAt)}`;
+        }
+        renderPersistentCloudStatus();
+    }
+
+    function setCloudStatus(message = '', tone = 'muted', autoHideMs = 0) {
+        const modalStatus = document.getElementById('cloud-save-status');
+        const headerStatus = document.getElementById('cloud-save-status-header');
+
+        clearTimeout(cloudStatusTimer);
+        const colorMap = {
+            muted: 'var(--text-sub)',
+            success: '#30d158',
+            error: '#ff453a',
+            info: 'var(--text-main)'
+        };
+        const color = colorMap[tone] || colorMap.muted;
+
+        if (modalStatus) {
+            modalStatus.textContent = message;
+            modalStatus.style.color = color;
+        }
+
+        if (headerStatus) {
+            headerStatus.textContent = message || getPersistentCloudStatusText();
+            headerStatus.style.color = message ? color : 'var(--text-sub)';
+        }
+
+        if (message && autoHideMs > 0) {
+            cloudStatusTimer = setTimeout(() => {
+                clearModalCloudStatus();
+                renderPersistentCloudStatus();
+            }, autoHideMs);
+        } else if (!message) {
+            clearModalCloudStatus();
+            renderPersistentCloudStatus();
+        }
+    }
+
+    function updateUndoRedoButtons() {
+        const undoBtn = document.getElementById('undo-btn');
+        const redoBtn = document.getElementById('redo-btn');
+        if (undoBtn) undoBtn.disabled = undoStack.length <= 1;
+        if (redoBtn) redoBtn.disabled = redoStack.length === 0;
+    }
+
+    function updateFilterButtonState() {
+        const filterBtn = document.getElementById('filter-btn');
+        if (!filterBtn) return;
+        filterBtn.classList.toggle('filter-btn-active', selectedStatusFilter !== 'All');
+        filterBtn.title = selectedStatusFilter === 'All' ? 'Filter theo status' : `Filter: ${selectedStatusFilter}`;
+    }
+
+    function buildHistorySnapshot() {
+        const screen = document.getElementById('edit-screen').style.display === 'flex' ? 'edit' : 'main';
+        return {
+            state: serializeState(),
+            screen,
+            currentEditId: screen === 'edit' ? currentEditId : null,
+            editorTitle: screen === 'edit' ? (document.getElementById('editor-title')?.value || '') : '',
+            editorContent: screen === 'edit' ? (document.getElementById('editor')?.innerHTML || '') : ''
+        };
+    }
+
+    function getHistorySignature(snapshot) {
+        return JSON.stringify(snapshot);
+    }
+
+    function ensureCurrentSnapshotInHistory(force = false) {
+        if (isRestoringHistory) return;
+        const snapshot = deepClone(buildHistorySnapshot());
+        const signature = getHistorySignature(snapshot);
+        if (!force && signature === lastHistorySignature) {
+            updateUndoRedoButtons();
+            return;
+        }
+        undoStack.push(snapshot);
+        if (undoStack.length > MAX_HISTORY_STEPS) {
+            undoStack.shift();
+        }
+        redoStack = [];
+        lastHistorySignature = signature;
+        updateUndoRedoButtons();
+    }
+
+    function restoreHistorySnapshot(snapshot) {
+        if (!snapshot) return;
+        isRestoringHistory = true;
+        applyState(snapshot.state);
+        persistLocalState();
+        updateLastSavedLine();
+        updateFilterButtonState();
+        updateAutoSaveUi();
+        scheduleAutoSave();
+
+        const shouldOpenEditor = snapshot.screen === 'edit' && snapshot.currentEditId && ideas.find(item => String(item.id) === String(snapshot.currentEditId));
+        if (shouldOpenEditor) {
+            openEditScreen(snapshot.currentEditId);
+            document.getElementById('editor-title').value = snapshot.editorTitle || '';
+            document.getElementById('editor').innerHTML = snapshot.editorContent || '';
+            const idea = ideas.find(item => String(item.id) === String(snapshot.currentEditId));
+            if (idea) {
+                idea.title = snapshot.editorTitle || '';
+                idea.content = snapshot.editorContent || '';
+            }
+        } else {
+            currentEditId = null;
+            document.getElementById('edit-screen').style.display = 'none';
+            document.getElementById('main-screen').style.display = 'block';
+            renderList();
+        }
+
+        isRestoringHistory = false;
+        lastHistorySignature = getHistorySignature(buildHistorySnapshot());
+        updateUndoRedoButtons();
+    }
+
+    function syncEditorDraftToIdea(recordHistory = false) {
+        if (!currentEditId) return false;
+        const idea = ideas.find(item => String(item.id) === String(currentEditId));
+        if (!idea) return false;
+        const titleValue = document.getElementById('editor-title')?.value ?? '';
+        const contentValue = document.getElementById('editor')?.innerHTML ?? '';
+        if (idea.title === titleValue && idea.content === contentValue) return false;
+        idea.title = titleValue;
+        idea.content = contentValue;
+        persistLocalState();
+        if (recordHistory) {
+            ensureCurrentSnapshotInHistory();
+        }
+        return true;
+    }
+
+    function scheduleEditorHistorySync() {
+        clearTimeout(editorHistoryTimer);
+        editorHistoryTimer = setTimeout(() => {
+            if (syncEditorDraftToIdea(false)) {
+                ensureCurrentSnapshotInHistory();
+            }
+        }, 500);
+    }
+
+    function undoAction() {
+        clearTimeout(editorHistoryTimer);
+        syncEditorDraftToIdea(false);
+        ensureCurrentSnapshotInHistory();
+        if (undoStack.length <= 1) return;
+        const currentSnapshot = undoStack.pop();
+        redoStack.push(deepClone(currentSnapshot));
+        restoreHistorySnapshot(deepClone(undoStack[undoStack.length - 1]));
+    }
+
+    function redoAction() {
+        if (redoStack.length === 0) return;
+        const snapshot = redoStack.pop();
+        undoStack.push(deepClone(snapshot));
+        if (undoStack.length > MAX_HISTORY_STEPS) {
+            undoStack.shift();
+        }
+        restoreHistorySnapshot(deepClone(snapshot));
+    }
+
+    function updateAutoSaveUi() {
+        const autoSaveCheckbox = document.getElementById('autosave-enabled');
+        const autoSaveInput = document.getElementById('autosave-minutes');
+        if (autoSaveCheckbox) autoSaveCheckbox.checked = autoSaveEnabled;
+        if (autoSaveInput) autoSaveInput.value = clampAutoSaveMinutes(autoSaveMinutes);
+        updateLastSavedLine();
+    }
+
+    function scheduleAutoSave() {
+        clearInterval(autoSaveIntervalId);
+        if (!currentUser || !autoSaveEnabled || !supabaseClient) return;
+        autoSaveIntervalId = setInterval(() => {
+            saveToCloud({ silentFeedback: true, source: 'auto' });
+        }, clampAutoSaveMinutes(autoSaveMinutes) * 60 * 1000);
+    }
+
+    function handleAutoSaveToggle() {
+        autoSaveEnabled = !!document.getElementById('autosave-enabled')?.checked;
+        persistLocalState();
+        updateAutoSaveUi();
+        ensureCurrentSnapshotInHistory();
+        scheduleAutoSave();
+    }
+
+    function changeAutoSaveMinutes(delta) {
+        autoSaveMinutes = clampAutoSaveMinutes((parseInt(autoSaveMinutes, 10) || 1) + delta);
+        persistLocalState();
+        updateAutoSaveUi();
+        ensureCurrentSnapshotInHistory();
+        scheduleAutoSave();
+    }
+
+    function handleAutoSaveMinutesInput() {
+        autoSaveMinutes = clampAutoSaveMinutes(document.getElementById('autosave-minutes')?.value || 1);
+        persistLocalState();
+        updateAutoSaveUi();
+        ensureCurrentSnapshotInHistory();
+        scheduleAutoSave();
+    }
+
+    function showFilterModal() {
+        const optionsContainer = document.getElementById('filter-options');
+        if (!optionsContainer) return;
+        const allStatuses = ['All', ...statuses];
+        optionsContainer.innerHTML = allStatuses.map(status => {
+            const isActive = status === selectedStatusFilter;
+            const statusColor = status === 'All' ? 'var(--text-main)' : (statusColors[status] || 'var(--text-main)');
+            return `
+                <button
+                    class="btn-text"
+                    onclick="applyStatusFilter('${status}')"
+                    style="background-color: ${isActive ? '#333' : 'transparent'}; border-radius: 20px; padding: 12px 14px; color: ${statusColor}; border: 1px solid ${isActive ? 'var(--divider)' : 'transparent'};"
+                >${status === 'All' ? 'All Statuses' : status}</button>
+            `;
+        }).join('');
+        document.getElementById('filter-modal').style.display = 'flex';
+    }
+
+    function closeFilterModal() {
+        document.getElementById('filter-modal').style.display = 'none';
+    }
+
+    function applyStatusFilter(status) {
+        selectedStatusFilter = status;
+        updateFilterButtonState();
+        closeFilterModal();
+        renderList();
+    }
+
+    function hydrateLocalState() {
+        try {
+            const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if (!raw) {
+                applyState(deepClone(DEFAULT_STATE));
+                persistLocalState();
+                return;
+            }
+            applyState(JSON.parse(raw));
+        } catch (error) {
+            console.error('Local load failed:', error);
+            applyState(deepClone(DEFAULT_STATE));
+            persistLocalState();
+        }
+    }
+
+    function setAuthFeedback(message = '', tone = 'muted') {
+        const feedbackEl = document.getElementById('auth-feedback');
+        if (!feedbackEl) return;
+        feedbackEl.textContent = message;
+        const colorMap = {
+            muted: 'var(--text-sub)',
+            success: '#30d158',
+            error: '#ff453a',
+            info: 'var(--text-main)'
+        };
+        feedbackEl.style.color = colorMap[tone] || colorMap.muted;
+    }
+
+    function setAuthMode(mode) {
+        authMode = mode === 'signup' ? 'signup' : 'login';
+        const isSignup = authMode === 'signup';
+        document.getElementById('auth-tab-login').classList.toggle('active', !isSignup);
+        document.getElementById('auth-tab-signup').classList.toggle('active', isSignup);
+        document.getElementById('auth-submit-btn').textContent = isSignup ? 'Create Account' : 'Log In';
+        document.getElementById('auth-secondary-link').textContent = isSignup
+            ? 'Already have an account? Log in'
+            : 'Need an account? Sign up';
+        setAuthFeedback('');
+    }
+
+    function toggleAuthMode() {
+        setAuthMode(authMode === 'login' ? 'signup' : 'login');
+    }
+
+    function showCloudConfirmModal(action) {
+        pendingCloudAction = action;
+        const titleEl = document.getElementById('cloud-confirm-title');
+        const copyEl = document.getElementById('cloud-confirm-copy');
+        const primaryBtn = document.getElementById('cloud-confirm-primary-btn');
+        const actionsPanel = document.getElementById('auth-session-actions');
+        const confirmPanel = document.getElementById('cloud-inline-confirm');
+
+        if (!titleEl || !copyEl || !primaryBtn || !actionsPanel || !confirmPanel) return;
+
+        if (action === 'save') {
+            titleEl.textContent = 'Confirm save';
+            copyEl.textContent = 'This will overwrite the current cloud data with the data on this device. Continue?';
+            primaryBtn.textContent = 'Save to Cloud';
+        } else if (action === 'load') {
+            titleEl.textContent = 'Confirm load';
+            copyEl.textContent = 'This will overwrite the current data on this device with the latest cloud data. Continue?';
+            primaryBtn.textContent = 'Load from Cloud';
+        } else if (action === 'import') {
+            titleEl.textContent = 'Confirm import';
+            copyEl.textContent = 'Importing will overwrite the current data on this device. A backup of your current data will be downloaded first. Continue?';
+            primaryBtn.textContent = 'Backup and Confirm';
+        } else {
+            return;
+        }
+
+        actionsPanel.style.display = 'none';
+        confirmPanel.style.display = 'block';
+    }
+
+    function closeCloudConfirmModal() {
+        pendingCloudAction = null;
+        const actionsPanel = document.getElementById('auth-session-actions');
+        const confirmPanel = document.getElementById('cloud-inline-confirm');
+        if (confirmPanel) confirmPanel.style.display = 'none';
+        if (actionsPanel) actionsPanel.style.display = 'flex';
+    }
+
+    async function confirmCloudActionProceed() {
+        const action = pendingCloudAction;
+        closeCloudConfirmModal();
+        if (action === 'save') {
+            closeAuthModal();
+            await saveToCloud({ confirmed: true });
+        } else if (action === 'load') {
+            closeAuthModal();
+            await loadFromCloud({ confirmed: true });
+        } else if (action === 'import') {
+            beginImportWithBackup();
+        }
+    }
+
+    function requestImportData() {
+        showCloudConfirmModal('import');
+    }
+
+    function requestSaveToCloud() {
+        showCloudConfirmModal('save');
+    }
+
+    function requestLoadFromCloud() {
+        showCloudConfirmModal('load');
+    }
+
+    function updateAuthUi() {
+        const headerBtn = document.getElementById('header-auth-btn');
+        const tabs = document.getElementById('auth-tabs');
+        const formPanel = document.getElementById('auth-form-panel');
+        const sessionPanel = document.getElementById('auth-session-panel');
+        const userEmail = document.getElementById('auth-user-email');
+
+        if (currentUser) {
+            headerBtn.textContent = 'Account';
+            tabs.style.display = 'none';
+            formPanel.style.display = 'none';
+            sessionPanel.style.display = 'block';
+            userEmail.textContent = currentUser.email || 'Signed in';
+            renderPersistentCloudStatus();
+        } else {
+            headerBtn.textContent = 'Log in';
+            tabs.style.display = 'flex';
+            formPanel.style.display = 'block';
+            sessionPanel.style.display = 'none';
+            userEmail.textContent = '';
+            lastCloudSavedAt = null;
+            setCloudStatus('');
+        }
+
+        closeCloudConfirmModal();
+        updateAutoSaveUi();
+        scheduleAutoSave();
+    }
+
+    function showAuthModal() {
+        updateAuthUi();
+        document.getElementById('auth-modal').style.display = 'flex';
+    }
+
+    function closeAuthModal() {
+        document.getElementById('auth-modal').style.display = 'none';
+        setAuthFeedback('');
+        clearModalCloudStatus();
+        closeCloudConfirmModal();
+    }
+
+    function initSupabase() {
+        if (!window.supabase || !window.supabase.createClient) {
+            console.error('Supabase JS was not loaded.');
+            return;
+        }
+
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        supabaseClient.auth.onAuthStateChange((_event, session) => {
+            currentUser = session?.user ?? null;
+            updateAuthUi();
+            scheduleAutoSave();
+        });
+    }
+
+    async function refreshCurrentUser() {
+        if (!supabaseClient) return null;
+        const { data, error } = await supabaseClient.auth.getUser();
+        if (error) {
+            console.error(error);
+            return null;
+        }
+        currentUser = data?.user ?? null;
+        updateAuthUi();
+        return currentUser;
+    }
+
+    async function submitAuth() {
+        if (!supabaseClient) {
+            setAuthFeedback('Supabase client chưa sẵn sàng.', 'error');
+            return;
+        }
+
+        const email = document.getElementById('auth-email').value.trim();
+        const password = document.getElementById('auth-password').value;
+
+        if (!email || !password) {
+            setAuthFeedback('Nhập email và password trước đã.', 'error');
+            return;
+        }
+
+        try {
+            setAuthFeedback(authMode === 'signup' ? 'Creating account...' : 'Signing in...', 'info');
+
+            if (authMode === 'signup') {
+                const { data, error } = await supabaseClient.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        emailRedirectTo: window.location.href.split('#')[0]
+                    }
+                });
+                if (error) throw error;
+                currentUser = data?.session?.user ?? null;
+                if (data?.session) {
+                    setAuthFeedback('Account created and signed in.', 'success');
+                } else {
+                    setAuthFeedback('Account created. Check your email if confirmation is on.', 'success');
+                }
+            } else {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+                currentUser = data?.user ?? null;
+                setAuthFeedback('Logged in.', 'success');
+            }
+
+            updateAuthUi();
+        } catch (error) {
+            console.error(error);
+            setAuthFeedback(error.message || 'Auth failed.', 'error');
+        }
+    }
+
+    async function signOutUser() {
+        if (!supabaseClient) return;
+        const { error } = await supabaseClient.auth.signOut();
+        if (error) {
+            setAuthFeedback(error.message || 'Log out failed.', 'error');
+            return;
+        }
+        currentUser = null;
+        clearInterval(autoSaveIntervalId);
+        updateAuthUi();
+        setAuthFeedback('Logged out.', 'success');
+    }
+
+    async function ensureSignedIn() {
+        const user = currentUser || await refreshCurrentUser();
+        if (!user) {
+            setAuthFeedback('Đăng nhập trước để dùng cloud.', 'error');
+            return null;
+        }
+        return user;
+    }
+
+    async function saveToCloud(options = {}) {
+        const { silentFeedback = false, confirmed = false, source = 'manual' } = options;
+        if (!silentFeedback && source !== 'auto' && !confirmed) {
+            showCloudConfirmModal('save');
+            return;
+        }
+        const user = await ensureSignedIn();
+        if (!user || isCloudSaving) return;
+
+        try {
+            isCloudSaving = true;
+            setCloudStatus('Saving...', 'info');
+            if (!silentFeedback) {
+                setAuthFeedback('Saving to cloud...', 'info');
+            }
+            syncEditorDraftToIdea(false);
+            persistLocalState();
+            lastCloudSavedAt = new Date().toISOString();
+            const payload = {
+                user_id: user.id,
+                state: serializeState(),
+                updated_at: lastCloudSavedAt
+            };
+            const { data, error } = await supabaseClient
+                .from(CLOUD_TABLE)
+                .upsert(payload, { onConflict: 'user_id' })
+                .select('updated_at')
+                .single();
+            if (error) throw error;
+            lastCloudSavedAt = data?.updated_at || lastCloudSavedAt;
+            persistLocalState();
+            updateLastSavedLine();
+            setCloudStatus('Saved', 'success', 1200);
+            if (!silentFeedback) {
+                setAuthFeedback('Saved to cloud.', 'success');
+            }
+        } catch (error) {
+            console.error(error);
+            setCloudStatus('Save failed', 'error', 3500);
+            setAuthFeedback(error.message || 'Save failed.', 'error');
+        } finally {
+            isCloudSaving = false;
+        }
+    }
+
+    async function loadFromCloud(options = {}) {
+        const { confirmed = false } = options;
+        if (!confirmed) {
+            showCloudConfirmModal('load');
+            return;
+        }
+
+        const user = await ensureSignedIn();
+        if (!user) return;
+
+        try {
+            setCloudStatus('Loading...', 'info');
+            setAuthFeedback('Loading from cloud...', 'info');
+            const { data, error } = await supabaseClient
+                .from(CLOUD_TABLE)
+                .select('state, updated_at')
+                .eq('user_id', user.id)
+                .maybeSingle();
+
+            if (error) throw error;
+
+            if (!data || !data.state) {
+                setCloudStatus('No cloud data', 'muted', 2200);
+                setAuthFeedback('Cloud chưa có dữ liệu nào.', 'muted');
+                return;
+            }
+
+            applyState(data.state);
+            if (data.updated_at) {
+                lastCloudSavedAt = data.updated_at;
+            }
+            persistLocalState();
+            currentEditId = null;
+            document.getElementById('edit-screen').style.display = 'none';
+            document.getElementById('main-screen').style.display = 'block';
+            renderList();
+            updateLastSavedLine();
+            updateAutoSaveUi();
+            scheduleAutoSave();
+            setCloudStatus('Loaded', 'success', 1200);
+            setAuthFeedback('Loaded from cloud.', 'success');
+        } catch (error) {
+            console.error(error);
+            setAuthFeedback(error.message || 'Load failed.', 'error');
+        }
+    }
+
+    function buildExportPayload() {
+        syncEditorDraftToIdea(false);
+        return {
+            app: "Liem's Idea Pad",
+            exportedAt: new Date().toISOString(),
+            state: serializeState()
+        };
+    }
+
+    function downloadJsonFile(dataObject, filename) {
+        const blob = new Blob([JSON.stringify(dataObject, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function createTimestampForFilename() {
+        const now = new Date();
+        const pad = value => String(value).padStart(2, '0');
+        return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}`;
+    }
+
+    function exportCurrentData(prefix = 'liems-idea-pad-export') {
+        try {
+            const payload = buildExportPayload();
+            persistLocalState();
+            downloadJsonFile(payload, `${prefix}_${createTimestampForFilename()}.json`);
+            setCloudStatus('Exported', 'success', 1600);
+        } catch (error) {
+            console.error(error);
+            setCloudStatus('Export failed', 'error', 3000);
+        }
+    }
+
+    function beginImportWithBackup() {
+        try {
+            pendingImportAfterBackup = true;
+            exportCurrentData('liems-idea-pad-backup');
+            const input = document.getElementById('import-data-input');
+            if (input) {
+                input.value = '';
+                closeAuthModal();
+                setTimeout(() => input.click(), 150);
+            }
+        } catch (error) {
+            console.error(error);
+            pendingImportAfterBackup = false;
+            showAuthModal();
+            setAuthFeedback('Backup failed. Import was cancelled.', 'error');
+        }
+    }
+
+    function handleImportFileSelected(event) {
+        const file = event?.target?.files?.[0];
+        if (!file) {
+            pendingImportAfterBackup = false;
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            try {
+                const raw = JSON.parse(reader.result);
+                const importedState = raw && typeof raw === 'object' && raw.state ? raw.state : raw;
+                applyState(importedState);
+                persistLocalState();
+                currentEditId = null;
+                document.getElementById('edit-screen').style.display = 'none';
+                document.getElementById('main-screen').style.display = 'block';
+                renderList();
+                updateAutoSaveUi();
+                scheduleAutoSave();
+                ensureCurrentSnapshotInHistory(true);
+                setCloudStatus('Imported', 'success', 1800);
+            } catch (error) {
+                console.error(error);
+                showAuthModal();
+                setAuthFeedback('Import failed. The file was read, but the import could not be completed.', 'error');
+                setCloudStatus('Import failed', 'error', 3000);
+            } finally {
+                pendingImportAfterBackup = false;
+                event.target.value = '';
+            }
+        };
+        reader.onerror = () => {
+            pendingImportAfterBackup = false;
+            event.target.value = '';
+            showAuthModal();
+            setAuthFeedback('Could not read that file.', 'error');
+            setCloudStatus('Import failed', 'error', 3000);
+        };
+        reader.readAsText(file);
+    }
+
+    function handleSearch(e) {
+        searchQuery = e.target.value.toLowerCase();
+        renderList();
+    }
+
+    function renderList() {
+        const container = document.getElementById('list-container');
+        container.innerHTML = '';
+
+        const filteredIdeas = ideas.filter(idea => {
+            const matchesSearch = !searchQuery || `${idea.title || ''} ${htmlToText(idea.content || '')}`.toLowerCase().includes(searchQuery);
+            const matchesStatus = selectedStatusFilter === 'All' || idea.status === selectedStatusFilter;
+            return matchesSearch && matchesStatus;
+        });
+
+        const groupedIdeas = {};
+        Object.keys(groups).forEach(groupId => { groupedIdeas[groupId] = []; });
+
+        filteredIdeas.forEach(idea => {
+            const groupId = idea.groupId || 'default';
+            if (!groupedIdeas[groupId]) groupedIdeas[groupId] = [];
+            groupedIdeas[groupId].push(idea);
+        });
+
+        groupOrder.forEach(groupId => {
+            if (!groups[groupId]) return;
+            const groupIdeas = groupedIdeas[groupId] || [];
+
+            if (groupIdeas.length === 0 && groupId === 'default' && !searchQuery) return;
+
+            const groupWrapper = document.createElement('div');
+            groupWrapper.className = 'group-wrapper';
+            groupWrapper.dataset.groupId = groupId;
+
+            const header = document.createElement('div');
+            header.className = 'group-header';
+
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'group-header-title';
+
+            const groupDragHandle = document.createElement('span');
+            groupDragHandle.className = 'group-drag-handle';
+            groupDragHandle.innerHTML = '⋮⋮';
+            titleDiv.appendChild(groupDragHandle);
+
+            const titleSpan = document.createElement('span');
+            titleSpan.className = 'group-name-editable';
+            titleSpan.textContent = groups[groupId];
+
+            if (groupId !== 'default') {
+                titleSpan.contentEditable = 'true';
+                titleSpan.spellcheck = false;
+
+                titleSpan.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        titleSpan.blur();
+                    }
+                });
+
+                titleSpan.addEventListener('blur', () => {
+                    const newName = titleSpan.textContent.trim();
+                    if (newName) {
+                        groups[groupId] = newName;
+                        persistLocalState();
+                        ensureCurrentSnapshotInHistory();
+                    } else {
+                        titleSpan.textContent = groups[groupId];
+                    }
+                });
+            }
+
+            titleDiv.appendChild(titleSpan);
+            header.appendChild(titleDiv);
+
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'group-actions';
+
+            const toggleBtn = document.createElement('button');
+            toggleBtn.className = 'action-btn-mini';
+            toggleBtn.innerHTML = collapsedGroups.has(groupId)
+                ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"></polyline></svg>'
+                : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+            toggleBtn.onclick = (event) => {
+                event.stopPropagation();
+                toggleGroup(groupId);
+            };
+            actionsDiv.appendChild(toggleBtn);
+
+            if (groupId !== 'default') {
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'action-btn-mini btn-trash';
+                deleteBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+                deleteBtn.onclick = (event) => {
+                    event.stopPropagation();
+                    showDeleteGroupModal(groupId);
+                };
+                actionsDiv.appendChild(deleteBtn);
+            }
+
+            header.appendChild(actionsDiv);
+            groupWrapper.appendChild(header);
+
+            const listBlock = document.createElement('div');
+            listBlock.className = 'idea-list';
+            listBlock.dataset.groupId = groupId;
+
+            if (collapsedGroups.has(groupId)) {
+                listBlock.style.display = 'none';
+            }
+
+            groupIdeas.forEach(idea => {
+                const item = document.createElement('div');
+                item.className = 'idea-item' + (selectedIdeas.has(idea.id) ? ' selected' : '');
+                item.dataset.id = idea.id;
+
+                const displayTitle = idea.title || 'New Idea';
+                const optionsHtml = statuses.map(status =>
+                    `<option value="${status}" ${idea.status === status ? 'selected' : ''}>${status}</option>`
+                ).join('');
+                const currentColor = statusColors[idea.status] || 'var(--text-main)';
+
+                item.innerHTML = `
+                    <div class="checkbox"></div>
+                    <div class="idea-content">
+                        <h3 class="idea-title">${displayTitle}</h3>
+                        <div class="idea-sub">
+                            <span style="opacity: 0.6;">${idea.date || getTodayDateString()}</span>
+                            <span style="opacity: 0.3;">•</span>
+                            <select class="status-dropdown" style="color: ${currentColor};" data-idea-id="${String(idea.id)}">
+                                ${optionsHtml}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="drag-handle">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                    </div>
+                `;
+
+                const handleTouchStartWithFilter = (event) => {
+                    if (event.target.closest('.drag-handle') || event.target.tagName === 'SELECT' || event.target.tagName === 'OPTION') return;
+                    handleTouchStart(event, idea.id);
+                };
+
+                const handleItemClickWithFilter = (event) => {
+                    if (event.target.closest('.drag-handle') || event.target.tagName === 'SELECT' || event.target.tagName === 'OPTION') return;
+                    handleItemClick(event, idea.id);
+                };
+
+                if (isMobile) {
+                    item.addEventListener('touchstart', handleTouchStartWithFilter);
+                    item.addEventListener('touchend', handleTouchEnd);
+                    item.addEventListener('touchmove', handleTouchEnd);
+                } else {
+                    item.addEventListener('mousedown', handleTouchStartWithFilter);
+                    item.addEventListener('mouseup', handleTouchEnd);
+                    item.addEventListener('mouseleave', handleTouchEnd);
+                }
+
+                const statusSelect = item.querySelector('.status-dropdown');
+                statusSelect.addEventListener('change', (event) => {
+                    changeStatus(event, statusSelect.dataset.ideaId, statusSelect.value);
+                });
+
+                item.addEventListener('click', handleItemClickWithFilter);
+                listBlock.appendChild(item);
+            });
+
+            groupWrapper.appendChild(listBlock);
+            container.appendChild(groupWrapper);
+        });
+
+        initDragAndDrop();
+        persistLocalState();
+        updateFilterButtonState();
+        ensureCurrentSnapshotInHistory();
+    }
+
+    function destroySortables() {
+        listSortables.forEach(instance => instance.destroy());
+        listSortables = [];
+        if (groupSortable) {
+            groupSortable.destroy();
+            groupSortable = null;
+        }
+    }
+
+    function initDragAndDrop() {
+        destroySortables();
+
+        const listContainers = document.querySelectorAll('.idea-list');
+        listContainers.forEach(container => {
+            const sortable = new Sortable(container, {
+                group: 'shared',
+                handle: '.drag-handle',
+                animation: 150,
+                disabled: isSelectionMode,
+                onEnd: function (evt) {
+                    const ideaId = evt.item.dataset.id;
+                    const newGroupId = evt.to.dataset.groupId;
+                    const idea = ideas.find(item => String(item.id) === String(ideaId));
+                    if (idea) {
+                        idea.groupId = newGroupId;
+                    }
+                    renderList();
+                }
+            });
+            listSortables.push(sortable);
+        });
+
+        const mainContainer = document.getElementById('list-container');
+        groupSortable = new Sortable(mainContainer, {
+            handle: '.group-drag-handle',
+            animation: 150,
+            disabled: isSelectionMode,
+            onEnd: function () {
+                const wrappers = Array.from(mainContainer.querySelectorAll('.group-wrapper'));
+                groupOrder = wrappers.map(wrapper => wrapper.dataset.groupId);
+                renderList();
+            }
+        });
+    }
+
+    function handleTouchStart(event, id) {
+        if (event.target.tagName === 'SELECT' || event.target.tagName === 'OPTION') return;
+        pressTimer = setTimeout(() => {
+            if (!isSelectionMode) {
+                enterSelectionMode(id);
+            }
+        }, 500);
+    }
+
+    function handleTouchEnd() {
+        clearTimeout(pressTimer);
+    }
+
+    function handleItemClick(event, id) {
+        if (event.target.tagName === 'SELECT' || event.target.tagName === 'OPTION') return;
+
+        if (isSelectionMode) {
+            toggleSelection(id);
+        } else {
+            openEditScreen(id);
+        }
+    }
+
+    function toggleGroup(groupId) {
+        if (collapsedGroups.has(groupId)) {
+            collapsedGroups.delete(groupId);
+        } else {
+            collapsedGroups.add(groupId);
+        }
+        renderList();
+    }
+
+    function changeStatus(event, id, newStatus) {
+        event.stopPropagation();
+        const idea = ideas.find(item => String(item.id) === String(id));
+        if (idea) {
+            idea.status = newStatus;
+        }
+        renderList();
+    }
+
+    function enterSelectionMode(firstId) {
+        isSelectionMode = true;
+        document.body.classList.add('selection-mode');
+        if (firstId !== undefined && firstId !== null) {
+            selectedIdeas.add(firstId);
+            renderList();
+        }
+    }
+
+    function exitSelectionMode() {
+        isSelectionMode = false;
+        document.body.classList.remove('selection-mode');
+        selectedIdeas.clear();
+        renderList();
+    }
+
+    function toggleSelection(id) {
+        if (selectedIdeas.has(id)) {
+            selectedIdeas.delete(id);
+        } else {
+            selectedIdeas.add(id);
+        }
+        renderList();
+        if (selectedIdeas.size === 0) exitSelectionMode();
+    }
+
+    function showGroupModal() {
+        if (selectedIdeas.size === 0) return;
+        isCreatingEmptyGroup = false;
+        document.getElementById('group-modal').style.display = 'flex';
+        document.getElementById('group-name-input').focus();
+    }
+
+    function showEmptyGroupModal() {
+        isCreatingEmptyGroup = true;
+        document.getElementById('group-modal').style.display = 'flex';
+        document.getElementById('group-name-input').focus();
+    }
+
+    function closeModal() {
+        document.getElementById('group-modal').style.display = 'none';
+        document.getElementById('group-name-input').value = '';
+        isCreatingEmptyGroup = false;
+    }
+
+    function applyGroup() {
+        const groupName = document.getElementById('group-name-input').value.trim();
+        if (!groupName) {
+            alert('Vui lòng nhập tên folder!');
+            return;
+        }
+
+        const newGroupId = 'g_' + Date.now();
+        groups[newGroupId] = groupName;
+        groupOrder.unshift(newGroupId);
+
+        if (!isCreatingEmptyGroup) {
+            ideas.forEach(idea => {
+                if (selectedIdeas.has(idea.id)) {
+                    idea.groupId = newGroupId;
+                }
+            });
+        }
+
+        closeModal();
+        exitSelectionMode();
+        renderList();
+    }
+
+    function ungroupSelected() {
+        if (selectedIdeas.size === 0) return;
+
+        ideas.forEach(idea => {
+            if (selectedIdeas.has(idea.id)) {
+                idea.groupId = 'default';
+            }
+        });
+
+        exitSelectionMode();
+    }
+
+    function showDeleteGroupModal(groupId) {
+        groupToDeleteId = groupId;
+        document.getElementById('delete-group-modal').style.display = 'flex';
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('delete-group-modal').style.display = 'none';
+        groupToDeleteId = null;
+    }
+
+    function confirmDeleteGroup(actionType) {
+        if (!groupToDeleteId) return;
+
+        if (actionType === 'delete_all') {
+            ideas = ideas.filter(idea => idea.groupId !== groupToDeleteId);
+        } else if (actionType === 'move_ungroup') {
+            ideas.forEach(idea => {
+                if (idea.groupId === groupToDeleteId) {
+                    idea.groupId = 'default';
+                }
+            });
+        }
+
+        delete groups[groupToDeleteId];
+        groupOrder = groupOrder.filter(groupId => groupId !== groupToDeleteId);
+        collapsedGroups.delete(groupToDeleteId);
+        closeDeleteModal();
+        renderList();
+    }
+
+    function toggleBlockInsideEditor(event, btnElement) {
+        event.preventDefault();
+        event.stopPropagation();
+        const block = btnElement.closest('.custom-block');
+        if (block) {
+            block.classList.toggle('collapsed');
+            if (block.classList.contains('collapsed')) {
+                btnElement.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"></polyline></svg>';
+            } else {
+                btnElement.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+            }
+            scheduleEditorHistorySync();
+        }
+    }
+
+    function toggleBlockDropdown(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const menu = document.getElementById('block-dropdown-menu');
+        if (!menu) return;
+        menu.classList.toggle('open');
+    }
+
+    function closeBlockDropdown() {
+        const menu = document.getElementById('block-dropdown-menu');
+        if (menu) {
+            menu.classList.remove('open');
+        }
+    }
+
+    function buildBlockHtml(title) {
+        return `
+            <div class="custom-block">
+                <div class="block-actions-overlay" contenteditable="false">
+                    <button class="action-btn-mini block-toggle-btn" onclick="toggleBlockInsideEditor(event, this)" title="Collapse / Expand"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+                    <button class="action-btn-mini btn-trash" onclick="showDeleteBlockModal(this)" title="Delete Block"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                </div>
+                <h3 class="block-title">${escapeHtml(title)}</h3>
+                <div class="block-content-body">
+                    <ul>
+                        <li><br></li>
+                    </ul>
+                </div>
+            </div><p><br></p>
+        `;
+    }
+
+    function escapeHtml(text) {
+        return String(text ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function convertBlockBodyToNormalHtml(bodyElement) {
+        if (!bodyElement) return '';
+        const clone = bodyElement.cloneNode(true);
+        clone.querySelectorAll('ul, ol').forEach(list => {
+            const fragment = document.createDocumentFragment();
+            Array.from(list.children).forEach(li => {
+                const paragraph = document.createElement('p');
+                const html = li.innerHTML.trim();
+                paragraph.innerHTML = html || '<br>';
+                fragment.appendChild(paragraph);
+            });
+            list.replaceWith(fragment);
+        });
+        return clone.innerHTML.trim();
+    }
+
+    function showDeleteBlockModal(btnElement) {
+        blockToDeleteElement = btnElement.closest('.custom-block');
+        closeBlockDropdown();
+        document.getElementById('delete-block-modal').style.display = 'flex';
+    }
+
+    function closeDeleteBlockModal() {
+        document.getElementById('delete-block-modal').style.display = 'none';
+        blockToDeleteElement = null;
+    }
+
+    function confirmDeleteBlock() {
+        if (blockToDeleteElement) {
+            blockToDeleteElement.remove();
+            scheduleEditorHistorySync();
+        }
+        closeDeleteBlockModal();
+    }
+
+    function convertBlockToNormalText() {
+        if (!blockToDeleteElement) {
+            closeDeleteBlockModal();
+            return;
+        }
+
+        const titleText = (blockToDeleteElement.querySelector('.block-title, h3')?.innerText || '').trim();
+        const bodyHtml = convertBlockBodyToNormalHtml(blockToDeleteElement.querySelector('.block-content-body'));
+        const mergedHtml = `${titleText ? `<p>${escapeHtml(titleText)}</p>` : ''}${bodyHtml}${bodyHtml ? '<p><br></p>' : ''}`;
+
+        blockToDeleteElement.insertAdjacentHTML('beforebegin', mergedHtml || '<p><br></p>');
+        blockToDeleteElement.remove();
+        scheduleEditorHistorySync();
+        closeDeleteBlockModal();
+    }
+
+    function createNewIdea() {
+        const newIdea = {
+            id: Date.now(),
+            title: '',
+            content: '',
+            status: 'Capture',
+            groupId: 'default',
+            date: getTodayDateString()
+        };
+        ideas.unshift(newIdea);
+        persistLocalState();
+        openEditScreen(newIdea.id);
+        ensureCurrentSnapshotInHistory();
+    }
+
+    function openEditScreen(id) {
+        currentEditId = id;
+        const idea = ideas.find(item => String(item.id) === String(id));
+        if (!idea) return;
+
+        closeBlockDropdown();
+        document.getElementById('main-screen').style.display = 'none';
+        document.getElementById('edit-screen').style.display = 'flex';
+
+        const titleInput = document.getElementById('editor-title');
+        titleInput.value = idea.title || '';
+
+        const editor = document.getElementById('editor');
+        editor.innerHTML = idea.content || '';
+
+        if (!idea.title) {
+            titleInput.focus();
+        } else {
+            editor.focus();
+        }
+    }
+
+    function getTopLevelEditorNode(node, editor) {
+        let current = node;
+        while (current && current !== editor) {
+            if (current.parentNode === editor) {
+                return current;
+            }
+            current = current.parentNode;
+        }
+        return null;
+    }
+
+    function placeCaretAtStart(element) {
+        if (!element) return;
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        if (typeof element.focus === 'function') {
+            element.focus();
+        }
+    }
+
+    function insertCustomBlock(title = 'Quick Capture') {
+        const editor = document.getElementById('editor');
+        if (!editor) return;
+        closeBlockDropdown();
+
+        const blockHtml = buildBlockHtml(title);
+        const selection = window.getSelection();
+        const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+        const anchorNode = range
+            ? (range.commonAncestorContainer.nodeType === Node.TEXT_NODE
+                ? range.commonAncestorContainer.parentNode
+                : range.commonAncestorContainer)
+            : null;
+
+        const currentBlock = anchorNode && typeof anchorNode.closest === 'function'
+            ? anchorNode.closest('.custom-block')
+            : null;
+
+        let insertedBlock = null;
+
+        if (currentBlock && editor.contains(currentBlock)) {
+            currentBlock.insertAdjacentHTML('afterend', blockHtml);
+            insertedBlock = currentBlock.nextElementSibling;
+        } else {
+            const topLevelNode = anchorNode ? getTopLevelEditorNode(anchorNode, editor) : null;
+            if (topLevelNode) {
+                topLevelNode.insertAdjacentHTML('afterend', blockHtml);
+                insertedBlock = topLevelNode.nextElementSibling;
+            } else {
+                editor.insertAdjacentHTML('beforeend', blockHtml);
+                insertedBlock = editor.querySelector('.custom-block:last-of-type');
+            }
+        }
+
+        const focusTarget = insertedBlock?.querySelector('.block-content-body li') || insertedBlock?.querySelector('.block-content-body');
+        if (focusTarget) {
+            placeCaretAtStart(focusTarget);
+        } else {
+            editor.focus();
+        }
+
+        scheduleEditorHistorySync();
+    }
+
+    function saveAndGoBack() {
+        const titleInput = document.getElementById('editor-title').value.trim();
+        const editor = document.getElementById('editor');
+        const content = editor.innerHTML;
+        const textContent = htmlToText(content);
+
+        if (currentEditId) {
+            const idea = ideas.find(item => String(item.id) === String(currentEditId));
+            if (idea) {
+                idea.title = titleInput;
+                idea.content = content;
+
+                if (!titleInput && !textContent) {
+                    ideas = ideas.filter(item => String(item.id) !== String(currentEditId));
+                }
+            }
+        }
+
+        closeBlockDropdown();
+        persistLocalState();
+        document.getElementById('edit-screen').style.display = 'none';
+        document.getElementById('main-screen').style.display = 'block';
+        currentEditId = null;
+        renderList();
+    }
+
+    function formatDoc(cmd, value = null) {
+        document.execCommand(cmd, false, value);
+        document.getElementById('editor').focus();
+        scheduleEditorHistorySync();
+    }
+
+    function bindModalOverlayClose() {
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (event) => {
+                if (event.target !== overlay) return;
+                if (overlay.id === 'group-modal') closeModal();
+                if (overlay.id === 'filter-modal') closeFilterModal();
+                if (overlay.id === 'delete-group-modal') closeDeleteModal();
+                if (overlay.id === 'delete-block-modal') closeDeleteBlockModal();
+                if (overlay.id === 'auth-modal') closeAuthModal();
+            });
+        });
+    }
+
+    async function bootstrap() {
+        hydrateLocalState();
+        setAuthMode('login');
+        updateAuthUi();
+        renderList();
+        bindModalOverlayClose();
+        initSupabase();
+        if (supabaseClient) {
+            await refreshCurrentUser();
+        }
+
+        const authPassword = document.getElementById('auth-password');
+        authPassword.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                submitAuth();
+            }
+        });
+
+        document.getElementById('editor-title').addEventListener('input', () => {
+            scheduleEditorHistorySync();
+        });
+
+        document.getElementById('editor').addEventListener('input', () => {
+            scheduleEditorHistorySync();
+        });
+
+        document.addEventListener('click', (event) => {
+            const wrap = document.getElementById('block-dropdown-wrap');
+            if (!wrap || wrap.contains(event.target)) return;
+            closeBlockDropdown();
+        });
+
+        updateFilterButtonState();
+        updateAutoSaveUi();
+        updateUndoRedoButtons();
+    }
+
+    bootstrap();
+
+</script>
+</body>
+</html>
