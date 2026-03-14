@@ -1,5 +1,6 @@
 
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -186,6 +187,106 @@
         
         .search-bar input::placeholder {
             color: var(--text-sub);
+        }
+
+
+        .search-wrap {
+            position: relative;
+            flex: 1;
+        }
+
+        .search-results-panel {
+            position: absolute;
+            top: calc(100% + 10px);
+            left: 0;
+            right: 0;
+            background: #202020;
+            border: 1px solid var(--divider);
+            border-radius: 14px;
+            box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+            z-index: 35;
+            max-height: 380px;
+            overflow-y: auto;
+            display: none;
+            padding: 8px;
+        }
+
+        .search-results-panel.open {
+            display: block;
+        }
+
+        .search-results-empty {
+            color: var(--text-sub);
+            font-size: 14px;
+            font-weight: 600;
+            padding: 16px 14px;
+        }
+
+        .search-results-header {
+            color: var(--text-sub);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 10px 12px 8px 12px;
+        }
+
+        .search-result-item {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .search-result-item:hover {
+            background: #2a2a2a;
+        }
+
+        .search-result-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .search-result-meta {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-sub);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .search-result-snippet {
+            font-size: 12px;
+            color: var(--text-sub);
+            line-height: 1.45;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .search-jump-highlight {
+            border-radius: 8px;
+            animation: searchJumpPulse 1.6s ease;
+        }
+
+        @keyframes searchJumpPulse {
+            0% { background-color: rgba(255, 200, 210, 0.24); }
+            100% { background-color: transparent; }
         }
 
         .header-icon-btn {
@@ -1076,12 +1177,15 @@
     <!-- SCREEN 1: MAIN LIST -->
     <div id="main-screen">
         <div class="toolbar-row">
-            <div class="search-bar">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.7;">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-                <input type="text" id="searchInput" placeholder="Search ideas..." oninput="handleSearch(event)">
+            <div class="search-wrap">
+                <div class="search-bar">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.7;">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="searchInput" placeholder="Search ideas..." oninput="handleSearch(event)" onfocus="handleSearchFocus()" autocomplete="off">
+                </div>
+                <div id="search-results-panel" class="search-results-panel"></div>
             </div>
             
             <button class="header-icon-btn" onclick="showEmptyGroupModal()" title="Tạo Folder mới">
@@ -1332,6 +1436,8 @@
     let isSelectionMode = false;
     let selectedIdeas = new Set();
     let searchQuery = '';
+    let searchResults = [];
+    let searchHighlightTimer = null;
     let selectedStatusFilter = 'All';
     let groupToDeleteId = null;
     let isCreatingEmptyGroup = false;
@@ -2193,8 +2299,145 @@
     }
 
     function handleSearch(e) {
-        searchQuery = e.target.value.toLowerCase();
+        searchQuery = (e.target.value || '').trim();
+        renderSearchResults();
+    }
+
+    function handleSearchFocus() {
+        if (searchQuery) {
+            renderSearchResults();
+        }
+    }
+
+    function getSearchResults() {
+        const query = (searchQuery || '').trim().toLowerCase();
+        if (!query) return [];
+
+        return ideas
+            .filter(idea => selectedStatusFilter === 'All' || idea.status === selectedStatusFilter)
+            .map(idea => {
+                const title = idea.title || 'New Idea';
+                const contentText = htmlToText(idea.content || '');
+                const groupName = groups[idea.groupId || 'default'] || 'Ungrouped';
+                const haystack = `${title} ${contentText} ${groupName} ${idea.status || ''}`.toLowerCase();
+                if (!haystack.includes(query)) return null;
+
+                const titleLower = title.toLowerCase();
+                const contentLower = contentText.toLowerCase();
+                let score = 0;
+                if (titleLower.startsWith(query)) score += 120;
+                else if (titleLower.includes(query)) score += 90;
+                if (contentLower.includes(query)) score += 40;
+                if ((groupName || '').toLowerCase().includes(query)) score += 20;
+                if ((idea.status || '').toLowerCase().includes(query)) score += 15;
+
+                const snippetSource = contentText || title;
+                const snippetLower = snippetSource.toLowerCase();
+                const matchIndex = snippetLower.indexOf(query);
+                let snippet = snippetSource;
+                if (matchIndex >= 0 && snippetSource.length > 120) {
+                    const start = Math.max(0, matchIndex - 28);
+                    const end = Math.min(snippetSource.length, matchIndex + query.length + 60);
+                    snippet = `${start > 0 ? '…' : ''}${snippetSource.slice(start, end)}${end < snippetSource.length ? '…' : ''}`;
+                } else if (snippetSource.length > 120) {
+                    snippet = `${snippetSource.slice(0, 120)}…`;
+                }
+
+                return {
+                    id: idea.id,
+                    title,
+                    snippet,
+                    status: idea.status,
+                    date: idea.date || getTodayDateString(),
+                    groupId: idea.groupId || 'default',
+                    groupName,
+                    score
+                };
+            })
+            .filter(Boolean)
+            .sort((a, b) => b.score - a.score || String(b.date).localeCompare(String(a.date)))
+            .slice(0, 12);
+    }
+
+    function renderSearchResults() {
+        const panel = document.getElementById('search-results-panel');
+        if (!panel) return;
+
+        const query = (searchQuery || '').trim();
+        if (!query) {
+            searchResults = [];
+            panel.classList.remove('open');
+            panel.innerHTML = '';
+            return;
+        }
+
+        searchResults = getSearchResults();
+        panel.classList.add('open');
+
+        if (searchResults.length === 0) {
+            panel.innerHTML = '<div class="search-results-header">Search Results</div><div class="search-results-empty">No matching ideas found.</div>';
+            return;
+        }
+
+        panel.innerHTML = `
+            <div class="search-results-header">${searchResults.length} result${searchResults.length > 1 ? 's' : ''}</div>
+            ${searchResults.map(result => `
+                <button class="search-result-item" onclick="jumpToIdeaFromSearch('${String(result.id).replace(/'/g, "\'")}')">
+                    <div class="search-result-title">${escapeHtml(result.title)}</div>
+                    <div class="search-result-meta">
+                        <span>${escapeHtml(result.groupName)}</span>
+                        <span style="opacity: 0.4;">•</span>
+                        <span style="color:${statusColors[result.status] || 'var(--text-sub)'}">${escapeHtml(result.status)}</span>
+                        <span style="opacity: 0.4;">•</span>
+                        <span>${escapeHtml(result.date)}</span>
+                    </div>
+                    <div class="search-result-snippet">${escapeHtml(result.snippet)}</div>
+                </button>
+            `).join('')}
+        `;
+    }
+
+    function closeSearchResults(clearQuery = false) {
+        const panel = document.getElementById('search-results-panel');
+        if (panel) {
+            panel.classList.remove('open');
+            panel.innerHTML = '';
+        }
+        searchResults = [];
+        if (clearQuery) {
+            searchQuery = '';
+            const input = document.getElementById('searchInput');
+            if (input) input.value = '';
+        }
+    }
+
+    function jumpToIdeaFromSearch(id) {
+        const targetIdea = ideas.find(item => String(item.id) === String(id));
+        if (!targetIdea) return;
+
+        if (isSelectionMode) {
+            exitSelectionMode();
+        }
+
+        const groupId = targetIdea.groupId || 'default';
+        if (collapsedGroups.has(groupId)) {
+            collapsedGroups.delete(groupId);
+        }
+
+        closeSearchResults(true);
         renderList();
+
+        requestAnimationFrame(() => {
+            const safeId = String(id).replace(/"/g, '\"');
+            const itemEl = document.querySelector(`.idea-item[data-id="${safeId}"]`);
+            if (!itemEl) return;
+            clearTimeout(searchHighlightTimer);
+            itemEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            itemEl.classList.add('search-jump-highlight');
+            searchHighlightTimer = setTimeout(() => {
+                itemEl.classList.remove('search-jump-highlight');
+            }, 1700);
+        });
     }
 
     function renderList() {
@@ -2202,9 +2445,8 @@
         container.innerHTML = '';
 
         const filteredIdeas = ideas.filter(idea => {
-            const matchesSearch = !searchQuery || `${idea.title || ''} ${htmlToText(idea.content || '')}`.toLowerCase().includes(searchQuery);
             const matchesStatus = selectedStatusFilter === 'All' || idea.status === selectedStatusFilter;
-            return matchesSearch && matchesStatus;
+            return matchesStatus;
         });
 
         const groupedIdeas = {};
@@ -2220,7 +2462,8 @@
             if (!groups[groupId]) return;
             const groupIdeas = groupedIdeas[groupId] || [];
 
-            if (groupIdeas.length === 0 && groupId === 'default' && !searchQuery) return;
+            const hasActiveListFilter = selectedStatusFilter !== 'All';
+            if (groupIdeas.length === 0 && (groupId === 'default' || hasActiveListFilter)) return;
 
             const groupWrapper = document.createElement('div');
             groupWrapper.className = 'group-wrapper';
@@ -2367,6 +2610,7 @@
         initDragAndDrop();
         persistLocalState();
         updateFilterButtonState();
+        renderSearchResults();
         ensureCurrentSnapshotInHistory();
     }
 
@@ -2715,6 +2959,7 @@
         if (!idea) return;
 
         closeBlockDropdown();
+        closeSearchResults();
         document.getElementById('main-screen').style.display = 'none';
         document.getElementById('edit-screen').style.display = 'flex';
 
@@ -2874,8 +3119,25 @@
 
         document.addEventListener('click', (event) => {
             const wrap = document.getElementById('block-dropdown-wrap');
-            if (!wrap || wrap.contains(event.target)) return;
-            closeBlockDropdown();
+            if (!wrap || !wrap.contains(event.target)) {
+                closeBlockDropdown();
+            }
+
+            const searchWrap = document.querySelector('.search-wrap');
+            if (searchWrap && !searchWrap.contains(event.target)) {
+                closeSearchResults();
+            }
+        });
+
+        document.getElementById('searchInput').addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeSearchResults();
+                event.target.blur();
+            }
+            if (event.key === 'Enter' && searchResults.length > 0) {
+                event.preventDefault();
+                jumpToIdeaFromSearch(searchResults[0].id);
+            }
         });
 
         updateFilterButtonState();
