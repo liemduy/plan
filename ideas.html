@@ -231,6 +231,32 @@
             padding: 10px 12px 8px 12px;
         }
 
+        .search-results-summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 12px 8px 12px;
+            color: var(--text-sub);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+        }
+
+        .search-results-hint {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            text-transform: none;
+            opacity: 0.75;
+            white-space: nowrap;
+        }
+
+        .search-results-section + .search-results-section {
+            margin-top: 2px;
+        }
+
         .search-result-item {
             width: 100%;
             background: transparent;
@@ -248,6 +274,40 @@
 
         .search-result-item:hover {
             background: #2a2a2a;
+        }
+
+        .search-result-item.active {
+            background: #2a2a2a;
+            outline: 1px solid rgba(255, 200, 210, 0.18);
+        }
+
+        .search-result-topline {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .search-result-main {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .search-result-badge {
+            flex-shrink: 0;
+            align-self: flex-start;
+            background: rgba(255, 200, 210, 0.1);
+            color: var(--accent);
+            border: 1px solid rgba(255, 200, 210, 0.12);
+            border-radius: 999px;
+            padding: 4px 8px;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
         }
 
         .search-result-title {
@@ -277,6 +337,13 @@
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
+        }
+
+        .search-highlight {
+            color: var(--text-main);
+            background: rgba(255, 200, 210, 0.22);
+            border-radius: 4px;
+            padding: 0 2px;
         }
 
         .search-jump-highlight {
@@ -1437,6 +1504,7 @@
     let selectedIdeas = new Set();
     let searchQuery = '';
     let searchResults = [];
+    let searchActiveIndex = -1;
     let searchHighlightTimer = null;
     let selectedStatusFilter = 'All';
     let groupToDeleteId = null;
@@ -2298,149 +2366,330 @@
         reader.readAsText(file);
     }
 
-    function handleSearch(e) {
-        searchQuery = (e.target.value || '').trim();
+
+function handleSearch(e) {
+    searchQuery = (e.target.value || '').trim();
+    searchActiveIndex = -1;
+    renderSearchResults();
+}
+
+function handleSearchFocus() {
+    if (searchQuery) {
         renderSearchResults();
     }
+}
 
-    function handleSearchFocus() {
-        if (searchQuery) {
-            renderSearchResults();
-        }
+function escapeRegExp(value) {
+    return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function getSearchTokens(query) {
+    return String(query || '')
+        .toLowerCase()
+        .split(/\s+/)
+        .map(token => token.trim())
+        .filter(Boolean)
+        .slice(0, 6);
+}
+
+function fieldMatchScore(text, tokens, fullQuery) {
+    const source = String(text || '').toLowerCase();
+    if (!source || tokens.length === 0) return 0;
+
+    let score = 0;
+    let matchedCount = 0;
+
+    if (fullQuery && source.includes(fullQuery)) {
+        score += source.startsWith(fullQuery) ? 45 : 28;
     }
 
-    function getSearchResults() {
-        const query = (searchQuery || '').trim().toLowerCase();
-        if (!query) return [];
+    tokens.forEach(token => {
+        if (!source.includes(token)) return;
+        matchedCount += 1;
+        if (source === token) score += 30;
+        else if (source.startsWith(token)) score += 20;
+        else score += 10;
+    });
 
-        return ideas
-            .filter(idea => selectedStatusFilter === 'All' || idea.status === selectedStatusFilter)
-            .map(idea => {
-                const title = idea.title || 'New Idea';
-                const contentText = htmlToText(idea.content || '');
-                const groupName = groups[idea.groupId || 'default'] || 'Ungrouped';
-                const haystack = `${title} ${contentText} ${groupName} ${idea.status || ''}`.toLowerCase();
-                if (!haystack.includes(query)) return null;
+    if (matchedCount === tokens.length) score += 18;
+    return score;
+}
 
-                const titleLower = title.toLowerCase();
-                const contentLower = contentText.toLowerCase();
-                let score = 0;
-                if (titleLower.startsWith(query)) score += 120;
-                else if (titleLower.includes(query)) score += 90;
-                if (contentLower.includes(query)) score += 40;
-                if ((groupName || '').toLowerCase().includes(query)) score += 20;
-                if ((idea.status || '').toLowerCase().includes(query)) score += 15;
+function highlightSearchText(text, tokens, fullQuery) {
+    let html = escapeHtml(String(text || ''));
+    const pieces = Array.from(new Set([fullQuery, ...tokens].filter(Boolean))).sort((a, b) => b.length - a.length);
+    pieces.forEach(piece => {
+        html = html.replace(new RegExp(`(${escapeRegExp(piece)})`, 'gi'), '<mark class="search-highlight">$1</mark>');
+    });
+    return html;
+}
 
-                const snippetSource = contentText || title;
-                const snippetLower = snippetSource.toLowerCase();
-                const matchIndex = snippetLower.indexOf(query);
-                let snippet = snippetSource;
-                if (matchIndex >= 0 && snippetSource.length > 120) {
-                    const start = Math.max(0, matchIndex - 28);
-                    const end = Math.min(snippetSource.length, matchIndex + query.length + 60);
-                    snippet = `${start > 0 ? '…' : ''}${snippetSource.slice(start, end)}${end < snippetSource.length ? '…' : ''}`;
-                } else if (snippetSource.length > 120) {
-                    snippet = `${snippetSource.slice(0, 120)}…`;
-                }
+function buildSnippetWithHighlight(text, tokens, fullQuery) {
+    const source = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!source) return '';
 
-                return {
-                    id: idea.id,
-                    title,
-                    snippet,
-                    status: idea.status,
-                    date: idea.date || getTodayDateString(),
-                    groupId: idea.groupId || 'default',
-                    groupName,
-                    score
-                };
-            })
-            .filter(Boolean)
-            .sort((a, b) => b.score - a.score || String(b.date).localeCompare(String(a.date)))
-            .slice(0, 12);
-    }
-
-    function renderSearchResults() {
-        const panel = document.getElementById('search-results-panel');
-        if (!panel) return;
-
-        const query = (searchQuery || '').trim();
-        if (!query) {
-            searchResults = [];
-            panel.classList.remove('open');
-            panel.innerHTML = '';
-            return;
-        }
-
-        searchResults = getSearchResults();
-        panel.classList.add('open');
-
-        if (searchResults.length === 0) {
-            panel.innerHTML = '<div class="search-results-header">Search Results</div><div class="search-results-empty">No matching ideas found.</div>';
-            return;
-        }
-
-        panel.innerHTML = `
-            <div class="search-results-header">${searchResults.length} result${searchResults.length > 1 ? 's' : ''}</div>
-            ${searchResults.map(result => `
-                <button class="search-result-item" onclick="jumpToIdeaFromSearch('${String(result.id).replace(/'/g, "\'")}')">
-                    <div class="search-result-title">${escapeHtml(result.title)}</div>
-                    <div class="search-result-meta">
-                        <span>${escapeHtml(result.groupName)}</span>
-                        <span style="opacity: 0.4;">•</span>
-                        <span style="color:${statusColors[result.status] || 'var(--text-sub)'}">${escapeHtml(result.status)}</span>
-                        <span style="opacity: 0.4;">•</span>
-                        <span>${escapeHtml(result.date)}</span>
-                    </div>
-                    <div class="search-result-snippet">${escapeHtml(result.snippet)}</div>
-                </button>
-            `).join('')}
-        `;
-    }
-
-    function closeSearchResults(clearQuery = false) {
-        const panel = document.getElementById('search-results-panel');
-        if (panel) {
-            panel.classList.remove('open');
-            panel.innerHTML = '';
-        }
-        searchResults = [];
-        if (clearQuery) {
-            searchQuery = '';
-            const input = document.getElementById('searchInput');
-            if (input) input.value = '';
-        }
-    }
-
-    function jumpToIdeaFromSearch(id) {
-        const targetIdea = ideas.find(item => String(item.id) === String(id));
-        if (!targetIdea) return;
-
-        if (isSelectionMode) {
-            exitSelectionMode();
-        }
-
-        const groupId = targetIdea.groupId || 'default';
-        if (collapsedGroups.has(groupId)) {
-            collapsedGroups.delete(groupId);
-        }
-
-        closeSearchResults(true);
-        renderList();
-
-        requestAnimationFrame(() => {
-            const safeId = String(id).replace(/"/g, '\"');
-            const itemEl = document.querySelector(`.idea-item[data-id="${safeId}"]`);
-            if (!itemEl) return;
-            clearTimeout(searchHighlightTimer);
-            itemEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            itemEl.classList.add('search-jump-highlight');
-            searchHighlightTimer = setTimeout(() => {
-                itemEl.classList.remove('search-jump-highlight');
-            }, 1700);
+    const lower = source.toLowerCase();
+    let firstIndex = fullQuery ? lower.indexOf(fullQuery) : -1;
+    if (firstIndex === -1) {
+        tokens.forEach(token => {
+            const idx = lower.indexOf(token);
+            if (idx !== -1 && (firstIndex === -1 || idx < firstIndex)) {
+                firstIndex = idx;
+            }
         });
     }
 
-    function renderList() {
+    let snippet = source;
+    if (source.length > 140) {
+        if (firstIndex >= 0) {
+            const focusLength = Math.max(fullQuery ? fullQuery.length : 0, tokens[0] ? tokens[0].length : 0, 1);
+            const start = Math.max(0, firstIndex - 32);
+            const end = Math.min(source.length, firstIndex + focusLength + 72);
+            snippet = `${start > 0 ? '…' : ''}${source.slice(start, end)}${end < source.length ? '…' : ''}`;
+        } else {
+            snippet = `${source.slice(0, 140)}…`;
+        }
+    }
+
+    return highlightSearchText(snippet, tokens, fullQuery);
+}
+
+function getSearchResults() {
+    const query = (searchQuery || '').trim().toLowerCase();
+    const tokens = getSearchTokens(query);
+    if (!query || tokens.length === 0) return [];
+
+    return ideas
+        .filter(idea => selectedStatusFilter === 'All' || idea.status === selectedStatusFilter)
+        .map(idea => {
+            const title = idea.title || 'New Idea';
+            const contentText = htmlToText(idea.content || '');
+            const groupName = groups[idea.groupId || 'default'] || 'Ungrouped';
+            const status = idea.status || 'Capture';
+            const date = idea.date || getTodayDateString();
+
+            const titleScore = fieldMatchScore(title, tokens, query);
+            const contentScore = fieldMatchScore(contentText, tokens, query);
+            const groupScore = fieldMatchScore(groupName, tokens, query);
+            const statusScore = fieldMatchScore(status, tokens, query);
+
+            const weightedScores = {
+                title: titleScore * 4.2,
+                content: contentScore * 2.4,
+                group: groupScore * 2.1,
+                status: statusScore * 1.6
+            };
+
+            const totalScore = Object.values(weightedScores).reduce((sum, value) => sum + value, 0);
+            if (totalScore <= 0) return null;
+
+            const matchType = Object.entries(weightedScores)
+                .sort((a, b) => b[1] - a[1])[0]?.[0] || 'content';
+
+            const matchLabelMap = {
+                title: 'Title match',
+                content: 'Content match',
+                group: 'Folder match',
+                status: 'Status match'
+            };
+
+            const snippetSource = matchType === 'content'
+                ? contentText
+                : (contentText || `${groupName} • ${status}`);
+
+            return {
+                id: idea.id,
+                title,
+                titleHtml: highlightSearchText(title, tokens, query),
+                snippetHtml: buildSnippetWithHighlight(snippetSource, tokens, query),
+                groupName,
+                groupNameHtml: highlightSearchText(groupName, tokens, query),
+                status,
+                statusHtml: highlightSearchText(status, tokens, query),
+                date,
+                groupId: idea.groupId || 'default',
+                score: totalScore,
+                matchType,
+                matchLabel: matchLabelMap[matchType]
+            };
+        })
+        .filter(Boolean)
+        .sort((a, b) => b.score - a.score || String(b.date).localeCompare(String(a.date)))
+        .slice(0, 16);
+}
+
+function setSearchActiveIndex(index, scrollIntoView = true) {
+    if (!searchResults.length) {
+        searchActiveIndex = -1;
+        return;
+    }
+
+    const maxIndex = searchResults.length - 1;
+    if (index < 0) index = maxIndex;
+    if (index > maxIndex) index = 0;
+    searchActiveIndex = index;
+
+    const panel = document.getElementById('search-results-panel');
+    if (!panel) return;
+
+    panel.querySelectorAll('.search-result-item').forEach(button => {
+        const isActive = Number(button.dataset.index) === searchActiveIndex;
+        button.classList.toggle('active', isActive);
+        if (isActive && scrollIntoView) {
+            button.scrollIntoView({ block: 'nearest' });
+        }
+    });
+}
+
+function moveSearchSelection(direction) {
+    if (!searchResults.length) return;
+    if (searchActiveIndex === -1) {
+        setSearchActiveIndex(0);
+        return;
+    }
+    setSearchActiveIndex(searchActiveIndex + direction);
+}
+
+function renderSearchResults() {
+    const panel = document.getElementById('search-results-panel');
+    if (!panel) return;
+
+    const query = (searchQuery || '').trim();
+    if (!query) {
+        searchResults = [];
+        searchActiveIndex = -1;
+        panel.classList.remove('open');
+        panel.innerHTML = '';
+        return;
+    }
+
+    const rawResults = getSearchResults();
+    panel.classList.add('open');
+
+    if (rawResults.length === 0) {
+        searchResults = [];
+        searchActiveIndex = -1;
+        panel.innerHTML = '<div class="search-results-summary"><span>0 results</span><span class="search-results-hint">Search title, content, folder, status</span></div><div class="search-results-empty">No matching ideas found.</div>';
+        return;
+    }
+
+    const sectionOrder = ['title', 'group', 'status', 'content'];
+    const sectionTitles = {
+        title: 'Title Matches',
+        group: 'Folder Matches',
+        status: 'Status Matches',
+        content: 'Content Matches'
+    };
+
+    const sectionBuckets = sectionOrder.map(sectionKey => ({
+        key: sectionKey,
+        items: rawResults.filter(result => result.matchType === sectionKey)
+    }));
+
+    searchResults = sectionBuckets.flatMap(section => section.items);
+
+    if (searchActiveIndex < 0 || searchActiveIndex >= searchResults.length) {
+        searchActiveIndex = 0;
+    }
+
+    let renderIndex = 0;
+    const sectionHtml = sectionBuckets.map(section => {
+        if (!section.items.length) return '';
+        const rows = section.items.map(result => {
+            const currentIndex = renderIndex;
+            renderIndex += 1;
+            return `
+                <button class="search-result-item ${currentIndex === searchActiveIndex ? 'active' : ''}" data-id="${escapeHtml(result.id)}" data-index="${currentIndex}" type="button">
+                    <div class="search-result-topline">
+                        <div class="search-result-main">
+                            <div class="search-result-title">${result.titleHtml}</div>
+                            <div class="search-result-meta">
+                                <span>${result.groupNameHtml}</span>
+                                <span style="opacity: 0.4;">•</span>
+                                <span style="color:${statusColors[result.status] || 'var(--text-sub)'}">${result.statusHtml}</span>
+                                <span style="opacity: 0.4;">•</span>
+                                <span>${escapeHtml(result.date)}</span>
+                            </div>
+                        </div>
+                        <span class="search-result-badge">${escapeHtml(result.matchLabel)}</span>
+                    </div>
+                    <div class="search-result-snippet">${result.snippetHtml}</div>
+                </button>
+            `;
+        }).join('');
+        return `
+            <div class="search-results-section">
+                <div class="search-results-header">${sectionTitles[section.key]}</div>
+                ${rows}
+            </div>
+        `;
+    }).join('');
+
+    panel.innerHTML = `
+        <div class="search-results-summary">
+            <span>${searchResults.length} result${searchResults.length > 1 ? 's' : ''}</span>
+            <span class="search-results-hint">↑↓ move • Enter jump • Esc close</span>
+        </div>
+        ${sectionHtml}
+    `;
+
+    panel.querySelectorAll('.search-result-item').forEach(button => {
+        button.addEventListener('mouseenter', () => {
+            setSearchActiveIndex(Number(button.dataset.index), false);
+        });
+        button.addEventListener('click', () => {
+            jumpToIdeaFromSearch(button.dataset.id);
+        });
+    });
+
+    setSearchActiveIndex(searchActiveIndex, false);
+}
+
+function closeSearchResults(clearQuery = false) {
+    const panel = document.getElementById('search-results-panel');
+    if (panel) {
+        panel.classList.remove('open');
+        panel.innerHTML = '';
+    }
+    searchResults = [];
+    searchActiveIndex = -1;
+    if (clearQuery) {
+        searchQuery = '';
+        const input = document.getElementById('searchInput');
+        if (input) input.value = '';
+    }
+}
+
+function jumpToIdeaFromSearch(id) {
+    const targetIdea = ideas.find(item => String(item.id) === String(id));
+    if (!targetIdea) return;
+
+    if (isSelectionMode) {
+        exitSelectionMode();
+    }
+
+    const groupId = targetIdea.groupId || 'default';
+    if (collapsedGroups.has(groupId)) {
+        collapsedGroups.delete(groupId);
+    }
+
+    closeSearchResults(true);
+    renderList();
+
+    requestAnimationFrame(() => {
+        const safeId = String(id).replace(/"/g, '\"');
+        const itemEl = document.querySelector(`.idea-item[data-id="${safeId}"]`);
+        if (!itemEl) return;
+        clearTimeout(searchHighlightTimer);
+        itemEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        itemEl.classList.add('search-jump-highlight');
+        searchHighlightTimer = setTimeout(() => {
+            itemEl.classList.remove('search-jump-highlight');
+        }, 1700);
+    });
+}
+
+function renderList() {
         const container = document.getElementById('list-container');
         container.innerHTML = '';
 
@@ -3133,10 +3382,24 @@
             if (event.key === 'Escape') {
                 closeSearchResults();
                 event.target.blur();
+                return;
+            }
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                moveSearchSelection(1);
+                return;
+            }
+            if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                moveSearchSelection(-1);
+                return;
             }
             if (event.key === 'Enter' && searchResults.length > 0) {
                 event.preventDefault();
-                jumpToIdeaFromSearch(searchResults[0].id);
+                const activeResult = searchResults[searchActiveIndex] || searchResults[0];
+                if (activeResult) {
+                    jumpToIdeaFromSearch(activeResult.id);
+                }
             }
         });
 
