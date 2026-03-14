@@ -69,9 +69,21 @@
             justify-content: space-between;
             align-items: center;
             gap: 12px;
-            padding: 24px 20px 0 20px;
+            padding: 24px 20px 14px 20px;
             margin-bottom: 24px;
             flex-shrink: 0;
+            position: relative;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            left: 20px;
+            right: 20px;
+            bottom: 0;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.06);
+            pointer-events: none;
         }
 
         /* --- SCREEN 1: MAIN --- */
@@ -461,8 +473,10 @@
             padding: 15px 20px;
             justify-content: space-between;
             align-items: center;
+            gap: 12px;
             border-top: 1px solid var(--divider);
             z-index: 11;
+            flex-wrap: wrap;
         }
 
         body.selection-mode .action-bar {
@@ -905,8 +919,13 @@
         }
         @media (max-width: 640px) {
             .header {
-                padding: 18px 14px 0 14px;
+                padding: 18px 14px 12px 14px;
                 margin-bottom: 18px;
+            }
+
+            .header::after {
+                left: 14px;
+                right: 14px;
             }
 
             .app-logo {
@@ -1092,6 +1111,7 @@
         <div class="action-bar">
             <button class="btn-text" style="color: var(--text-main);" onclick="exitSelectionMode()">Cancel</button>
             <button class="btn-text" onclick="ungroupSelected()">Ungroup</button>
+            <button class="btn-text" style="color: #ff8a80;" onclick="showDeleteIdeasModal()">Delete ideas</button>
             <button class="btn-primary" style="padding: 10px 24px;" onclick="showGroupModal()">Group ideas</button>
         </div>
     </div>
@@ -1173,6 +1193,18 @@
             <button class="btn-primary" style="background-color: #ff453a; color: white;" onclick="confirmDeleteGroup('delete_all')">Xóa tất cả Idea</button>
             <button class="btn-text" style="background-color: #333; border-radius: 20px; padding: 12px; color: white;" onclick="confirmDeleteGroup('move_ungroup')">Chuyển ra ngoài</button>
             <button class="btn-text" onclick="closeDeleteModal()">Hủy</button>
+        </div>
+    </div>
+</div>
+
+<!-- DELETE SELECTED IDEAS MODAL -->
+<div class="modal-overlay" id="delete-ideas-modal">
+    <div class="modal-content">
+        <h3 class="font-heading">Delete Ideas</h3>
+        <p style="font-size: 14px; color: var(--text-sub); margin-bottom: 24px;">Delete all selected ideas permanently?</p>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <button class="btn-primary" style="background-color: #ff453a; color: white;" onclick="confirmDeleteSelectedIdeas()">Delete selected ideas</button>
+            <button class="btn-text" onclick="closeDeleteIdeasModal()">Cancel</button>
         </div>
     </div>
 </div>
@@ -2505,6 +2537,26 @@
         exitSelectionMode();
     }
 
+    function showDeleteIdeasModal() {
+        if (selectedIdeas.size === 0) return;
+        document.getElementById('delete-ideas-modal').style.display = 'flex';
+    }
+
+    function closeDeleteIdeasModal() {
+        document.getElementById('delete-ideas-modal').style.display = 'none';
+    }
+
+    function confirmDeleteSelectedIdeas() {
+        if (selectedIdeas.size === 0) {
+            closeDeleteIdeasModal();
+            return;
+        }
+
+        ideas = ideas.filter(idea => !selectedIdeas.has(idea.id));
+        closeDeleteIdeasModal();
+        exitSelectionMode();
+    }
+
     function showDeleteGroupModal(groupId) {
         groupToDeleteId = groupId;
         document.getElementById('delete-group-modal').style.display = 'flex';
@@ -2786,6 +2838,7 @@
                 if (overlay.id === 'group-modal') closeModal();
                 if (overlay.id === 'filter-modal') closeFilterModal();
                 if (overlay.id === 'delete-group-modal') closeDeleteModal();
+                if (overlay.id === 'delete-ideas-modal') closeDeleteIdeasModal();
                 if (overlay.id === 'delete-block-modal') closeDeleteBlockModal();
                 if (overlay.id === 'auth-modal') closeAuthModal();
             });
