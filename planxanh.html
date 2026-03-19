@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liem's Planner</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: '#1ed760',
+                        brandLight: 'rgba(30, 215, 96, 0.15)',
+                        darkBg: '#000000',
+                        darkCard: '#121212',
+                        textMuted: '#b3b3b3',
+                        borderGray: '#2a2a2a'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none; /* Tránh bôi đen text ngẫu nhiên khi ấn giữ */
+        }
+        .accordion-content {
+            transition: all 0.3s ease-in-out;
+            overflow: hidden;
+        }
+        .chevron-icon { transition: transform 0.3s ease; }
+        
+        .editable-text {
+            cursor: text;
+            padding: 2px 4px;
+            margin-left: -4px;
+            border-radius: 4px;
+            border: 1px solid transparent;
+            transition: border-color 0.2s, background-color 0.2s, color 0.3s ease;
+            word-break: break-word;
+            user-select: text; /* Cho phép bôi đen text để sửa */
+        }
+        .editable-text:focus {
+            outline: none;
+            border-color: #1ed760;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .editable-text:empty:before {
+            content: "Nhập nội dung...";
+            color: #b3b3b3;
+            pointer-events: none;
+        }
+
+        /* --- Custom Done Styling --- */
+        .is-done-bg {
+            background-color: theme('colors.brandLight') !important;
+            border-radius: 0.375rem;
+            transition: background-color 0.3s ease;
+        }
+        .done-badge {
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.65rem;
+            font-weight: 600;
+            background-color: rgba(30, 215, 96, 0.15);
+            color: #1ed760;
+            padding: 2px 6px;
+            border-radius: 9999px;
+            margin-left: 8px;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+
+        /* Modal Overlays */
+        #custom-context-menu, #date-picker-menu, #auth-modal-dialog {
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            border: 1px solid #2a2a2a;
+        }
+    </style>
+</head>
+<body class="min-h-screen font-sans">
+
+    <!-- Header -->
+    <header class="bg-black py-4 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-50">
+        <div id="logo-btn" class="flex items-center gap-2 cursor-pointer hover:opacity-80 transition">
+            <i class="ph-fill ph-notebook text-3xl text-white"></i>
+            <span class="text-xl font-bold tracking-tight text-white">Liem's Planner</span>
+        </div>
+        <div class="flex items-center gap-4 sm:gap-6">
+            <button id="account-btn" class="bg-brand text-black font-bold py-2 px-4 sm:px-6 rounded-full text-sm sm:text-base hover:scale-105 transition-transform">
+                Account
+            </button>
+            <button class="text-white hover:text-brand transition ml-1">
+                <i class="ph ph-list text-3xl"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content: Projects View -->
+    <main id="projects-view" class="px-4 sm:px-8 py-6 max-w-3xl mx-auto pb-32 block">
+        
+        <!-- Search Bar -->
+        <div class="relative mb-8">
+            <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-gray-500">
+                <i class="ph ph-magnifying-glass text-xl"></i>
+            </div>
+            <input type="text" 
+                   class="bg-white text-black w-full rounded pl-12 pr-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-brand" 
+                   placeholder="Search">
+        </div>
+
+        <!-- Main Title Area -->
+        <div class="flex items-center justify-between mb-6 group">
+            <h1 class="text-2xl sm:text-3xl font-bold flex items-center">
+                Projects 
+                <span id="main-progress-counter" class="text-sm sm:text-base font-normal text-textMuted ml-3 select-none"></span>
+            </h1>
+            <button id="add-project-btn" class="flex items-center gap-1 text-sm font-semibold text-brand hover:text-white transition px-3 py-1.5 rounded-full bg-brand/10 hover:bg-brand/20">
+                <i class="ph ph-plus-circle text-lg"></i> project
+            </button>
+        </div>
+
+        <!-- Dynamic Accordion System -->
+        <div id="project-list" class="space-y-0 relative">
+            
+            <!-- Default Data Example -->
+            <div class="project-item border-b border-borderGray" data-level="project">
+                <div class="accordion-header w-full flex items-center justify-between py-5 text-left group cursor-pointer hover:bg-white/5 px-2 -mx-2 rounded transition">
+                    <div class="flex items-center flex-1 mr-4">
+                        <i class="ph ph-receipt text-2xl text-brand transition-colors duration-300 mr-3"></i>
+                        <span contenteditable="true" class="editable-text font-bold text-lg text-brand">Payment and billing</span>
+                        <span class="progress-counter text-sm font-normal text-textMuted ml-2 select-none" contenteditable="false"></span>
+                        <span class="badge-container"></span>
+                    </div>
+                    <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+                        <button class="add-phase-btn text-xs font-semibold text-brand bg-brand/10 hover:bg-brand hover:text-black transition px-2 py-1 rounded-full flex items-center gap-1"><i class="ph ph-plus"></i><span class="hidden sm:inline">phase</span></button>
+                        <button class="delete-btn text-textMuted hover:text-red-500 transition p-1"><i class="ph ph-trash text-lg"></i></button>
+                        <i class="ph ph-caret-down text-xl chevron-icon rotate-180 text-brand transition-colors duration-300 ml-1"></i>
+                    </div>
+                </div>
+                
+                <div class="accordion-content pl-8 sm:pl-12 pb-4 block">
+                    <!-- Phase 1.1 -->
+                    <div class="phase-item mb-2 border-b border-transparent" data-level="phase">
+                        <div class="accordion-header w-full flex items-center justify-between py-3 text-left group cursor-pointer hover:bg-white/5 px-2 -mx-2 rounded transition">
+                            <div class="flex items-center flex-1 mr-4">
+                                <span contenteditable="true" class="font-bold text-base text-white group-hover:text-brand transition editable-text">Suggested topics</span>
+                                <span class="progress-counter text-xs font-normal text-textMuted ml-2 select-none" contenteditable="false"></span>
+                                <span class="badge-container"></span>
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <button class="add-output-btn text-xs font-semibold text-white bg-white/10 hover:bg-white hover:text-black transition px-2 py-1 rounded-full flex items-center gap-1"><i class="ph ph-plus"></i><span class="hidden sm:inline">output</span></button>
+                                <button class="delete-btn text-textMuted hover:text-red-500 transition p-1"><i class="ph ph-trash text-lg"></i></button>
+                                <i class="ph ph-caret-down text-xl chevron-icon rotate-180 text-white ml-1"></i>
+                            </div>
+                        </div>
+                        <div class="accordion-content pl-4 sm:pl-6 pb-2 space-y-1 block mt-1">
+                            <div class="output-item group flex items-center justify-between py-2 px-2 -mx-2 hover:bg-white/5 rounded transition" data-level="output">
+                                <div class="flex items-center flex-1 mr-4">
+                                    <i class="ph ph-check-circle text-textMuted mr-2 opacity-50 text-sm"></i>
+                                    <span contenteditable="true" class="text-base text-gray-200 editable-text">Price update information</span>
+                                    <span class="badge-container"></span>
+                                </div>
+                                <button class="delete-btn text-textMuted hover:text-red-500 transition p-1 shrink-0"><i class="ph ph-trash text-base"></i></button>
+                            </div>
+                            <div class="output-item group flex items-center justify-between py-2 px-2 -mx-2 hover:bg-white/5 rounded transition" data-level="output">
+                                <div class="flex items-center flex-1 mr-4">
+                                    <i class="ph ph-check-circle text-textMuted mr-2 opacity-50 text-sm"></i>
+                                    <span contenteditable="true" class="text-base text-gray-200 editable-text">How to cancel Premium plan</span>
+                                    <span class="badge-container"></span>
+                                </div>
+                                <button class="delete-btn text-textMuted hover:text-red-500 transition p-1 shrink-0"><i class="ph ph-trash text-base"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Main Content: Schedule View (Hidden by default) -->
+    <main id="schedule-view" class="px-4 sm:px-8 py-6 max-w-3xl mx-auto pb-32 hidden">
+        <div class="flex items-center justify-between mb-6 group">
+            <h1 class="text-2xl sm:text-3xl font-bold flex items-center">Schedule</h1>
+        </div>
+        
+        <!-- Empty State -->
+        <div id="schedule-empty-state" class="border border-dashed border-[#2a2a2a] rounded-lg p-10 text-center flex flex-col items-center justify-center mt-4">
+            <i class="ph ph-calendar-blank text-5xl text-textMuted mb-4"></i>
+            <h2 class="text-lg font-bold text-white mb-2">No scheduled actions yet</h2>
+            <p class="text-textMuted text-sm">Long press any unfinished item in Projects and select "Add actions" to schedule them here.</p>
+        </div>
+
+        <!-- Schedule List Container -->
+        <div id="schedule-list" class="space-y-4 mt-4">
+            <!-- Scheduled items will be appended here -->
+        </div>
+    </main>
+
+    <!-- HTML for Action/Schedule Modal -->
+    <div id="action-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity" id="action-modal-backdrop"></div>
+        <!-- Dialog -->
+        <div class="bg-[#181818] border border-[#2a2a2a] rounded-lg shadow-2xl p-6 z-10 w-[90%] max-w-md transform scale-95 opacity-0 transition-all duration-200" id="action-modal-dialog">
+            <h3 class="text-xl font-bold mb-4">Add to Schedule</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-textMuted mb-1 uppercase tracking-wider">Action Name</label>
+                    <input type="text" id="action-input" class="w-full bg-[#121212] border border-[#3e3e3e] rounded p-3 text-white focus:outline-none focus:border-brand transition" placeholder="E.g., Update pricing page">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-textMuted mb-1 uppercase tracking-wider">Outputs (Press Enter for new line)</label>
+                    <textarea id="output-input" rows="4" class="w-full bg-[#121212] border border-[#3e3e3e] rounded p-3 text-white focus:outline-none focus:border-brand transition resize-none leading-relaxed" placeholder="Draft new copy&#10;Design new layout&#10;Deploy changes"></textarea>
+                </div>
+            </div>
+            <div class="flex gap-3 justify-end mt-6">
+                <button id="cancel-action-btn" class="px-4 py-2 rounded-full text-sm font-semibold hover:bg-white/10 transition">Cancel</button>
+                <button id="save-action-btn" class="px-4 py-2 rounded-full text-sm font-semibold bg-brand text-black hover:scale-105 transition">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- HTML for Auth/Account Modal -->
+    <div id="auth-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity" id="auth-modal-backdrop"></div>
+        <!-- Dialog -->
+        <div class="bg-[#181818] border border-[#2a2a2a] rounded-lg shadow-2xl p-6 z-10 w-[90%] max-w-sm transform scale-95 opacity-0 transition-all duration-200" id="auth-modal-dialog">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold">Account</h3>
+                <button id="close-auth-btn" class="text-textMuted hover:text-white transition"><i class="ph ph-x text-xl"></i></button>
+            </div>
+            
+            <form class="space-y-4" onsubmit="event.preventDefault();">
+                <div>
+                    <label class="block text-xs font-semibold text-textMuted mb-1 uppercase tracking-wider">Email or Username</label>
+                    <input type="text" class="w-full bg-[#121212] border border-[#3e3e3e] rounded p-3 text-white focus:outline-none focus:border-brand transition" placeholder="Enter email or username">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-textMuted mb-1 uppercase tracking-wider">Password</label>
+                    <input type="password" class="w-full bg-[#121212] border border-[#3e3e3e] rounded p-3 text-white focus:outline-none focus:border-brand transition" placeholder="Enter password">
+                </div>
+                
+                <div class="flex items-center justify-between pt-1">
+                    <label class="flex items-center gap-2 cursor-pointer group">
+                        <input type="checkbox" class="w-4 h-4 accent-brand rounded bg-[#121212] border-[#3e3e3e]">
+                        <span class="text-sm text-textMuted group-hover:text-white transition">Remember me</span>
+                    </label>
+                    <a href="#" class="text-sm text-textMuted hover:text-brand transition">Forgot password?</a>
+                </div>
+
+                <div class="pt-2">
+                    <button class="w-full bg-brand text-black font-bold py-3 rounded-full hover:scale-105 transition-transform">Log in</button>
+                </div>
+            </form>
+
+            <p class="text-textMuted text-sm text-center mt-6">
+                Don't have an account? <a href="#" class="text-white font-bold hover:text-brand transition">Sign up</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- HTML for Delete Confirmation Modal -->
+    <div id="delete-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity" id="delete-modal-backdrop"></div>
+        <div class="bg-[#181818] border border-[#2a2a2a] rounded-lg shadow-2xl p-6 z-10 w-[90%] max-w-sm transform scale-95 opacity-0 transition-all duration-200" id="delete-modal-dialog">
+            <h3 class="text-xl font-bold mb-2">Confirm Deletion</h3>
+            <p class="text-textMuted text-sm mb-6">Are you sure you want to delete this item? This action cannot be undone and will delete all items inside it.</p>
+            <div class="flex gap-3 justify-end">
+                <button id="cancel-delete-btn" class="px-4 py-2 rounded-full text-sm font-semibold hover:bg-white/10 transition">Cancel</button>
+                <button id="confirm-delete-btn" class="px-4 py-2 rounded-full text-sm font-semibold bg-red-600 text-white hover:bg-red-700 transition">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- HTML for Context Menu (Mark as Done / Undone) -->
+    <div id="custom-context-menu" class="fixed z-[90] hidden bg-[#282828] rounded-md shadow-xl py-1 min-w-[160px] transform -translate-x-4 -translate-y-4">
+        <button id="menu-mark-done" class="w-full text-left px-4 py-2.5 text-sm hover:bg-white/10 flex items-center gap-2 transition">
+            <i class="ph ph-check-circle text-brand text-lg"></i> Mark as done
+        </button>
+        <button id="menu-mark-undone" class="w-full text-left px-4 py-2.5 text-sm hover:bg-white/10 flex items-center gap-2 transition text-yellow-500 hidden">
+            <i class="ph ph-arrow-u-up-left text-lg"></i> Mark as undone
+        </button>
+        <div class="h-px bg-[#3e3e3e] my-1 mx-2"></div>
+        <button id="menu-add-actions" class="w-full text-left px-4 py-2.5 text-sm hover:bg-white/10 flex items-center gap-2 transition text-white">
+            <i class="ph ph-calendar-plus text-lg"></i> Add actions
+        </button>
+    </div>
+
+    <!-- HTML for Date Picker Pop-up -->
+    <div id="date-picker-menu" class="fixed z-[95] hidden bg-[#282828] rounded-md shadow-xl p-3 w-64 transform -translate-x-4 -translate-y-4">
+        <label class="block text-xs font-semibold text-textMuted mb-2 uppercase tracking-wider">Select Completion Date</label>
+        <input type="date" id="done-date-input" class="w-full bg-[#121212] border border-[#3e3e3e] rounded p-2 text-white text-sm mb-3 focus:outline-none focus:border-brand">
+        <div class="flex justify-end gap-2">
+            <button id="cancel-date-btn" class="px-3 py-1.5 rounded text-xs hover:bg-white/10 transition">Cancel</button>
+            <button id="save-date-btn" class="px-3 py-1.5 rounded text-xs bg-brand text-black font-bold hover:scale-105 transition">Save</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const projectList = document.getElementById('project-list');
+            const addProjectBtn = document.getElementById('add-project-btn');
+
+            // --- ACCOUNT MODAL LOGIC ---
+            const accountBtn = document.getElementById('account-btn');
+            const authModal = document.getElementById('auth-modal');
+            const authDialog = document.getElementById('auth-modal-dialog');
+            const closeAuthBtn = document.getElementById('close-auth-btn');
+            const authBackdrop = document.getElementById('auth-modal-backdrop');
+
+            function openAuth() {
+                authModal.classList.remove('hidden');
+                requestAnimationFrame(() => {
+                    authDialog.classList.remove('scale-95', 'opacity-0');
+                    authDialog.classList.add('scale-100', 'opacity-100');
+                });
+            }
+            function closeAuth() {
+                authDialog.classList.remove('scale-100', 'opacity-100');
+                authDialog.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => authModal.classList.add('hidden'), 200);
+            }
+            accountBtn.addEventListener('click', openAuth);
+            closeAuthBtn.addEventListener('click', closeAuth);
+            authBackdrop.addEventListener('click', closeAuth);
+
+
+            // --- UPDATE COUNTERS LOGIC ---
+            function updateCounters() {
+                // Update Phases (Count Outputs)
+                document.querySelectorAll('.phase-item').forEach(phase => {
+                    const outputs = phase.querySelectorAll(':scope > .accordion-content > .output-item');
+                    const total = outputs.length;
+                    const done = Array.from(outputs).filter(o => o.dataset.status === 'done').length;
+                    const counter = phase.querySelector(':scope > .accordion-header .progress-counter');
+                    if(counter) counter.textContent = total > 0 ? `(${done}/${total} done)` : '';
+                });
+
+                // Update Projects (Count Phases)
+                document.querySelectorAll('.project-item').forEach(project => {
+                    const phases = project.querySelectorAll(':scope > .accordion-content > .phase-item');
+                    const total = phases.length;
+                    const done = Array.from(phases).filter(p => p.dataset.status === 'done').length;
+                    const counter = project.querySelector(':scope > .accordion-header .progress-counter');
+                    if(counter) counter.textContent = total > 0 ? `(${done}/${total} done)` : '';
+                });
+
+                // Update Main Title (Count Projects)
+                const projects = document.querySelectorAll('.project-item');
+                const totalProj = projects.length;
+                const doneProj = Array.from(projects).filter(p => p.dataset.status === 'done').length;
+                const mainCounter = document.getElementById('main-progress-counter');
+                if(mainCounter) mainCounter.textContent = totalProj > 0 ? `(${doneProj}/${totalProj} done)` : '';
+            }
+
+            // Run on load
+            updateCounters();
+
+
+            // --- TEMPLATES ---
+            const templates = {
+                output: `
+                    <div class="output-item group flex items-center justify-between py-2 px-2 -mx-2 hover:bg-white/5 rounded transition" data-level="output">
+                        <div class="flex items-center flex-1 mr-4">
+                            <i class="ph ph-check-circle text-textMuted mr-2 opacity-50 text-sm"></i>
+                            <span contenteditable="true" class="text-base text-gray-200 editable-text">New Output</span>
+                            <span class="badge-container"></span>
+                        </div>
+                        <button class="delete-btn text-textMuted hover:text-red-500 transition p-1 shrink-0"><i class="ph ph-trash text-base"></i></button>
+                    </div>
+                `,
+                phase: `
+                    <div class="phase-item mb-2 border-b border-transparent" data-level="phase">
+                        <div class="accordion-header w-full flex items-center justify-between py-3 text-left group cursor-pointer hover:bg-white/5 px-2 -mx-2 rounded transition">
+                            <div class="flex items-center flex-1 mr-4">
+                                <span contenteditable="true" class="font-bold text-base text-white group-hover:text-brand transition editable-text">New Phase</span>
+                                <span class="progress-counter text-xs font-normal text-textMuted ml-2 select-none" contenteditable="false"></span>
+                                <span class="badge-container"></span>
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <button class="add-output-btn text-xs font-semibold text-white bg-white/10 hover:bg-white hover:text-black transition px-2 py-1 rounded-full flex items-center gap-1"><i class="ph ph-plus"></i><span class="hidden sm:inline">output</span></button>
+                                <button class="delete-btn text-textMuted hover:text-red-500 transition p-1"><i class="ph ph-trash text-lg"></i></button>
+                                <i class="ph ph-caret-down text-xl chevron-icon text-textMuted group-hover:text-white transition ml-1"></i>
+                            </div>
+                        </div>
+                        <div class="accordion-content pl-4 sm:pl-6 pb-2 space-y-1 block mt-1"></div>
+                    </div>
+                `,
+                project: `
+                    <div class="project-item border-b border-borderGray" data-level="project">
+                        <div class="accordion-header w-full flex items-center justify-between py-5 text-left group cursor-pointer hover:bg-white/5 px-2 -mx-2 rounded transition">
+                            <div class="flex items-center flex-1 mr-4">
+                                <i class="ph ph-folder-notch text-2xl text-brand transition-colors duration-300 mr-3"></i>
+                                <span contenteditable="true" class="editable-text font-bold text-lg text-brand">New Project</span>
+                                <span class="progress-counter text-sm font-normal text-textMuted ml-2 select-none" contenteditable="false"></span>
+                                <span class="badge-container"></span>
+                            </div>
+                            <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+                                <button class="add-phase-btn text-xs font-semibold text-brand bg-brand/10 hover:bg-brand hover:text-black transition px-2 py-1 rounded-full flex items-center gap-1"><i class="ph ph-plus"></i><span class="hidden sm:inline">phase</span></button>
+                                <button class="delete-btn text-textMuted hover:text-red-500 transition p-1"><i class="ph ph-trash text-lg"></i></button>
+                                <i class="ph ph-caret-down text-xl chevron-icon rotate-180 text-brand transition-colors duration-300 ml-1"></i>
+                            </div>
+                        </div>
+                        <div class="accordion-content pl-8 sm:pl-12 pb-4 block"></div>
+                    </div>
+                `
+            };
+
+
+            // --- DELETE MODAL LOGIC ---
+            let itemToDelete = null;
+            const deleteModal = document.getElementById('delete-modal');
+            const deleteModalDialog = document.getElementById('delete-modal-dialog');
+            const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+            const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+
+            function showDeleteModal(item) {
+                itemToDelete = item;
+                deleteModal.classList.remove('hidden');
+                requestAnimationFrame(() => {
+                    deleteModalDialog.classList.remove('scale-95', 'opacity-0');
+                    deleteModalDialog.classList.add('scale-100', 'opacity-100');
+                });
+            }
+
+            function hideDeleteModal() {
+                deleteModalDialog.classList.remove('scale-100', 'opacity-100');
+                deleteModalDialog.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    deleteModal.classList.add('hidden');
+                    itemToDelete = null;
+                }, 200);
+            }
+
+            cancelDeleteBtn.addEventListener('click', hideDeleteModal);
+            confirmDeleteBtn.addEventListener('click', () => {
+                if (itemToDelete) {
+                    const item = itemToDelete;
+                    const parentToCheck = item.parentElement.closest('[data-level]');
+                    item.style.opacity = '0';
+                    item.style.transform = 'scale(0.98)';
+                    item.style.transition = 'all 0.3s';
+                    setTimeout(() => {
+                        item.remove();
+                        if(parentToCheck) updateParentStatus(parentToCheck);
+                        updateCounters(); // RECOUNT
+                    }, 300);
+                }
+                hideDeleteModal();
+            });
+
+
+            // --- ADD / ACCORDION / DELETE BUTTON HANDLERS ---
+            addProjectBtn.addEventListener('click', () => {
+                projectList.insertAdjacentHTML('beforeend', templates.project);
+                projectList.lastElementChild.querySelector('.editable-text').focus();
+                updateCounters(); // RECOUNT
+            });
+
+            projectList.addEventListener('click', (e) => {
+                if (e.target.classList.contains('editable-text')) return;
+
+                const btn = e.target.closest('button');
+                if (btn) e.stopPropagation();
+
+                // Add Phase
+                if (e.target.closest('.add-phase-btn')) {
+                    const projectItem = e.target.closest('.project-item');
+                    const contentArea = projectItem.querySelector(':scope > .accordion-content');
+                    contentArea.insertAdjacentHTML('beforeend', templates.phase);
+                    openAccordion(projectItem.querySelector(':scope > .accordion-header'));
+                    contentArea.lastElementChild.querySelector('.editable-text').focus();
+                    updateParentStatus(projectItem); 
+                    updateCounters(); // RECOUNT
+                    return;
+                }
+
+                // Add Output
+                if (e.target.closest('.add-output-btn')) {
+                    const phaseItem = e.target.closest('.phase-item');
+                    const contentArea = phaseItem.querySelector(':scope > .accordion-content');
+                    contentArea.insertAdjacentHTML('beforeend', templates.output);
+                    openAccordion(phaseItem.querySelector(':scope > .accordion-header'));
+                    contentArea.lastElementChild.querySelector('.editable-text').focus();
+                    updateParentStatus(phaseItem);
+                    updateCounters(); // RECOUNT
+                    return;
+                }
+
+                // Delete Request
+                if (e.target.closest('.delete-btn')) {
+                    const item = e.target.closest('[data-level]');
+                    if (item) showDeleteModal(item);
+                    return;
+                }
+
+                // Accordion Toggle
+                const header = e.target.closest('.accordion-header');
+                if (header) toggleAccordion(header);
+            });
+
+            function toggleAccordion(header) {
+                const content = header.nextElementSibling;
+                if(!content) return;
+                if (content.classList.contains('hidden')) { openAccordion(header); } 
+                else { closeAccordion(header); }
+            }
+
+            function openAccordion(header) {
+                const content = header.nextElementSibling;
+                const chevron = header.querySelector('.chevron-icon');
+                content.classList.remove('hidden'); content.classList.add('block');
+                chevron.classList.add('rotate-180');
+
+                // Color change logic cho Project Level
+                const isProject = header.closest('.project-item') && !header.closest('.phase-item');
+                if (isProject) {
+                    const textSpan = header.querySelector('.editable-text');
+                    const icon = header.querySelector('i.ph-receipt, i.ph-folder-notch, i.ph-folder');
+                    textSpan.classList.replace('text-white', 'text-brand');
+                    if (icon) icon.classList.replace('text-white', 'text-brand');
+                    chevron.classList.replace('text-textMuted', 'text-brand');
+                }
+            }
+
+            function closeAccordion(header) {
+                const content = header.nextElementSibling;
+                const chevron = header.querySelector('.chevron-icon');
+                content.classList.add('hidden'); content.classList.remove('block');
+                chevron.classList.remove('rotate-180');
+
+                // Color change logic cho Project Level
+                const isProject = header.closest('.project-item') && !header.closest('.phase-item');
+                if (isProject) {
+                    const textSpan = header.querySelector('.editable-text');
+                    const icon = header.querySelector('i.ph-receipt, i.ph-folder-notch, i.ph-folder');
+                    textSpan.classList.replace('text-brand', 'text-white');
+                    if (icon) icon.classList.replace('text-brand', 'text-white');
+                    chevron.classList.replace('text-brand', 'text-textMuted');
+                }
+            }
+
+            projectList.addEventListener('keydown', (e) => {
+                if (e.target.classList.contains('editable-text') && e.key === 'Enter') {
+                    e.preventDefault(); e.target.blur();
+                }
+            });
+
+
+            // --- LONG PRESS & MARK AS DONE LOGIC ---
+            let pressTimer;
+            let longPressTarget = null;
+            let lastClientX = 0;
+            let lastClientY = 0;
+
+            const contextMenu = document.getElementById('custom-context-menu');
+            const datePickerMenu = document.getElementById('date-picker-menu');
+            const menuMarkDone = document.getElementById('menu-mark-done');
+            const menuMarkUndone = document.getElementById('menu-mark-undone');
+            const menuAddActions = document.getElementById('menu-add-actions');
+            const doneDateInput = document.getElementById('done-date-input');
+
+            // --- VIEW NAVIGATION LOGIC ---
+            const projectsView = document.getElementById('projects-view');
+            const scheduleView = document.getElementById('schedule-view');
+            const logoBtn = document.getElementById('logo-btn');
+
+            function showView(viewName) {
+                if (viewName === 'schedule') {
+                    projectsView.classList.replace('block', 'hidden');
+                    scheduleView.classList.replace('hidden', 'block');
+                } else {
+                    scheduleView.classList.replace('block', 'hidden');
+                    projectsView.classList.replace('hidden', 'block');
+                }
+            }
+
+            logoBtn.addEventListener('click', () => {
+                showView('projects');
+            });
+
+            function getTargetContainer(element) {
+                if (element.dataset.level === 'output') return element;
+                return Array.from(element.children).find(c => c.classList.contains('accordion-header'));
+            }
+
+            function startPress(e) {
+                if (e.target.closest('button')) return; // Ignore buttons
+                // Lấy toạ độ client
+                lastClientX = e.clientX || (e.touches && e.touches[0].clientX);
+                lastClientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+                const item = e.target.closest('[data-level]');
+                if (!item) return;
+
+                longPressTarget = item;
+                pressTimer = setTimeout(() => {
+                    showContextMenu(item);
+                }, 500); 
+            }
+
+            function cancelPress() { clearTimeout(pressTimer); }
+
+            projectList.addEventListener('mousedown', startPress);
+            projectList.addEventListener('touchstart', startPress, {passive: true});
+            window.addEventListener('mouseup', cancelPress);
+            window.addEventListener('touchend', cancelPress);
+            window.addEventListener('mousemove', cancelPress);
+            window.addEventListener('touchmove', cancelPress);
+
+            document.addEventListener('mousedown', (e) => {
+                if (!contextMenu.contains(e.target) && !datePickerMenu.contains(e.target)) {
+                    contextMenu.classList.add('hidden');
+                    datePickerMenu.classList.add('hidden');
+                }
+            });
+
+            function showContextMenu(item) {
+                cancelPress();
+                
+                // Huỷ bôi đen text nếu có
+                window.getSelection().removeAllRanges();
+                if(document.activeElement && document.activeElement.classList.contains('editable-text')) {
+                    document.activeElement.blur();
+                }
+
+                const isDone = item.dataset.status === 'done';
+                const isOutput = item.dataset.level === 'output';
+
+                // Chỉ hiện "Mark as undone" nếu đã done VÀ đang ở cấp output
+                if (isDone && isOutput) {
+                    menuMarkDone.classList.add('hidden');
+                    menuMarkUndone.classList.remove('hidden');
+                } else {
+                    menuMarkDone.classList.remove('hidden');
+                    menuMarkUndone.classList.add('hidden');
+                }
+
+                // Cập nhật Logic Add Actions: Chỉ hiện khi chưa done
+                if (isDone) {
+                    menuAddActions.classList.add('hidden');
+                } else {
+                    menuAddActions.classList.remove('hidden');
+                }
+
+                contextMenu.style.left = `${lastClientX}px`;
+                contextMenu.style.top = `${lastClientY}px`;
+                contextMenu.classList.remove('hidden');
+                datePickerMenu.classList.add('hidden');
+            }
+
+            // Click "Mark as done" -> Show Date Picker
+            menuMarkDone.addEventListener('click', (e) => {
+                e.stopPropagation();
+                contextMenu.classList.add('hidden');
+                
+                const today = new Date();
+                const yyyy = today.getFullYear();
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                doneDateInput.value = `${yyyy}-${mm}-${dd}`;
+                
+                datePickerMenu.style.left = `${lastClientX}px`;
+                datePickerMenu.style.top = `${lastClientY}px`;
+                datePickerMenu.classList.remove('hidden');
+            });
+
+            // Click "Mark as undone"
+            menuMarkUndone.addEventListener('click', (e) => {
+                e.stopPropagation();
+                contextMenu.classList.add('hidden');
+                
+                // 1. Gỡ hiệu ứng của chính nó
+                applyUndoneUI(longPressTarget);
+                
+                // 2. Tự động gỡ các mục con bên trong (nếu có)
+                const children = longPressTarget.querySelectorAll('[data-level]');
+                children.forEach(child => applyUndoneUI(child));
+
+                // 3. Gọi lên cha để check
+                const parent = longPressTarget.parentElement.closest('[data-level]');
+                if (parent) updateParentStatus(parent);
+
+                // RECOUNT
+                updateCounters();
+            });
+
+            // Click "Add actions" (Mở modal nhập nội dung)
+            const actionModal = document.getElementById('action-modal');
+            const actionDialog = document.getElementById('action-modal-dialog');
+            const actionInput = document.getElementById('action-input');
+            const outputInput = document.getElementById('output-input');
+
+            function openActionModal() {
+                actionModal.classList.remove('hidden');
+                requestAnimationFrame(() => {
+                    actionDialog.classList.remove('scale-95', 'opacity-0');
+                    actionDialog.classList.add('scale-100', 'opacity-100');
+                });
+            }
+
+            function closeActionModal() {
+                actionDialog.classList.remove('scale-100', 'opacity-100');
+                actionDialog.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => actionModal.classList.add('hidden'), 200);
+            }
+
+            document.getElementById('cancel-action-btn').addEventListener('click', closeActionModal);
+            document.getElementById('action-modal-backdrop').addEventListener('click', closeActionModal);
+
+            menuAddActions.addEventListener('click', (e) => {
+                e.stopPropagation();
+                contextMenu.classList.add('hidden');
+                
+                // Tự động lấy text của mục hiện tại điền sẵn vào ô Action
+                const textSpan = longPressTarget.querySelector('.editable-text');
+                if (textSpan) {
+                    actionInput.value = textSpan.innerText;
+                } else {
+                    actionInput.value = '';
+                }
+                outputInput.value = ''; // Làm trống ô outputs
+                
+                openActionModal();
+            });
+
+            // Xử lý khi lưu Add Action (Chuyển qua Schedule)
+            document.getElementById('save-action-btn').addEventListener('click', () => {
+                const actionText = actionInput.value.trim();
+                const outputsText = outputInput.value.trim();
+                
+                if (!actionText) {
+                    // Nếu người dùng xoá trắng ô action thì focus lại, không cho lưu
+                    actionInput.focus();
+                    return;
+                }
+
+                const scheduleList = document.getElementById('schedule-list');
+                const emptyState = document.getElementById('schedule-empty-state');
+                
+                emptyState.classList.add('hidden'); // Ẩn trạng thái rỗng
+                
+                // Tách các dòng output
+                let outputsHtml = '';
+                if (outputsText) {
+                    const lines = outputsText.split('\n').filter(line => line.trim() !== '');
+                    outputsHtml = lines.map(line => `
+                        <div class="flex items-start gap-3 py-1 group/output">
+                            <input type="checkbox" class="mt-1 w-4 h-4 accent-brand rounded bg-[#121212] border-[#3e3e3e] cursor-pointer shrink-0">
+                            <span contenteditable="true" class="text-sm text-gray-300 editable-text flex-1">${line}</span>
+                        </div>
+                    `).join('');
+                }
+
+                // Render cục Block (Notion style)
+                const template = `
+                    <div class="bg-white/5 border border-borderGray rounded-lg p-4 transition hover:bg-white/10 group">
+                        <div class="flex items-center gap-3 mb-2">
+                            <i class="ph-fill ph-play-circle text-xl text-brand shrink-0"></i>
+                            <span contenteditable="true" class="font-bold text-base text-white editable-text flex-1">${actionText}</span>
+                            <button class="delete-schedule-btn text-textMuted hover:text-red-500 transition opacity-0 group-hover:opacity-100 p-1"><i class="ph ph-trash text-lg"></i></button>
+                        </div>
+                        <div class="pl-8 space-y-1">
+                            ${outputsHtml}
+                        </div>
+                    </div>
+                `;
+                
+                scheduleList.insertAdjacentHTML('beforeend', template);
+                
+                closeActionModal();
+                showView('schedule'); // Nhảy qua tab Schedule
+            });
+
+            // Logic xóa block ở tab Schedule
+            document.getElementById('schedule-list').addEventListener('click', (e) => {
+                const delBtn = e.target.closest('.delete-schedule-btn');
+                if(delBtn) {
+                     const item = delBtn.closest('.bg-white\\/5');
+                     if(item) {
+                         item.style.opacity = '0';
+                         item.style.transform = 'scale(0.98)';
+                         item.style.transition = 'all 0.3s';
+                         setTimeout(() => {
+                             item.remove();
+                             // Nếu xóa hết thì hiện lại Empty State
+                             if(document.getElementById('schedule-list').children.length === 0) {
+                                 document.getElementById('schedule-empty-state').classList.remove('hidden');
+                             }
+                         }, 300);
+                     }
+                }
+            });
+
+            // Save Date Picker
+            document.getElementById('save-date-btn').addEventListener('click', () => {
+                const dateVal = doneDateInput.value;
+                if (!dateVal) return;
+                datePickerMenu.classList.add('hidden');
+                
+                processMarkAsDone(longPressTarget, dateVal, false);
+                updateCounters(); // RECOUNT
+            });
+
+            document.getElementById('cancel-date-btn').addEventListener('click', () => {
+                datePickerMenu.classList.add('hidden');
+            });
+
+            // --- CORE LOGIC HIERARCHY ---
+
+            function applyDoneUI(element, dateStr) {
+                element.dataset.status = 'done';
+                element.dataset.date = dateStr;
+                
+                const container = getTargetContainer(element);
+                if(container) container.classList.add('is-done-bg');
+                
+                if(element.dataset.level === 'output') {
+                    const icon = container.querySelector('.ph-check-circle');
+                    if(icon) {
+                        icon.classList.remove('text-textMuted', 'opacity-50');
+                        icon.classList.add('text-brand', 'opacity-100');
+                        icon.classList.replace('ph', 'ph-fill');
+                    }
+                }
+
+                const badgeContainer = container.querySelector('.badge-container');
+                if (badgeContainer) {
+                    const [y, m, d] = dateStr.split('-');
+                    const dateObj = new Date(y, m - 1, d);
+                    const formattedDate = dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+                    badgeContainer.innerHTML = `<span class="done-badge"><i class="ph ph-check mr-1"></i> ${formattedDate}</span>`;
+                }
+            }
+
+            function applyUndoneUI(element) {
+                delete element.dataset.status;
+                delete element.dataset.date;
+                
+                const container = getTargetContainer(element);
+                if(container) container.classList.remove('is-done-bg');
+
+                if(element.dataset.level === 'output') {
+                    const icon = container.querySelector('.ph-check-circle');
+                    if(icon) {
+                        icon.classList.add('text-textMuted', 'opacity-50');
+                        icon.classList.remove('text-brand', 'opacity-100');
+                        icon.classList.replace('ph-fill', 'ph');
+                    }
+                }
+
+                const badgeContainer = container.querySelector('.badge-container');
+                if (badgeContainer) badgeContainer.innerHTML = '';
+            }
+
+            function processMarkAsDone(element, dateStr, isAutoPropagated = false) {
+                if (!isAutoPropagated || element.dataset.status !== 'done') {
+                    applyDoneUI(element, dateStr);
+                }
+
+                if (!isAutoPropagated) { 
+                    const children = element.querySelectorAll('[data-level]');
+                    children.forEach(child => {
+                        if (child.dataset.status !== 'done') {
+                            applyDoneUI(child, dateStr);
+                        }
+                    });
+                }
+
+                if (element.parentElement) {
+                    const parent = element.parentElement.closest('[data-level]');
+                    if (parent) updateParentStatus(parent);
+                }
+            }
+
+            function updateParentStatus(parentElement) {
+                if (!parentElement) return;
+
+                const contentArea = Array.from(parentElement.children).find(c => c.classList.contains('accordion-content'));
+                if(!contentArea) return;
+                
+                const directChildren = Array.from(contentArea.querySelectorAll(':scope > [data-level]'));
+                
+                if (directChildren.length === 0) {
+                    if (parentElement.dataset.status === 'done') {
+                        applyUndoneUI(parentElement);
+                        const grandParent = parentElement.parentElement.closest('[data-level]');
+                        if(grandParent) updateParentStatus(grandParent);
+                    }
+                    return;
+                }
+
+                const allDone = directChildren.every(child => child.dataset.status === 'done');
+
+                if (allDone) {
+                    let maxDate = '';
+                    directChildren.forEach(child => {
+                        const d = child.dataset.date;
+                        if (!maxDate || d > maxDate) maxDate = d;
+                    });
+                    
+                    processMarkAsDone(parentElement, maxDate, true);
+                } else {
+                    if (parentElement.dataset.status === 'done') {
+                        applyUndoneUI(parentElement);
+                        const grandParent = parentElement.parentElement.closest('[data-level]');
+                        if(grandParent) updateParentStatus(grandParent); 
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
