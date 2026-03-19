@@ -726,13 +726,8 @@
                 e.stopPropagation();
                 contextMenu.classList.add('hidden');
                 
-                // Tự động lấy text của mục hiện tại điền sẵn vào ô Action
-                const textSpan = longPressTarget.querySelector('.editable-text');
-                if (textSpan) {
-                    actionInput.value = textSpan.innerText;
-                } else {
-                    actionInput.value = '';
-                }
+                // Mặc định tên action là +action theo yêu cầu
+                actionInput.value = '+action';
                 outputInput.value = ''; // Làm trống ô outputs
                 
                 openActionModal();
@@ -759,23 +754,27 @@
                 if (outputsText) {
                     const lines = outputsText.split('\n').filter(line => line.trim() !== '');
                     outputsHtml = lines.map(line => `
-                        <div class="flex items-start gap-3 py-1 group/output">
+                        <div class="flex items-start gap-3 py-2 group/output hover:bg-white/5 px-2 -mx-2 rounded transition">
                             <input type="checkbox" class="mt-1 w-4 h-4 accent-brand rounded bg-[#121212] border-[#3e3e3e] cursor-pointer shrink-0">
                             <span contenteditable="true" class="text-sm text-gray-300 editable-text flex-1">${line}</span>
                         </div>
                     `).join('');
                 }
 
-                // Render cục Block (Notion style)
+                // Render cục Block (Theo thiết kế danh sách, gạch chân đứt nét)
                 const template = `
-                    <div class="bg-white/5 border border-borderGray rounded-lg p-4 transition hover:bg-white/10 group">
-                        <div class="flex items-center gap-3 mb-2">
-                            <i class="ph-fill ph-play-circle text-xl text-brand shrink-0"></i>
-                            <span contenteditable="true" class="font-bold text-base text-white editable-text flex-1">${actionText}</span>
-                            <button class="delete-schedule-btn text-textMuted hover:text-red-500 transition opacity-0 group-hover:opacity-100 p-1"><i class="ph ph-trash text-lg"></i></button>
+                    <div class="schedule-item border-b border-[#3e3e3e]">
+                        <div class="schedule-header w-full flex items-center justify-between py-4 text-left group cursor-pointer hover:bg-white/5 px-2 -mx-2 rounded transition">
+                            <div class="flex items-center flex-1 mr-4">
+                                <span contenteditable="true" class="font-bold text-base text-white editable-text inline-block border-b border-dashed border-gray-400 pb-0.5 transition-colors">${actionText}</span>
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <button class="delete-schedule-btn text-textMuted hover:text-red-500 transition opacity-0 group-hover:opacity-100 p-1"><i class="ph ph-trash text-lg"></i></button>
+                                <i class="ph ph-caret-down text-xl chevron-icon text-textMuted group-hover:text-white transition ml-1"></i>
+                            </div>
                         </div>
-                        <div class="pl-8 space-y-1">
-                            ${outputsHtml}
+                        <div class="schedule-content pl-4 sm:pl-6 pb-4 hidden space-y-1">
+                            ${outputsHtml || '<p class="text-xs text-textMuted italic">No outputs added.</p>'}
                         </div>
                     </div>
                 `;
@@ -786,11 +785,14 @@
                 showView('schedule'); // Nhảy qua tab Schedule
             });
 
-            // Logic xóa block ở tab Schedule
+            // Logic xóa và expand block ở tab Schedule
             document.getElementById('schedule-list').addEventListener('click', (e) => {
+                if (e.target.classList.contains('editable-text')) return;
+
                 const delBtn = e.target.closest('.delete-schedule-btn');
                 if(delBtn) {
-                     const item = delBtn.closest('.bg-white\\/5');
+                     e.stopPropagation();
+                     const item = delBtn.closest('.schedule-item');
                      if(item) {
                          item.style.opacity = '0';
                          item.style.transform = 'scale(0.98)';
@@ -803,6 +805,32 @@
                              }
                          }, 300);
                      }
+                     return;
+                }
+
+                // Accordion Toggle cho Schedule
+                const header = e.target.closest('.schedule-header');
+                if (header) {
+                    const content = header.nextElementSibling;
+                    const chevron = header.querySelector('.chevron-icon');
+                    if(content) {
+                        const editableText = header.querySelector('.editable-text');
+                        if (content.classList.contains('hidden')) {
+                            // Mở ra: Hiện content, xoay icon, đổi text sang màu xanh (brand)
+                            content.classList.remove('hidden');
+                            content.classList.add('block');
+                            chevron.classList.add('rotate-180');
+                            editableText.classList.replace('text-white', 'text-brand');
+                            editableText.classList.replace('border-gray-400', 'border-brand');
+                        } else {
+                            // Đóng lại: Ẩn content, trả icon và màu về mặc định
+                            content.classList.add('hidden');
+                            content.classList.remove('block');
+                            chevron.classList.remove('rotate-180');
+                            editableText.classList.replace('text-brand', 'text-white');
+                            editableText.classList.replace('border-brand', 'border-gray-400');
+                        }
+                    }
                 }
             });
 
