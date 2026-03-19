@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,6 +9,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- SortableJS -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
@@ -34,6 +39,70 @@
             color: #ffffff;
             -webkit-tap-highlight-color: transparent;
             user-select: none; /* Tránh bôi đen text ngẫu nhiên khi ấn giữ */
+            padding-left: env(safe-area-inset-left, 0px);
+            padding-right: env(safe-area-inset-right, 0px);
+        }
+        @media (max-width: 640px) {
+            header,
+            main#projects-view,
+            main#schedule-view {
+                padding-left: 1.25rem !important;
+                padding-right: 1.25rem !important;
+            }
+            #schedule-view .schedule-content {
+                padding-left: 0.75rem !important;
+            }
+            #projects-view {
+                padding-top: 1.25rem !important;
+            }
+            #projects-view > .relative {
+                margin-bottom: 1.5rem !important;
+            }
+            #projects-view > .group {
+                margin-bottom: 1rem !important;
+            }
+            #projects-view .project-item > .accordion-header {
+                padding-top: 1rem !important;
+                padding-bottom: 1rem !important;
+            }
+            #projects-view .phase-item > .accordion-header {
+                padding-top: 0.75rem !important;
+                padding-bottom: 0.75rem !important;
+            }
+            #projects-view .output-item {
+                padding-top: 0.625rem !important;
+                padding-bottom: 0.625rem !important;
+            }
+            #projects-view .project-item > .accordion-content {
+                padding-left: 1rem !important;
+                padding-bottom: 0.875rem !important;
+            }
+            #projects-view .phase-item > .accordion-content {
+                padding-left: 0.625rem !important;
+                padding-bottom: 0.25rem !important;
+            }
+            #projects-view .project-item > .accordion-header > div:last-child,
+            #projects-view .phase-item > .accordion-header > div:last-child {
+                gap: 0.5rem !important;
+            }
+            #projects-view .project-item .project-icon {
+                margin-right: 0.75rem !important;
+            }
+            #projects-view .output-item > div:first-child {
+                margin-right: 0.75rem !important;
+            }
+            #pending-section-header,
+            #done-section-header {
+                margin-top: 2rem !important;
+                margin-bottom: 0.75rem !important;
+            }
+            #action-modal-dialog,
+            #calendar-modal-dialog,
+            #delete-modal-dialog,
+            #time-range-modal-dialog,
+            #auth-modal-dialog {
+                width: min(94vw, 28rem) !important;
+            }
         }
         .accordion-content {
             transition: all 0.3s ease-in-out;
@@ -68,6 +137,14 @@
             border-radius: 0.375rem;
             transition: background-color 0.3s ease;
         }
+        .is-done-bg-blue {
+            background-color: rgba(59, 130, 246, 0.15) !important; /* Tailwind blue-500 at 15% */
+            border-radius: 0.375rem;
+            transition: background-color 0.3s ease;
+        }
+        .is-pending-text {
+            color: #eab308 !important; /* Tailwind yellow-500 */
+        }
         .done-badge {
             display: inline-flex;
             align-items: center;
@@ -81,119 +158,225 @@
             white-space: nowrap;
             vertical-align: middle;
         }
+        .done-badge-blue {
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.65rem;
+            font-weight: 600;
+            background-color: rgba(59, 130, 246, 0.15);
+            color: #3b82f6; /* Tailwind blue-500 */
+            padding: 2px 6px;
+            border-radius: 9999px;
+            margin-left: 8px;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
 
         /* Modal Overlays */
         #custom-context-menu, #date-picker-menu, #auth-modal-dialog {
             box-shadow: 0 4px 20px rgba(0,0,0,0.5);
             border: 1px solid #2a2a2a;
         }
-    </style>
+
+        #done-projects-list > .project-item > .accordion-header {
+            background-color: rgba(59, 130, 246, 0.15) !important;
+            border-radius: 0.5rem;
+        }
+        #done-projects-list > .project-item > .accordion-header .editable-text,
+        #done-projects-list > .project-item > .accordion-header .project-icon,
+        #done-projects-list > .project-item > .accordion-header .chevron-icon {
+            color: #3b82f6 !important;
+        }
+        #done-projects-list > .project-item > .accordion-header .add-phase-btn {
+            color: #60a5fa !important;
+            background-color: rgba(59, 130, 246, 0.12) !important;
+        }
+        #done-projects-list > .project-item > .accordion-header .add-phase-btn:hover {
+            color: #000000 !important;
+            background-color: #3b82f6 !important;
+        }
+
+        #project-search-clear-btn.hidden {
+            display: none;
+        }
+</style>
 </head>
 <body class="min-h-screen font-sans">
 
     <!-- Header -->
-    <header class="bg-black py-4 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-50">
+    <header class="bg-black py-4 px-5 sm:px-8 flex items-center justify-between sticky top-0 z-50">
         <div id="logo-btn" class="flex items-center gap-2 cursor-pointer hover:opacity-80 transition">
             <i class="ph-fill ph-notebook text-3xl text-white"></i>
             <span class="text-xl font-bold tracking-tight text-white">Liem's Planner</span>
         </div>
-        <div class="flex items-center gap-4 sm:gap-6">
+        <div class="flex items-center gap-2 sm:gap-4">
+            <button id="nav-actions-btn" class="text-white border border-[#3e3e3e] hover:border-white font-bold py-2 px-4 rounded-full text-sm sm:text-base transition-colors">
+                Actions
+            </button>
             <button id="account-btn" class="bg-brand text-black font-bold py-2 px-4 sm:px-6 rounded-full text-sm sm:text-base hover:scale-105 transition-transform">
                 Account
-            </button>
-            <button class="text-white hover:text-brand transition ml-1">
-                <i class="ph ph-list text-3xl"></i>
             </button>
         </div>
     </header>
 
     <!-- Main Content: Projects View -->
-    <main id="projects-view" class="px-4 sm:px-8 py-6 max-w-3xl mx-auto pb-32 block">
+    <main id="projects-view" class="px-5 sm:px-8 py-6 max-w-3xl mx-auto pb-32 block">
         
         <!-- Search Bar -->
-        <div class="relative mb-8">
+        <div class="relative mb-6 sm:mb-7">
             <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-gray-500">
                 <i class="ph ph-magnifying-glass text-xl"></i>
             </div>
-            <input type="text" 
-                   class="bg-white text-black w-full rounded pl-12 pr-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-brand" 
-                   placeholder="Search">
+            <input id="project-search-input" type="text" 
+                   class="bg-white text-black w-full rounded pl-12 pr-12 py-3 text-base focus:outline-none focus:ring-2 focus:ring-brand" 
+                   placeholder="Search projects, phases, outputs">
+            <button id="project-search-clear-btn" type="button" class="hidden absolute inset-y-0 right-0 flex items-center justify-center w-11 text-gray-500 hover:text-black transition" aria-label="Clear search">
+                <i class="ph ph-x text-lg"></i>
+            </button>
+            <div id="project-search-status" class="hidden mt-2 text-xs text-textMuted"></div>
         </div>
 
         <!-- Main Title Area -->
-        <div class="flex items-center justify-between mb-6 group">
-            <h1 class="text-2xl sm:text-3xl font-bold flex items-center">
-                Projects 
-                <span id="main-progress-counter" class="text-sm sm:text-base font-normal text-textMuted ml-3 select-none"></span>
-            </h1>
-            <button id="add-project-btn" class="flex items-center gap-1 text-sm font-semibold text-brand hover:text-white transition px-3 py-1.5 rounded-full bg-brand/10 hover:bg-brand/20">
-                <i class="ph ph-plus-circle text-lg"></i> project
-            </button>
+        <div class="mb-5 sm:mb-6 group">
+            <div class="flex items-center justify-between">
+                <h1 class="text-2xl sm:text-3xl font-bold flex items-center">
+                    Projects 
+                </h1>
+                <button id="add-project-btn" class="flex items-center gap-1 text-sm font-semibold text-brand hover:text-white transition px-3 py-1.5 rounded-full bg-brand/10 hover:bg-brand/20">
+                    <i class="ph ph-plus-circle text-lg"></i> project
+                </button>
+            </div>
+            <div id="main-progress-counter" class="text-sm font-normal text-textMuted mt-1 select-none hidden"></div>
         </div>
 
         <!-- Dynamic Accordion System -->
-        <div id="project-list" class="space-y-0 relative">
+        <div id="project-list-container" class="space-y-0 relative">
             
-            <!-- Default Data Example -->
-            <div class="project-item border-b border-borderGray" data-level="project">
-                <div class="accordion-header w-full flex items-center justify-between py-5 text-left group cursor-pointer hover:bg-white/5 px-2 -mx-2 rounded transition">
-                    <div class="flex items-center flex-1 mr-4">
-                        <i class="ph ph-receipt text-2xl text-brand transition-colors duration-300 mr-3"></i>
-                        <span contenteditable="true" class="editable-text font-bold text-lg text-brand">Payment and billing</span>
-                        <span class="progress-counter text-sm font-normal text-textMuted ml-2 select-none" contenteditable="false"></span>
-                        <span class="badge-container"></span>
-                    </div>
-                    <div class="flex items-center gap-2 sm:gap-3 shrink-0">
-                        <button class="add-phase-btn text-xs font-semibold text-brand bg-brand/10 hover:bg-brand hover:text-black transition px-2 py-1 rounded-full flex items-center gap-1"><i class="ph ph-plus"></i><span class="hidden sm:inline">phase</span></button>
-                        <button class="delete-btn text-textMuted hover:text-red-500 transition p-1"><i class="ph ph-trash text-lg"></i></button>
-                        <i class="ph ph-caret-down text-xl chevron-icon rotate-180 text-brand transition-colors duration-300 ml-1"></i>
-                    </div>
-                </div>
-                
-                <div class="accordion-content pl-8 sm:pl-12 pb-4 block">
-                    <!-- Phase 1.1 -->
-                    <div class="phase-item mb-2 border-b border-transparent" data-level="phase">
-                        <div class="accordion-header w-full flex items-center justify-between py-3 text-left group cursor-pointer hover:bg-white/5 px-2 -mx-2 rounded transition">
-                            <div class="flex items-center flex-1 mr-4">
-                                <span contenteditable="true" class="font-bold text-base text-white group-hover:text-brand transition editable-text">Suggested topics</span>
-                                <span class="progress-counter text-xs font-normal text-textMuted ml-2 select-none" contenteditable="false"></span>
-                                <span class="badge-container"></span>
-                            </div>
-                            <div class="flex items-center gap-2 shrink-0">
-                                <button class="add-output-btn text-xs font-semibold text-white bg-white/10 hover:bg-white hover:text-black transition px-2 py-1 rounded-full flex items-center gap-1"><i class="ph ph-plus"></i><span class="hidden sm:inline">output</span></button>
-                                <button class="delete-btn text-textMuted hover:text-red-500 transition p-1"><i class="ph ph-trash text-lg"></i></button>
-                                <i class="ph ph-caret-down text-xl chevron-icon rotate-180 text-white ml-1"></i>
-                            </div>
-                        </div>
-                        <div class="accordion-content pl-4 sm:pl-6 pb-2 space-y-1 block mt-1">
-                            <div class="output-item group flex items-center justify-between py-2 px-2 -mx-2 hover:bg-white/5 rounded transition" data-level="output">
-                                <div class="flex items-center flex-1 mr-4">
-                                    <i class="ph ph-check-circle text-textMuted mr-2 opacity-50 text-sm"></i>
-                                    <span contenteditable="true" class="text-base text-gray-200 editable-text">Price update information</span>
+            <div id="active-projects-list" class="space-y-0 min-h-[10px]">
+                <!-- Default Data Example -->
+                <div class="project-item border-b border-borderGray" data-level="project">
+                    <div class="accordion-header w-full flex items-center justify-between py-3 sm:py-4 text-left group cursor-pointer hover:bg-white/5 px-2 -mx-2 rounded transition">
+                        <div class="flex items-center flex-1 mr-3 sm:mr-4">
+                            <i class="ph ph-folder-notch text-2xl text-brand transition-colors duration-300 mr-3 project-icon"></i>
+                            <div class="flex flex-col flex-1">
+                                <div class="flex items-center flex-wrap">
+                                    <span class="pending-badge hidden bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold mr-2">Pending</span>
+                                    <span contenteditable="true" class="editable-text font-bold text-lg text-brand">Payment and billing</span>
                                     <span class="badge-container"></span>
                                 </div>
-                                <button class="delete-btn text-textMuted hover:text-red-500 transition p-1 shrink-0"><i class="ph ph-trash text-base"></i></button>
-                            </div>
-                            <div class="output-item group flex items-center justify-between py-2 px-2 -mx-2 hover:bg-white/5 rounded transition" data-level="output">
-                                <div class="flex items-center flex-1 mr-4">
-                                    <i class="ph ph-check-circle text-textMuted mr-2 opacity-50 text-sm"></i>
-                                    <span contenteditable="true" class="text-base text-gray-200 editable-text">How to cancel Premium plan</span>
-                                    <span class="badge-container"></span>
+                                <div class="flex flex-wrap items-center gap-3 mt-1">
+                                    <span class="progress-counter text-xs font-normal text-textMuted select-none hidden" contenteditable="false"></span>
+                                    <div class="time-range-container text-xs text-textMuted hidden flex-row items-center gap-1"></div>
                                 </div>
-                                <button class="delete-btn text-textMuted hover:text-red-500 transition p-1 shrink-0"><i class="ph ph-trash text-base"></i></button>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1 sm:gap-2 shrink-0">
+                            <button class="add-phase-btn text-xs font-semibold text-brand bg-brand/10 hover:bg-brand hover:text-black transition px-2 py-1 rounded-full flex items-center gap-1"><i class="ph ph-plus"></i><span class="hidden sm:inline">phase</span></button>
+                            <button class="delete-btn text-textMuted hover:text-red-500 transition p-1"><i class="ph ph-trash text-lg"></i></button>
+                            <i class="ph ph-caret-down text-xl chevron-icon rotate-180 text-brand transition-colors duration-300 ml-1"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-content pl-5 sm:pl-10 pb-3 block">
+                        <!-- Phase 1.1 -->
+                        <div class="phase-item mb-1 border-b border-transparent" data-level="phase">
+                            <div class="accordion-header w-full flex items-center justify-between py-1.5 sm:py-2.5 text-left group cursor-pointer hover:bg-white/5 px-2 -mx-2 rounded transition">
+                                <div class="flex items-center flex-1 mr-3 sm:mr-4">
+                                    <div class="flex flex-col flex-1">
+                                        <div class="flex items-center flex-wrap">
+                                            <span class="pending-badge hidden bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold mr-2">Pending</span>
+                                            <span contenteditable="true" class="font-bold text-base text-white group-hover:text-brand transition editable-text">Suggested topics</span>
+                                            <span class="badge-container"></span>
+                                        </div>
+                                        <div class="flex flex-wrap items-center gap-3 mt-0.5">
+                                            <span class="progress-counter text-xs font-normal text-textMuted select-none hidden" contenteditable="false"></span>
+                                            <div class="time-range-container text-xs text-textMuted hidden flex-row items-center gap-1"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1 sm:gap-2 shrink-0">
+                                    <button class="add-output-btn text-xs font-semibold text-white bg-white/10 hover:bg-white hover:text-black transition px-2 py-1 rounded-full flex items-center gap-1"><i class="ph ph-plus"></i><span class="hidden sm:inline">output</span></button>
+                                    <button class="delete-btn text-textMuted hover:text-red-500 transition p-1"><i class="ph ph-trash text-lg"></i></button>
+                                    <i class="ph ph-caret-down text-xl chevron-icon rotate-180 text-white ml-1"></i>
+                                </div>
+                            </div>
+                            <div class="accordion-content pl-3 sm:pl-5 pb-1.5 space-y-0.5 block mt-0.5">
+                                <div class="output-item group flex items-center justify-between py-1.5 px-2 -mx-2 hover:bg-white/5 rounded transition" data-level="output">
+                                    <div class="flex items-center flex-1 mr-3 sm:mr-4">
+                                        <i class="ph ph-check-circle text-textMuted mr-2 opacity-50 text-sm"></i>
+                                        <div class="flex flex-col flex-1">
+                                            <div class="flex items-center flex-wrap">
+                                                <span class="pending-badge hidden bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold mr-2">Pending</span>
+                                                <span contenteditable="true" class="text-base text-gray-200 editable-text">Price update information</span>
+                                                <span class="badge-container"></span>
+                                            </div>
+                                            <div class="time-range-container text-xs text-textMuted mt-0.5 hidden flex-row items-center gap-1"></div>
+                                        </div>
+                                    </div>
+                                    <button class="delete-btn text-textMuted hover:text-red-500 transition p-1 shrink-0"><i class="ph ph-trash text-base"></i></button>
+                                </div>
+                                <div class="output-item group flex items-center justify-between py-1.5 px-2 -mx-2 hover:bg-white/5 rounded transition" data-level="output">
+                                    <div class="flex items-center flex-1 mr-3 sm:mr-4">
+                                        <i class="ph ph-check-circle text-textMuted mr-2 opacity-50 text-sm"></i>
+                                        <div class="flex flex-col flex-1">
+                                            <div class="flex items-center flex-wrap">
+                                                <span class="pending-badge hidden bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold mr-2">Pending</span>
+                                                <span contenteditable="true" class="text-base text-gray-200 editable-text">How to cancel Premium plan</span>
+                                                <span class="badge-container"></span>
+                                            </div>
+                                            <div class="time-range-container text-xs text-textMuted mt-0.5 hidden flex-row items-center gap-1"></div>
+                                        </div>
+                                    </div>
+                                    <button class="delete-btn text-textMuted hover:text-red-500 transition p-1 shrink-0"><i class="ph ph-trash text-base"></i></button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Pending Section Header -->
+            <div id="pending-section-header" class="hidden mt-7 mb-2.5 flex items-center gap-2 text-yellow-500 font-bold text-sm uppercase tracking-wider border-b border-[#2a2a2a] pb-1.5">
+                <i class="ph-fill ph-clock text-lg"></i> Pending Projects
+            </div>
+
+            <div id="pending-projects-list" class="space-y-0 min-h-[10px]">
+            </div>
+            
+            <!-- Done Section Header -->
+            <div id="done-section-header" class="hidden mt-7 mb-2.5 flex items-center gap-2 text-blue-500 font-bold text-sm uppercase tracking-wider border-b border-[#2a2a2a] pb-1.5">
+                <i class="ph-fill ph-check-circle text-lg"></i> Done Projects
+            </div>
+
+            <div id="done-projects-list" class="space-y-0 min-h-[10px]">
             </div>
 
         </div>
     </main>
 
     <!-- Main Content: Schedule View (Hidden by default) -->
-    <main id="schedule-view" class="px-4 sm:px-8 py-6 max-w-3xl mx-auto pb-32 hidden">
-        <div class="flex items-center justify-between mb-6 group">
-            <h1 class="text-2xl sm:text-3xl font-bold flex items-center">Schedule</h1>
+    <main id="schedule-view" class="px-5 sm:px-8 py-6 max-w-3xl mx-auto pb-32 hidden">
+        <div class="flex items-center justify-between mb-2 group">
+            <div class="flex items-center gap-2.5">
+                <button id="schedule-back-btn" class="w-9 h-9 rounded-full flex items-center justify-center text-textMuted hover:text-white hover:bg-white/5 transition" aria-label="Back to projects">
+                    <i class="ph ph-arrow-left text-xl"></i>
+                </button>
+                <h1 class="text-2xl sm:text-3xl font-bold flex items-center">Schedule</h1>
+            </div>
+            <button id="schedule-calendar-btn" class="flex items-center gap-1 text-sm font-semibold text-brand hover:text-white transition px-3 py-1.5 rounded-full bg-brand/10 hover:bg-brand/20">
+                <i class="ph ph-calendar-blank text-lg"></i>
+            </button>
+        </div>
+
+        <!-- Missed Projects Tracker -->
+        <div id="missed-projects-wrapper" class="mb-6">
+            <button id="toggle-missed-btn" class="flex items-center text-sm text-yellow-500 hover:text-yellow-400 transition-colors">
+                <span id="missed-count-text">0 project missed</span>
+                <i class="ph ph-caret-down ml-1 transition-transform duration-300" id="missed-caret"></i>
+            </button>
+            <div id="missed-projects-list" class="hidden mt-2 space-y-1 pl-2 border-l-2 border-yellow-500/30">
+                <!-- Missed projects will be injected here -->
+            </div>
         </div>
         
         <!-- Empty State -->
@@ -204,12 +387,95 @@
         </div>
 
         <!-- Schedule List Container -->
-        <div id="schedule-list" class="space-y-4 mt-4">
+        <div id="schedule-list" class="space-y-4 mt-4 min-h-[10px]">
             <!-- Scheduled items will be appended here -->
         </div>
     </main>
 
-    <!-- HTML for Action/Schedule Modal -->
+<!-- HTML for Auth/Account Modal -->
+<div id="auth-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity" id="auth-modal-backdrop"></div>
+    <div class="bg-[#181818] border border-[#2a2a2a] rounded-lg shadow-2xl p-6 z-10 w-[92%] max-w-md transform scale-95 opacity-0 transition-all duration-200" id="auth-modal-dialog">
+        <div class="flex justify-between items-center mb-5">
+            <div>
+                <h3 class="text-xl font-bold">Account</h3>
+                <p id="auth-inline-status" class="text-xs text-textMuted mt-1">Guest mode · local only</p>
+            </div>
+            <button id="close-auth-btn" class="text-textMuted hover:text-white transition"><i class="ph ph-x text-xl"></i></button>
+        </div>
+
+        <div id="auth-tabs" class="grid grid-cols-3 gap-2 mb-5 rounded-xl bg-white/5 p-1">
+            <button type="button" id="auth-tab-login" class="auth-tab-btn rounded-lg px-3 py-2 text-sm font-semibold bg-brand text-black">Log in</button>
+            <button type="button" id="auth-tab-signup" class="auth-tab-btn rounded-lg px-3 py-2 text-sm font-semibold text-textMuted hover:text-white transition">Sign up</button>
+            <button type="button" id="auth-tab-account" class="auth-tab-btn rounded-lg px-3 py-2 text-sm font-semibold text-textMuted hover:text-white transition">Account</button>
+        </div>
+
+        <div id="auth-feedback" class="hidden mb-4 rounded-xl border px-3 py-2 text-sm"></div>
+
+        <div id="auth-panel-login" class="auth-panel block">
+            <form id="login-form" class="space-y-4" onsubmit="event.preventDefault();">
+                <div>
+                    <label class="block text-xs font-semibold text-textMuted mb-1 uppercase tracking-wider">Email</label>
+                    <input id="login-email" type="email" autocomplete="email" class="w-full bg-[#121212] border border-[#3e3e3e] rounded p-3 text-white focus:outline-none focus:border-brand transition" placeholder="you@example.com">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-textMuted mb-1 uppercase tracking-wider">Password</label>
+                    <input id="login-password" type="password" autocomplete="current-password" class="w-full bg-[#121212] border border-[#3e3e3e] rounded p-3 text-white focus:outline-none focus:border-brand transition" placeholder="Enter password">
+                </div>
+                <button id="login-submit-btn" class="w-full bg-brand text-black font-bold py-3 rounded-full hover:scale-105 transition-transform">Log in</button>
+            </form>
+        </div>
+
+        <div id="auth-panel-signup" class="auth-panel hidden">
+            <form id="signup-form" class="space-y-4" onsubmit="event.preventDefault();">
+                <div>
+                    <label class="block text-xs font-semibold text-textMuted mb-1 uppercase tracking-wider">Display name</label>
+                    <input id="signup-display-name" type="text" autocomplete="name" class="w-full bg-[#121212] border border-[#3e3e3e] rounded p-3 text-white focus:outline-none focus:border-brand transition" placeholder="Your name">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-textMuted mb-1 uppercase tracking-wider">Email</label>
+                    <input id="signup-email" type="email" autocomplete="email" class="w-full bg-[#121212] border border-[#3e3e3e] rounded p-3 text-white focus:outline-none focus:border-brand transition" placeholder="you@example.com">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-textMuted mb-1 uppercase tracking-wider">Password</label>
+                    <input id="signup-password" type="password" autocomplete="new-password" class="w-full bg-[#121212] border border-[#3e3e3e] rounded p-3 text-white focus:outline-none focus:border-brand transition" placeholder="At least 6 characters">
+                </div>
+                <button id="signup-submit-btn" class="w-full bg-brand text-black font-bold py-3 rounded-full hover:scale-105 transition-transform">Create account</button>
+            </form>
+        </div>
+
+        <div id="auth-panel-account" class="auth-panel hidden space-y-4">
+            <div class="rounded-2xl border border-[#2a2a2a] bg-[#121212] p-4">
+                <p class="text-xs font-semibold text-textMuted uppercase tracking-wider mb-2">Current user</p>
+                <div class="space-y-1">
+                    <p id="account-display-name" class="font-semibold text-white">Guest</p>
+                    <p id="account-email" class="text-sm text-textMuted break-all">Not logged in</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3">
+                <button type="button" id="save-cloud-btn" class="px-4 py-2 rounded-full text-sm font-semibold bg-brand text-black hover:scale-105 transition disabled:opacity-40 disabled:cursor-not-allowed">Save to Cloud</button>
+                <button type="button" id="load-cloud-btn" class="px-4 py-2 rounded-full text-sm font-semibold bg-white/10 hover:bg-white/15 transition disabled:opacity-40 disabled:cursor-not-allowed">Load from Cloud</button>
+                <button type="button" id="logout-btn" class="px-4 py-2 rounded-full text-sm font-semibold bg-white/10 hover:bg-white/15 transition disabled:opacity-40 disabled:cursor-not-allowed">Log out</button>
+            </div>
+
+            <div class="rounded-2xl border border-[#2a2a2a] p-4 space-y-3">
+                <div>
+                    <p class="text-xs font-semibold text-textMuted uppercase tracking-wider mb-2">Backup</p>
+                    <p class="text-sm text-textMuted">Export/import the whole planner as a JSON file. Useful before risky edits or when moving between devices.</p>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <button type="button" id="export-json-btn" class="px-4 py-2 rounded-full text-sm font-semibold bg-white/10 hover:bg-white/15 transition">Export JSON</button>
+                    <button type="button" id="import-json-btn" class="px-4 py-2 rounded-full text-sm font-semibold bg-white/10 hover:bg-white/15 transition">Import JSON</button>
+                </div>
+                <input id="import-json-file" type="file" accept="application/json" class="hidden">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- HTML for Action/Schedule Modal -->
+
     <div id="action-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center">
         <!-- Backdrop -->
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity" id="action-modal-backdrop"></div>
@@ -233,43 +499,24 @@
         </div>
     </div>
 
-    <!-- HTML for Auth/Account Modal -->
-    <div id="auth-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center">
+    <!-- HTML for Schedule Calendar Modal -->
+    <div id="calendar-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center">
         <!-- Backdrop -->
-        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity" id="auth-modal-backdrop"></div>
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity" id="calendar-modal-backdrop"></div>
         <!-- Dialog -->
-        <div class="bg-[#181818] border border-[#2a2a2a] rounded-lg shadow-2xl p-6 z-10 w-[90%] max-w-sm transform scale-95 opacity-0 transition-all duration-200" id="auth-modal-dialog">
+        <div class="bg-[#181818] border border-[#2a2a2a] rounded-lg shadow-2xl p-6 z-10 w-[90%] max-w-sm transform scale-95 opacity-0 transition-all duration-200" id="calendar-modal-dialog">
             <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold">Account</h3>
-                <button id="close-auth-btn" class="text-textMuted hover:text-white transition"><i class="ph ph-x text-xl"></i></button>
+                <h3 class="text-xl font-bold">Select Date</h3>
+                <button id="close-calendar-btn" class="text-textMuted hover:text-white transition"><i class="ph ph-x text-xl"></i></button>
             </div>
-            
-            <form class="space-y-4" onsubmit="event.preventDefault();">
-                <div>
-                    <label class="block text-xs font-semibold text-textMuted mb-1 uppercase tracking-wider">Email or Username</label>
-                    <input type="text" class="w-full bg-[#121212] border border-[#3e3e3e] rounded p-3 text-white focus:outline-none focus:border-brand transition" placeholder="Enter email or username">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-textMuted mb-1 uppercase tracking-wider">Password</label>
-                    <input type="password" class="w-full bg-[#121212] border border-[#3e3e3e] rounded p-3 text-white focus:outline-none focus:border-brand transition" placeholder="Enter password">
-                </div>
-                
-                <div class="flex items-center justify-between pt-1">
-                    <label class="flex items-center gap-2 cursor-pointer group">
-                        <input type="checkbox" class="w-4 h-4 accent-brand rounded bg-[#121212] border-[#3e3e3e]">
-                        <span class="text-sm text-textMuted group-hover:text-white transition">Remember me</span>
-                    </label>
-                    <a href="#" class="text-sm text-textMuted hover:text-brand transition">Forgot password?</a>
-                </div>
-
-                <div class="pt-2">
-                    <button class="w-full bg-brand text-black font-bold py-3 rounded-full hover:scale-105 transition-transform">Log in</button>
-                </div>
-            </form>
-
-            <p class="text-textMuted text-sm text-center mt-6">
-                Don't have an account? <a href="#" class="text-white font-bold hover:text-brand transition">Sign up</a>
-            </p>
+            <div class="mb-6">
+                <label class="block text-xs font-semibold text-textMuted mb-2 uppercase tracking-wider">Schedule for</label>
+                <input type="date" class="w-full bg-[#121212] border border-[#3e3e3e] rounded p-3 text-white focus:outline-none focus:border-brand transition">
+            </div>
+            <div class="flex justify-end gap-3">
+                <button id="cancel-calendar-btn" class="px-4 py-2 rounded-full text-sm font-semibold hover:bg-white/10 transition">Cancel</button>
+                <button id="save-calendar-btn" class="px-4 py-2 rounded-full text-sm font-semibold bg-brand text-black hover:scale-105 transition">Apply</button>
+            </div>
         </div>
     </div>
 
@@ -295,6 +542,9 @@
             <i class="ph ph-arrow-u-up-left text-lg"></i> Mark as undone
         </button>
         <div class="h-px bg-[#3e3e3e] my-1 mx-2"></div>
+        <button id="menu-add-time" class="w-full text-left px-4 py-2.5 text-sm hover:bg-white/10 flex items-center gap-2 transition text-white">
+            <i class="ph ph-clock text-lg"></i> Add time range
+        </button>
         <button id="menu-add-actions" class="w-full text-left px-4 py-2.5 text-sm hover:bg-white/10 flex items-center gap-2 transition text-white">
             <i class="ph ph-calendar-plus text-lg"></i> Add actions
         </button>
@@ -310,10 +560,95 @@
         </div>
     </div>
 
+    <!-- HTML for Time Range Modal -->
+    <div id="time-range-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity" id="time-range-modal-backdrop"></div>
+        <div class="bg-[#181818] border border-[#2a2a2a] rounded-lg shadow-2xl p-6 z-10 w-[90%] max-w-sm transform scale-95 opacity-0 transition-all duration-200" id="time-range-modal-dialog">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold">Add Time Range</h3>
+                <button id="close-time-range-btn" class="text-textMuted hover:text-white transition"><i class="ph ph-x text-xl"></i></button>
+            </div>
+            <div class="flex gap-4 mb-6">
+                <div class="flex-1">
+                    <label class="block text-xs font-semibold text-textMuted mb-2 uppercase tracking-wider">Start</label>
+                    <input type="date" id="start-time-input" class="w-full bg-[#121212] border border-[#3e3e3e] rounded p-2 text-white text-sm focus:outline-none focus:border-brand transition">
+                </div>
+                <div class="flex-1">
+                    <label class="block text-xs font-semibold text-textMuted mb-2 uppercase tracking-wider">End</label>
+                    <input type="date" id="end-time-input" class="w-full bg-[#121212] border border-[#3e3e3e] rounded p-2 text-white text-sm focus:outline-none focus:border-brand transition">
+                </div>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button id="cancel-time-range-btn" class="px-4 py-2 rounded-full text-sm font-semibold hover:bg-white/10 transition">Cancel</button>
+                <button id="save-time-range-btn" class="px-4 py-2 rounded-full text-sm font-semibold bg-brand text-black hover:scale-105 transition">Apply</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const projectList = document.getElementById('project-list');
+            const projectListContainer = document.getElementById('project-list-container');
             const addProjectBtn = document.getElementById('add-project-btn');
+
+            let isDragging = false;
+            window.__plannerHandleDragStart = () => { isDragging = true; };
+            window.__plannerHandleDragEnd = () => {
+                setTimeout(() => { isDragging = false; }, 50);
+                updateAll();
+                if (typeof window.schedulePersist === 'function') window.schedulePersist('drag-end');
+            };
+
+            // --- SORTABLE JS INITIALIZATION ---
+            function getSortableHandleSelector(el) {
+                return null;
+            }
+
+            function ensureProjectDragHandles(root = document) {
+                root.querySelectorAll('.drag-handle').forEach((el) => el.remove());
+            }
+
+            function initSortable(el, groupName) {
+                if (!el || el.dataset.sortableInit === '1') return;
+                new Sortable(el, {
+                    group: groupName,
+                    animation: 150,
+                    filter: '.editable-text, button, input, textarea, .chevron-icon',
+                    preventOnFilter: false,
+                    delay: 200,
+                    delayOnTouchOnly: true,
+                    fallbackTolerance: 5,
+                    touchStartThreshold: 5,
+                    ghostClass: 'opacity-50',
+                    onStart: function() {
+                        if (typeof window.__plannerHandleDragStart === 'function') {
+                            window.__plannerHandleDragStart();
+                        } else {
+                            isDragging = true;
+                        }
+                    },
+                    onEnd: function() {
+                        if (typeof window.__plannerHandleDragEnd === 'function') {
+                            window.__plannerHandleDragEnd();
+                        } else {
+                            setTimeout(() => isDragging = false, 50);
+                            updateAll();
+                        }
+                    }
+                });
+                el.dataset.sortableInit = '1';
+            }
+
+            window.getSortableHandleSelector = getSortableHandleSelector;
+            window.ensureProjectDragHandles = ensureProjectDragHandles;
+            ensureProjectDragHandles();
+
+            // Init existing containers
+            initSortable(document.getElementById('active-projects-list'), 'active-projects');
+            initSortable(document.getElementById('pending-projects-list'), 'pending-projects');
+            initSortable(document.getElementById('done-projects-list'), 'done-projects');
+            document.querySelectorAll('.project-item > .accordion-content').forEach(el => initSortable(el, 'phases'));
+            document.querySelectorAll('.phase-item > .accordion-content').forEach(el => initSortable(el, 'outputs'));
+            initSortable(document.getElementById('schedule-list'), 'schedule-actions');
 
             // --- ACCOUNT MODAL LOGIC ---
             const accountBtn = document.getElementById('account-btn');
@@ -323,6 +658,7 @@
             const authBackdrop = document.getElementById('auth-modal-backdrop');
 
             function openAuth() {
+                if(!authModal) return;
                 authModal.classList.remove('hidden');
                 requestAnimationFrame(() => {
                     authDialog.classList.remove('scale-95', 'opacity-0');
@@ -330,14 +666,133 @@
                 });
             }
             function closeAuth() {
+                if(!authModal) return;
                 authDialog.classList.remove('scale-100', 'opacity-100');
                 authDialog.classList.add('scale-95', 'opacity-0');
                 setTimeout(() => authModal.classList.add('hidden'), 200);
             }
-            accountBtn.addEventListener('click', openAuth);
-            closeAuthBtn.addEventListener('click', closeAuth);
-            authBackdrop.addEventListener('click', closeAuth);
+            if(accountBtn) accountBtn.addEventListener('click', openAuth);
+            if(closeAuthBtn) closeAuthBtn.addEventListener('click', closeAuth);
+            if(authBackdrop) authBackdrop.addEventListener('click', closeAuth);
 
+            // --- IDs GENERATOR ---
+            function generateId() { return 'item-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9); }
+            document.querySelectorAll('[data-level]').forEach(el => {
+                if (!el.id) el.id = generateId();
+            });
+
+            // --- MISSED PROJECTS LOGIC ---
+            function updateMissedProjects() {
+                const allProjects = document.querySelectorAll('.project-item');
+                const scheduledSourceIds = Array.from(document.querySelectorAll('.schedule-item')).map(item => item.dataset.sourceId);
+                const missedProjects = [];
+                
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                allProjects.forEach(proj => {
+                    const isDone = proj.dataset.status === 'done';
+                    const startDateStr = proj.dataset.startDate;
+                    const startDateObj = startDateStr ? new Date(startDateStr.split('-')[0], startDateStr.split('-')[1] - 1, startDateStr.split('-')[2]) : null;
+                    const isPending = !isDone && startDateObj && startDateObj > today;
+                    
+                    // Gom tất cả ID của project và các mục con (phase, output) bên trong
+                    const allDescendants = Array.from(proj.querySelectorAll('[data-level]'));
+                    const allIds = [proj.id, ...allDescendants.map(d => d.id)];
+                    
+                    // Kiểm tra xem có ID nào nằm trong danh sách Action không
+                    const hasAction = allIds.some(id => scheduledSourceIds.includes(id));
+                    
+                    // Chỉ hiển thị Missed Projects đối với các project đang ACTIVE và CHƯA có action nào
+                    if (!isDone && !isPending && !hasAction) {
+                        const titleEl = proj.querySelector(':scope > .accordion-header .editable-text');
+                        if (titleEl) {
+                            missedProjects.push({
+                                id: proj.id,
+                                name: titleEl.innerText
+                            });
+                        }
+                    }
+                });
+
+                const countText = document.getElementById('missed-count-text');
+                const listEl = document.getElementById('missed-projects-list');
+                
+                if(countText) countText.innerText = `${missedProjects.length} project missed`;
+                
+                if(listEl) {
+                    if(missedProjects.length > 0) {
+                        listEl.innerHTML = missedProjects.map(p => `
+                            <button class="block text-sm text-textMuted hover:text-white text-left transition w-full missed-project-link py-1" data-target-id="${p.id}">
+                                • ${p.name || 'Untitled Project'}
+                            </button>
+                        `).join('');
+                    } else {
+                        listEl.innerHTML = '<span class="text-sm text-textMuted italic">All projects have actions!</span>';
+                    }
+                }
+            }
+
+            const toggleMissedBtn = document.getElementById('toggle-missed-btn');
+            if (toggleMissedBtn) {
+                toggleMissedBtn.addEventListener('click', () => {
+                    const missedList = document.getElementById('missed-projects-list');
+                    const missedCaret = document.getElementById('missed-caret');
+                    if (missedList && missedCaret) {
+                        missedList.classList.toggle('hidden');
+                        missedCaret.classList.toggle('rotate-180');
+                    }
+                });
+            }
+
+            // Highlight & Navigate Logic
+            document.addEventListener('click', (e) => {
+                const navBtn = e.target.closest('.navigate-to-source') || e.target.closest('.missed-project-link');
+                if (navBtn) {
+                    const targetId = navBtn.dataset.targetId;
+                    if (!targetId) return;
+                    
+                    const targetEl = document.getElementById(targetId);
+                    if (targetEl) {
+                        showView('projects');
+                        
+                        // Expand parents
+                        let parentContent = targetEl.closest('.accordion-content');
+                        while(parentContent) {
+                            const header = parentContent.previousElementSibling;
+                            if(header && header.classList.contains('accordion-header')) {
+                                if (parentContent.classList.contains('hidden')) {
+                                    openAccordion(header);
+                                }
+                            }
+                            parentContent = parentContent.parentElement.closest('.accordion-content');
+                        }
+                        
+                        setTimeout(() => {
+                            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            // Highlight effect
+                            const highlightTarget = targetEl.querySelector('.accordion-header') || targetEl;
+                            const originalBg = highlightTarget.style.backgroundColor;
+                            highlightTarget.style.transition = 'background-color 0.5s ease';
+                            highlightTarget.style.backgroundColor = 'rgba(30, 215, 96, 0.2)'; 
+                            setTimeout(() => {
+                                highlightTarget.style.backgroundColor = originalBg || '';
+                                setTimeout(() => {
+                                    highlightTarget.style.transition = '';
+                                    highlightTarget.style.backgroundColor = '';
+                                }, 500);
+                            }, 1500);
+                        }, 100);
+                    }
+                }
+            });
+
+            // Handle renaming updating missed projects list
+            document.addEventListener('focusout', (e) => {
+                if (e.target.classList.contains('editable-text')) {
+                    updateMissedProjects();
+                }
+            });
 
             // --- UPDATE COUNTERS LOGIC ---
             function updateCounters() {
@@ -346,8 +801,20 @@
                     const outputs = phase.querySelectorAll(':scope > .accordion-content > .output-item');
                     const total = outputs.length;
                     const done = Array.from(outputs).filter(o => o.dataset.status === 'done').length;
+                    const pending = Array.from(outputs).filter(o => {
+                        const badge = o.querySelector('.pending-badge');
+                        return badge && !badge.classList.contains('hidden');
+                    }).length;
+                    
                     const counter = phase.querySelector(':scope > .accordion-header .progress-counter');
-                    if(counter) counter.textContent = total > 0 ? `(${done}/${total} done)` : '';
+                    if(counter) {
+                        if (total > 0) {
+                            counter.textContent = pending > 0 ? `(${done}/${total} done, ${pending} pending)` : `(${done}/${total} done)`;
+                            counter.classList.remove('hidden');
+                        } else {
+                            counter.classList.add('hidden');
+                        }
+                    }
                 });
 
                 // Update Projects (Count Phases)
@@ -355,71 +822,139 @@
                     const phases = project.querySelectorAll(':scope > .accordion-content > .phase-item');
                     const total = phases.length;
                     const done = Array.from(phases).filter(p => p.dataset.status === 'done').length;
+                    const pending = Array.from(phases).filter(p => {
+                        const badge = p.querySelector(':scope > .accordion-header .pending-badge');
+                        return badge && !badge.classList.contains('hidden');
+                    }).length;
+                    
                     const counter = project.querySelector(':scope > .accordion-header .progress-counter');
-                    if(counter) counter.textContent = total > 0 ? `(${done}/${total} done)` : '';
+                    if(counter) {
+                        if (total > 0) {
+                            counter.textContent = pending > 0 ? `(${done}/${total} done, ${pending} pending)` : `(${done}/${total} done)`;
+                            counter.classList.remove('hidden');
+                        } else {
+                            counter.classList.add('hidden');
+                        }
+                    }
                 });
 
                 // Update Main Title (Count Projects)
                 const projects = document.querySelectorAll('.project-item');
                 const totalProj = projects.length;
                 const doneProj = Array.from(projects).filter(p => p.dataset.status === 'done').length;
+                const pendingProj = Array.from(projects).filter(p => {
+                    const badge = p.querySelector(':scope > .accordion-header .pending-badge');
+                    return badge && !badge.classList.contains('hidden');
+                }).length;
+                
                 const mainCounter = document.getElementById('main-progress-counter');
-                if(mainCounter) mainCounter.textContent = totalProj > 0 ? `(${doneProj}/${totalProj} done)` : '';
+                if(mainCounter) {
+                    if (totalProj > 0) {
+                        mainCounter.textContent = pendingProj > 0 ? `${doneProj}/${totalProj} done, ${pendingProj} pending` : `${doneProj}/${totalProj} done`;
+                        mainCounter.classList.remove('hidden');
+                    } else {
+                        mainCounter.classList.add('hidden');
+                    }
+                }
+            }
+
+            function updateProjectListsVisibility() {
+                const pendingList = document.getElementById('pending-projects-list');
+                const pendingHeader = document.getElementById('pending-section-header');
+                if (pendingList && pendingHeader) {
+                    if (pendingList.children.length > 0) pendingHeader.classList.remove('hidden');
+                    else pendingHeader.classList.add('hidden');
+                }
+
+                const doneList = document.getElementById('done-projects-list');
+                const doneHeader = document.getElementById('done-section-header');
+                if (doneList && doneHeader) {
+                    if (doneList.children.length > 0) doneHeader.classList.remove('hidden');
+                    else doneHeader.classList.add('hidden');
+                }
+            }
+
+            function updateAll() {
+                updateCounters();
+                updateMissedProjects();
+                updateProjectListsVisibility();
             }
 
             // Run on load
-            updateCounters();
-
+            updateAll();
 
             // --- TEMPLATES ---
             const templates = {
                 output: `
-                    <div class="output-item group flex items-center justify-between py-2 px-2 -mx-2 hover:bg-white/5 rounded transition" data-level="output">
-                        <div class="flex items-center flex-1 mr-4">
+                    <div class="output-item group flex items-center justify-between py-1.5 px-2 -mx-2 hover:bg-white/5 rounded transition" data-level="output">
+                        <div class="flex items-center flex-1 mr-3 sm:mr-4">
                             <i class="ph ph-check-circle text-textMuted mr-2 opacity-50 text-sm"></i>
-                            <span contenteditable="true" class="text-base text-gray-200 editable-text">New Output</span>
-                            <span class="badge-container"></span>
+                            <div class="flex flex-col flex-1">
+                                <div class="flex items-center flex-wrap">
+                                    <span class="pending-badge hidden bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold mr-2">Pending</span>
+                                    <span contenteditable="true" class="text-base text-gray-200 editable-text">New Output</span>
+                                    <span class="badge-container"></span>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-3 mt-0.5">
+                                    <div class="time-range-container text-xs text-textMuted hidden flex-row items-center gap-1"></div>
+                                </div>
+                            </div>
                         </div>
                         <button class="delete-btn text-textMuted hover:text-red-500 transition p-1 shrink-0"><i class="ph ph-trash text-base"></i></button>
                     </div>
                 `,
                 phase: `
-                    <div class="phase-item mb-2 border-b border-transparent" data-level="phase">
-                        <div class="accordion-header w-full flex items-center justify-between py-3 text-left group cursor-pointer hover:bg-white/5 px-2 -mx-2 rounded transition">
-                            <div class="flex items-center flex-1 mr-4">
-                                <span contenteditable="true" class="font-bold text-base text-white group-hover:text-brand transition editable-text">New Phase</span>
-                                <span class="progress-counter text-xs font-normal text-textMuted ml-2 select-none" contenteditable="false"></span>
-                                <span class="badge-container"></span>
+                    <div class="phase-item mb-1 border-b border-transparent" data-level="phase">
+                        <div class="accordion-header w-full flex items-center justify-between py-1.5 sm:py-2.5 text-left group cursor-pointer hover:bg-white/5 px-2 -mx-2 rounded transition">
+                            <div class="flex items-center flex-1 mr-3 sm:mr-4">
+                                <div class="flex flex-col flex-1">
+                                    <div class="flex items-center flex-wrap">
+                                        <span class="pending-badge hidden bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold mr-2">Pending</span>
+                                        <span contenteditable="true" class="font-bold text-base text-white group-hover:text-brand transition editable-text">New Phase</span>
+                                        <span class="badge-container"></span>
+                                    </div>
+                                    <div class="flex flex-wrap items-center gap-3 mt-0.5">
+                                        <span class="progress-counter text-xs font-normal text-textMuted select-none hidden" contenteditable="false"></span>
+                                        <div class="time-range-container text-xs text-textMuted hidden flex-row items-center gap-1"></div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="flex items-center gap-2 shrink-0">
+                            <div class="flex items-center gap-1 sm:gap-2 shrink-0">
                                 <button class="add-output-btn text-xs font-semibold text-white bg-white/10 hover:bg-white hover:text-black transition px-2 py-1 rounded-full flex items-center gap-1"><i class="ph ph-plus"></i><span class="hidden sm:inline">output</span></button>
                                 <button class="delete-btn text-textMuted hover:text-red-500 transition p-1"><i class="ph ph-trash text-lg"></i></button>
                                 <i class="ph ph-caret-down text-xl chevron-icon text-textMuted group-hover:text-white transition ml-1"></i>
                             </div>
                         </div>
-                        <div class="accordion-content pl-4 sm:pl-6 pb-2 space-y-1 block mt-1"></div>
+                        <div class="accordion-content pl-3 sm:pl-5 pb-1.5 space-y-0.5 block mt-0.5"></div>
                     </div>
                 `,
                 project: `
                     <div class="project-item border-b border-borderGray" data-level="project">
-                        <div class="accordion-header w-full flex items-center justify-between py-5 text-left group cursor-pointer hover:bg-white/5 px-2 -mx-2 rounded transition">
-                            <div class="flex items-center flex-1 mr-4">
-                                <i class="ph ph-folder-notch text-2xl text-brand transition-colors duration-300 mr-3"></i>
-                                <span contenteditable="true" class="editable-text font-bold text-lg text-brand">New Project</span>
-                                <span class="progress-counter text-sm font-normal text-textMuted ml-2 select-none" contenteditable="false"></span>
-                                <span class="badge-container"></span>
+                        <div class="accordion-header w-full flex items-center justify-between py-3 sm:py-4 text-left group cursor-pointer hover:bg-white/5 px-2 -mx-2 rounded transition">
+                            <div class="flex items-center flex-1 mr-3 sm:mr-4">
+                                <i class="ph ph-folder-notch text-2xl text-brand transition-colors duration-300 mr-3 project-icon"></i>
+                                <div class="flex flex-col flex-1">
+                                    <div class="flex items-center flex-wrap">
+                                        <span class="pending-badge hidden bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold mr-2">Pending</span>
+                                        <span contenteditable="true" class="editable-text font-bold text-lg text-brand">New Project</span>
+                                        <span class="badge-container"></span>
+                                    </div>
+                                    <div class="flex flex-wrap items-center gap-3 mt-1">
+                                        <span class="progress-counter text-xs font-normal text-textMuted select-none hidden" contenteditable="false"></span>
+                                        <div class="time-range-container text-xs text-textMuted hidden flex-row items-center gap-1"></div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+                            <div class="flex items-center gap-1 sm:gap-2 shrink-0">
                                 <button class="add-phase-btn text-xs font-semibold text-brand bg-brand/10 hover:bg-brand hover:text-black transition px-2 py-1 rounded-full flex items-center gap-1"><i class="ph ph-plus"></i><span class="hidden sm:inline">phase</span></button>
                                 <button class="delete-btn text-textMuted hover:text-red-500 transition p-1"><i class="ph ph-trash text-lg"></i></button>
                                 <i class="ph ph-caret-down text-xl chevron-icon rotate-180 text-brand transition-colors duration-300 ml-1"></i>
                             </div>
                         </div>
-                        <div class="accordion-content pl-8 sm:pl-12 pb-4 block"></div>
+                        <div class="accordion-content pl-5 sm:pl-10 pb-3 block"></div>
                     </div>
                 `
             };
-
 
             // --- DELETE MODAL LOGIC ---
             let itemToDelete = null;
@@ -446,8 +981,8 @@
                 }, 200);
             }
 
-            cancelDeleteBtn.addEventListener('click', hideDeleteModal);
-            confirmDeleteBtn.addEventListener('click', () => {
+            if(cancelDeleteBtn) cancelDeleteBtn.addEventListener('click', hideDeleteModal);
+            if(confirmDeleteBtn) confirmDeleteBtn.addEventListener('click', () => {
                 if (itemToDelete) {
                     const item = itemToDelete;
                     const parentToCheck = item.parentElement.closest('[data-level]');
@@ -457,7 +992,7 @@
                     setTimeout(() => {
                         item.remove();
                         if(parentToCheck) updateParentStatus(parentToCheck);
-                        updateCounters(); // RECOUNT
+                        updateAll(); // RECOUNT & MISSED
                     }, 300);
                 }
                 hideDeleteModal();
@@ -465,14 +1000,23 @@
 
 
             // --- ADD / ACCORDION / DELETE BUTTON HANDLERS ---
-            addProjectBtn.addEventListener('click', () => {
-                projectList.insertAdjacentHTML('beforeend', templates.project);
-                projectList.lastElementChild.querySelector('.editable-text').focus();
-                updateCounters(); // RECOUNT
+            if(addProjectBtn) addProjectBtn.addEventListener('click', () => {
+                const activeList = document.getElementById('active-projects-list');
+                activeList.insertAdjacentHTML('beforeend', templates.project);
+                const newProject = activeList.lastElementChild;
+                newProject.id = generateId(); // Assign ID
+                initSortable(newProject.querySelector(':scope > .accordion-content'), 'phases');
+                newProject.querySelector('.editable-text').focus();
+                updateAll(); // RECOUNT & MISSED
             });
 
-            projectList.addEventListener('click', (e) => {
+            if(projectListContainer) projectListContainer.addEventListener('click', (e) => {
+                if (isDragging) return; // Chống click nhầm sau khi thả kéo
                 if (e.target.classList.contains('editable-text')) return;
+                if (e.target.closest('.drag-handle')) {
+                    e.stopPropagation();
+                    return;
+                }
 
                 const btn = e.target.closest('button');
                 if (btn) e.stopPropagation();
@@ -482,10 +1026,27 @@
                     const projectItem = e.target.closest('.project-item');
                     const contentArea = projectItem.querySelector(':scope > .accordion-content');
                     contentArea.insertAdjacentHTML('beforeend', templates.phase);
+                    const newPhase = contentArea.lastElementChild;
+                    newPhase.id = generateId(); // Assign ID
+                    initSortable(newPhase.querySelector(':scope > .accordion-content'), 'outputs');
                     openAccordion(projectItem.querySelector(':scope > .accordion-header'));
-                    contentArea.lastElementChild.querySelector('.editable-text').focus();
+                    newPhase.querySelector('.editable-text').focus();
                     updateParentStatus(projectItem); 
-                    updateCounters(); // RECOUNT
+                    updateAll(); // RECOUNT & MISSED
+                    return;
+                }
+
+                // Add Output
+                if (e.target.closest('.add-output-btn')) {
+                    const phaseItem = e.target.closest('.phase-item');
+                    const contentArea = phaseItem.querySelector(':scope > .accordion-content');
+                    contentArea.insertAdjacentHTML('beforeend', templates.output);
+                    const newOutput = contentArea.lastElementChild;
+                    newOutput.id = generateId(); // Assign ID
+                    openAccordion(phaseItem.querySelector(':scope > .accordion-header'));
+                    newOutput.querySelector('.editable-text').focus();
+                    updateParentStatus(phaseItem);
+                    updateAll(); // RECOUNT & MISSED
                     return;
                 }
 
@@ -530,10 +1091,19 @@
                 const isProject = header.closest('.project-item') && !header.closest('.phase-item');
                 if (isProject) {
                     const textSpan = header.querySelector('.editable-text');
-                    const icon = header.querySelector('i.ph-receipt, i.ph-folder-notch, i.ph-folder');
-                    textSpan.classList.replace('text-white', 'text-brand');
-                    if (icon) icon.classList.replace('text-white', 'text-brand');
-                    chevron.classList.replace('text-textMuted', 'text-brand');
+                    const icon = header.querySelector('.project-icon');
+                    const isPending = textSpan.classList.contains('is-pending-text');
+                    const isDone = header.closest('.project-item').dataset.status === 'done';
+                    
+                    if (isDone) {
+                        textSpan.classList.replace('text-white', 'text-blue-500');
+                        if (icon) icon.classList.replace('text-white', 'text-blue-500');
+                        chevron.classList.replace('text-textMuted', 'text-blue-500');
+                    } else if(!isPending) {
+                        textSpan.classList.replace('text-white', 'text-brand');
+                        if (icon) icon.classList.replace('text-white', 'text-brand');
+                        chevron.classList.replace('text-textMuted', 'text-brand');
+                    }
                 }
             }
 
@@ -547,14 +1117,23 @@
                 const isProject = header.closest('.project-item') && !header.closest('.phase-item');
                 if (isProject) {
                     const textSpan = header.querySelector('.editable-text');
-                    const icon = header.querySelector('i.ph-receipt, i.ph-folder-notch, i.ph-folder');
-                    textSpan.classList.replace('text-brand', 'text-white');
-                    if (icon) icon.classList.replace('text-brand', 'text-white');
-                    chevron.classList.replace('text-brand', 'text-textMuted');
+                    const icon = header.querySelector('.project-icon');
+                    const isPending = textSpan.classList.contains('is-pending-text');
+                    const isDone = header.closest('.project-item').dataset.status === 'done';
+                    
+                    if (isDone) {
+                        textSpan.classList.replace('text-blue-500', 'text-white');
+                        if (icon) icon.classList.replace('text-blue-500', 'text-white');
+                        chevron.classList.replace('text-blue-500', 'text-textMuted');
+                    } else if(!isPending) {
+                        textSpan.classList.replace('text-brand', 'text-white');
+                        if (icon) icon.classList.replace('text-brand', 'text-white');
+                        chevron.classList.replace('text-brand', 'text-textMuted');
+                    }
                 }
             }
 
-            projectList.addEventListener('keydown', (e) => {
+            if(projectListContainer) projectListContainer.addEventListener('keydown', (e) => {
                 if (e.target.classList.contains('editable-text') && e.key === 'Enter') {
                     e.preventDefault(); e.target.blur();
                 }
@@ -572,12 +1151,14 @@
             const menuMarkDone = document.getElementById('menu-mark-done');
             const menuMarkUndone = document.getElementById('menu-mark-undone');
             const menuAddActions = document.getElementById('menu-add-actions');
+            const menuAddTime = document.getElementById('menu-add-time');
             const doneDateInput = document.getElementById('done-date-input');
 
             // --- VIEW NAVIGATION LOGIC ---
             const projectsView = document.getElementById('projects-view');
             const scheduleView = document.getElementById('schedule-view');
             const logoBtn = document.getElementById('logo-btn');
+            const navActionsBtn = document.getElementById('nav-actions-btn');
 
             function showView(viewName) {
                 if (viewName === 'schedule') {
@@ -589,9 +1170,49 @@
                 }
             }
 
-            logoBtn.addEventListener('click', () => {
+            if(logoBtn) logoBtn.addEventListener('click', () => {
                 showView('projects');
             });
+
+            if(navActionsBtn) navActionsBtn.addEventListener('click', () => {
+                showView('schedule');
+            });
+
+            const scheduleBackBtn = document.getElementById('schedule-back-btn');
+            if(scheduleBackBtn) scheduleBackBtn.addEventListener('click', () => {
+                showView('projects');
+            });
+
+            // --- CALENDAR MODAL LOGIC ---
+            const calendarModal = document.getElementById('calendar-modal');
+            const calendarDialog = document.getElementById('calendar-modal-dialog');
+            const scheduleCalendarBtn = document.getElementById('schedule-calendar-btn');
+            const closeCalendarBtn = document.getElementById('close-calendar-btn');
+            const cancelCalendarBtn = document.getElementById('cancel-calendar-btn');
+            const calendarModalBackdrop = document.getElementById('calendar-modal-backdrop');
+            const saveCalendarBtn = document.getElementById('save-calendar-btn');
+
+            function openCalendarModal() {
+                if(!calendarModal) return;
+                calendarModal.classList.remove('hidden');
+                requestAnimationFrame(() => {
+                    calendarDialog.classList.remove('scale-95', 'opacity-0');
+                    calendarDialog.classList.add('scale-100', 'opacity-100');
+                });
+            }
+
+            function closeCalendarModal() {
+                if(!calendarModal) return;
+                calendarDialog.classList.remove('scale-100', 'opacity-100');
+                calendarDialog.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => calendarModal.classList.add('hidden'), 200);
+            }
+
+            if(scheduleCalendarBtn) scheduleCalendarBtn.addEventListener('click', openCalendarModal);
+            if(closeCalendarBtn) closeCalendarBtn.addEventListener('click', closeCalendarModal);
+            if(cancelCalendarBtn) cancelCalendarBtn.addEventListener('click', closeCalendarModal);
+            if(calendarModalBackdrop) calendarModalBackdrop.addEventListener('click', closeCalendarModal);
+            if(saveCalendarBtn) saveCalendarBtn.addEventListener('click', closeCalendarModal); // Later, add real logic here
 
             function getTargetContainer(element) {
                 if (element.dataset.level === 'output') return element;
@@ -599,7 +1220,7 @@
             }
 
             function startPress(e) {
-                if (e.target.closest('button')) return; // Ignore buttons
+                if (e.target.closest('button') || e.target.closest('.drag-handle')) return; // Ignore buttons / drag handles
                 // Lấy toạ độ client
                 lastClientX = e.clientX || (e.touches && e.touches[0].clientX);
                 lastClientY = e.clientY || (e.touches && e.touches[0].clientY);
@@ -615,15 +1236,17 @@
 
             function cancelPress() { clearTimeout(pressTimer); }
 
-            projectList.addEventListener('mousedown', startPress);
-            projectList.addEventListener('touchstart', startPress, {passive: true});
+            if(projectListContainer) {
+                projectListContainer.addEventListener('mousedown', startPress);
+                projectListContainer.addEventListener('touchstart', startPress, {passive: true});
+            }
             window.addEventListener('mouseup', cancelPress);
             window.addEventListener('touchend', cancelPress);
             window.addEventListener('mousemove', cancelPress);
             window.addEventListener('touchmove', cancelPress);
 
             document.addEventListener('mousedown', (e) => {
-                if (!contextMenu.contains(e.target) && !datePickerMenu.contains(e.target)) {
+                if (contextMenu && !contextMenu.contains(e.target) && datePickerMenu && !datePickerMenu.contains(e.target)) {
                     contextMenu.classList.add('hidden');
                     datePickerMenu.classList.add('hidden');
                 }
@@ -664,7 +1287,7 @@
             }
 
             // Click "Mark as done" -> Show Date Picker
-            menuMarkDone.addEventListener('click', (e) => {
+            if(menuMarkDone) menuMarkDone.addEventListener('click', (e) => {
                 e.stopPropagation();
                 contextMenu.classList.add('hidden');
                 
@@ -680,7 +1303,7 @@
             });
 
             // Click "Mark as undone"
-            menuMarkUndone.addEventListener('click', (e) => {
+            if(menuMarkUndone) menuMarkUndone.addEventListener('click', (e) => {
                 e.stopPropagation();
                 contextMenu.classList.add('hidden');
                 
@@ -704,8 +1327,81 @@
             const actionDialog = document.getElementById('action-modal-dialog');
             const actionInput = document.getElementById('action-input');
             const outputInput = document.getElementById('output-input');
+            const cancelActionBtn = document.getElementById('cancel-action-btn');
+            const saveActionBtn = document.getElementById('save-action-btn');
+            const actionModalBackdrop = document.getElementById('action-modal-backdrop');
+
+            let currentEditingScheduleItem = null;
+
+            // --- TIME RANGE MODAL LOGIC ---
+            const timeRangeModal = document.getElementById('time-range-modal');
+            const timeRangeDialog = document.getElementById('time-range-modal-dialog');
+            const startTimeInput = document.getElementById('start-time-input');
+            const endTimeInput = document.getElementById('end-time-input');
+            
+            function openTimeRangeModal() {
+                if(!timeRangeModal) return;
+                timeRangeModal.classList.remove('hidden');
+                requestAnimationFrame(() => {
+                    timeRangeDialog.classList.remove('scale-95', 'opacity-0');
+                    timeRangeDialog.classList.add('scale-100', 'opacity-100');
+                });
+            }
+
+            function closeTimeRangeModal() {
+                if(!timeRangeModal) return;
+                timeRangeDialog.classList.remove('scale-100', 'opacity-100');
+                timeRangeDialog.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => timeRangeModal.classList.add('hidden'), 200);
+            }
+
+            document.getElementById('close-time-range-btn').addEventListener('click', closeTimeRangeModal);
+            document.getElementById('cancel-time-range-btn').addEventListener('click', closeTimeRangeModal);
+            document.getElementById('time-range-modal-backdrop').addEventListener('click', closeTimeRangeModal);
+            
+            if(menuAddTime) menuAddTime.addEventListener('click', (e) => {
+                e.stopPropagation();
+                contextMenu.classList.add('hidden');
+                
+                // Đọc date hiện tại nếu đã có
+                startTimeInput.value = longPressTarget.dataset.startDate || '';
+                endTimeInput.value = longPressTarget.dataset.endDate || '';
+                
+                openTimeRangeModal();
+            });
+
+            document.getElementById('save-time-range-btn').addEventListener('click', () => {
+                const startVal = startTimeInput.value;
+                const endVal = endTimeInput.value;
+                
+                if (startVal && endVal) {
+                    longPressTarget.dataset.startDate = startVal;
+                    longPressTarget.dataset.endDate = endVal;
+                    
+                    const container = getTargetContainer(longPressTarget);
+                    const timeRangeContainer = container.querySelector('.time-range-container');
+                    
+                    if (timeRangeContainer) {
+                        const [sy, sm, sd] = startVal.split('-');
+                        const [ey, em, ed] = endVal.split('-');
+                        // Format DD/MM/YY
+                        const formattedStart = `${sd}/${sm}/${sy.slice(2)}`;
+                        const formattedEnd = `${ed}/${em}/${ey.slice(2)}`;
+                        
+                        timeRangeContainer.innerHTML = `${formattedStart} <i class="ph ph-arrow-right text-brand"></i> ${formattedEnd}`;
+                        timeRangeContainer.classList.remove('hidden');
+                        timeRangeContainer.classList.add('flex');
+                    }
+                    
+                    updatePendingStatus(longPressTarget);
+                }
+                
+                closeTimeRangeModal();
+            });
+            // --- END TIME RANGE MODAL LOGIC ---
 
             function openActionModal() {
+                if(!actionModal) return;
                 actionModal.classList.remove('hidden');
                 requestAnimationFrame(() => {
                     actionDialog.classList.remove('scale-95', 'opacity-0');
@@ -714,27 +1410,29 @@
             }
 
             function closeActionModal() {
+                if(!actionModal) return;
                 actionDialog.classList.remove('scale-100', 'opacity-100');
                 actionDialog.classList.add('scale-95', 'opacity-0');
                 setTimeout(() => actionModal.classList.add('hidden'), 200);
             }
 
-            document.getElementById('cancel-action-btn').addEventListener('click', closeActionModal);
-            document.getElementById('action-modal-backdrop').addEventListener('click', closeActionModal);
+            if(cancelActionBtn) cancelActionBtn.addEventListener('click', closeActionModal);
+            if(actionModalBackdrop) actionModalBackdrop.addEventListener('click', closeActionModal);
 
-            menuAddActions.addEventListener('click', (e) => {
+            if(menuAddActions) menuAddActions.addEventListener('click', (e) => {
                 e.stopPropagation();
                 contextMenu.classList.add('hidden');
                 
                 // Mặc định tên action là +action theo yêu cầu
                 actionInput.value = '+action';
                 outputInput.value = ''; // Làm trống ô outputs
+                currentEditingScheduleItem = null; // Đặt lại trạng thái edit
                 
                 openActionModal();
             });
 
             // Xử lý khi lưu Add Action (Chuyển qua Schedule)
-            document.getElementById('save-action-btn').addEventListener('click', () => {
+            if(saveActionBtn) saveActionBtn.addEventListener('click', () => {
                 const actionText = actionInput.value.trim();
                 const outputsText = outputInput.value.trim();
                 
@@ -744,11 +1442,6 @@
                     return;
                 }
 
-                const scheduleList = document.getElementById('schedule-list');
-                const emptyState = document.getElementById('schedule-empty-state');
-                
-                emptyState.classList.add('hidden'); // Ẩn trạng thái rỗng
-                
                 // Tách các dòng output
                 let outputsHtml = '';
                 if (outputsText) {
@@ -756,38 +1449,90 @@
                     outputsHtml = lines.map(line => `
                         <div class="flex items-start gap-3 py-2 group/output hover:bg-white/5 px-2 -mx-2 rounded transition">
                             <input type="checkbox" class="mt-1 w-4 h-4 accent-brand rounded bg-[#121212] border-[#3e3e3e] cursor-pointer shrink-0">
-                            <span contenteditable="true" class="text-sm text-gray-300 editable-text flex-1">${line}</span>
+                            <span contenteditable="true" class="text-sm text-gray-300 editable-text output-text flex-1">${line}</span>
                         </div>
                     `).join('');
                 }
 
-                // Render cục Block (Theo thiết kế danh sách, gạch chân đứt nét)
+                if (currentEditingScheduleItem) {
+                    // Nếu đang trong chế độ Edit -> Cập nhật mục hiện tại
+                    currentEditingScheduleItem.querySelector('.action-title-text').innerText = actionText;
+                    const contentContainer = currentEditingScheduleItem.querySelector('.schedule-content');
+                    contentContainer.innerHTML = outputsHtml || '<p class="text-xs text-textMuted italic">No outputs added.</p>';
+                    
+                    currentEditingScheduleItem = null;
+                    window.dispatchEvent(new CustomEvent('planner-sync-schedule'));
+                    closeActionModal();
+                    return;
+                }
+
+                // Lấy tên và ID của mục nguồn (Source Item) đang được "add action"
+                let sourceId = '';
+                let sourceText = 'Unknown Item';
+                if (longPressTarget) {
+                    sourceId = longPressTarget.id;
+                    const sourceTextSpan = longPressTarget.querySelector('.editable-text');
+                    if (sourceTextSpan) sourceText = sourceTextSpan.innerText;
+                }
+
+                const scheduleList = document.getElementById('schedule-list');
+                const emptyState = document.getElementById('schedule-empty-state');
+                
+                if(emptyState) emptyState.classList.add('hidden'); // Ẩn trạng thái rỗng
+                
+                // Render cục Block
                 const template = `
-                    <div class="schedule-item border-b border-[#3e3e3e]">
+                    <div class="schedule-item border-b border-[#3e3e3e]" data-entry-id="${generateId()}" data-source-id="${sourceId}">
                         <div class="schedule-header w-full flex items-center justify-between py-4 text-left group cursor-pointer hover:bg-white/5 px-2 -mx-2 rounded transition">
-                            <div class="flex items-center flex-1 mr-4">
-                                <span contenteditable="true" class="font-bold text-base text-white editable-text inline-block border-b border-dashed border-gray-400 pb-0.5 transition-colors">${actionText}</span>
+                            <div class="flex items-center flex-1 mr-4 cursor-grab">
+                                <input type="checkbox" class="schedule-done-checkbox w-5 h-5 accent-brand rounded bg-[#121212] border-[#3e3e3e] cursor-pointer shrink-0 mr-3">
+                                <div class="flex flex-col">
+                                    <span contenteditable="true" class="font-bold text-base text-white editable-text inline-block transition-colors action-title-text">${actionText}</span>
+                                    <button class="navigate-to-source flex items-center text-xs text-textMuted mt-1 hover:text-brand transition text-left" data-target-id="${sourceId}">
+                                        <i class="ph ph-arrow-elbow-down-right mr-1.5 text-brand"></i>
+                                        <span>Support: ${sourceText}</span>
+                                    </button>
+                                </div>
                             </div>
-                            <div class="flex items-center gap-2 shrink-0">
+                            <div class="flex items-center gap-1 sm:gap-2 shrink-0">
+                                <button class="edit-schedule-btn text-textMuted hover:text-brand transition opacity-0 group-hover:opacity-100 p-1"><i class="ph ph-pencil text-lg"></i></button>
                                 <button class="delete-schedule-btn text-textMuted hover:text-red-500 transition opacity-0 group-hover:opacity-100 p-1"><i class="ph ph-trash text-lg"></i></button>
                                 <i class="ph ph-caret-down text-xl chevron-icon text-textMuted group-hover:text-white transition ml-1"></i>
                             </div>
                         </div>
-                        <div class="schedule-content pl-4 sm:pl-6 pb-4 hidden space-y-1">
+                        <div class="schedule-content pl-4 sm:pl-11 pb-4 hidden space-y-1 min-h-[10px]">
                             ${outputsHtml || '<p class="text-xs text-textMuted italic">No outputs added.</p>'}
                         </div>
                     </div>
                 `;
                 
-                scheduleList.insertAdjacentHTML('beforeend', template);
+                if(scheduleList) scheduleList.insertAdjacentHTML('beforeend', template);
+                window.dispatchEvent(new CustomEvent('planner-sync-schedule'));
                 
                 closeActionModal();
+                updateMissedProjects();
                 showView('schedule'); // Nhảy qua tab Schedule
             });
 
             // Logic xóa và expand block ở tab Schedule
-            document.getElementById('schedule-list').addEventListener('click', (e) => {
-                if (e.target.classList.contains('editable-text')) return;
+            const scheduleListElement = document.getElementById('schedule-list');
+            if(scheduleListElement) scheduleListElement.addEventListener('click', (e) => {
+                if (isDragging) return; // Chống click nhầm sau khi thả
+                if (e.target.classList.contains('editable-text') || e.target.type === 'checkbox') return;
+
+                const editBtn = e.target.closest('.edit-schedule-btn');
+                if(editBtn) {
+                    e.stopPropagation();
+                    currentEditingScheduleItem = editBtn.closest('.schedule-item');
+                    const actionText = currentEditingScheduleItem.querySelector('.action-title-text').innerText;
+                    const outputElements = currentEditingScheduleItem.querySelectorAll('.schedule-content .output-text');
+                    const outputsText = Array.from(outputElements).map(el => el.innerText).join('\n');
+
+                    actionInput.value = actionText;
+                    outputInput.value = outputsText;
+                    openActionModal();
+                    return;
+                }
 
                 const delBtn = e.target.closest('.delete-schedule-btn');
                 if(delBtn) {
@@ -800,9 +1545,13 @@
                          setTimeout(() => {
                              item.remove();
                              // Nếu xóa hết thì hiện lại Empty State
-                             if(document.getElementById('schedule-list').children.length === 0) {
-                                 document.getElementById('schedule-empty-state').classList.remove('hidden');
+                             const listContainer = document.getElementById('schedule-list');
+                             if(listContainer && listContainer.children.length === 0) {
+                                 const emptyState = document.getElementById('schedule-empty-state');
+                                 if(emptyState) emptyState.classList.remove('hidden');
                              }
+                             window.dispatchEvent(new CustomEvent('planner-sync-schedule'));
+                             updateMissedProjects();
                          }, 300);
                      }
                      return;
@@ -814,28 +1563,35 @@
                     const content = header.nextElementSibling;
                     const chevron = header.querySelector('.chevron-icon');
                     if(content) {
-                        const editableText = header.querySelector('.editable-text');
                         if (content.classList.contains('hidden')) {
-                            // Mở ra: Hiện content, xoay icon, đổi text sang màu xanh (brand)
+                            // Mở ra: Hiện content, xoay icon
                             content.classList.remove('hidden');
                             content.classList.add('block');
                             chevron.classList.add('rotate-180');
-                            editableText.classList.replace('text-white', 'text-brand');
-                            editableText.classList.replace('border-gray-400', 'border-brand');
                         } else {
-                            // Đóng lại: Ẩn content, trả icon và màu về mặc định
+                            // Đóng lại: Ẩn content
                             content.classList.add('hidden');
                             content.classList.remove('block');
                             chevron.classList.remove('rotate-180');
-                            editableText.classList.replace('text-brand', 'text-white');
-                            editableText.classList.replace('border-brand', 'border-gray-400');
                         }
                     }
                 }
             });
 
+            if(scheduleListElement) scheduleListElement.addEventListener('change', (e) => {
+                if (e.target.classList.contains('schedule-done-checkbox')) {
+                    const titleText = e.target.closest('.schedule-header').querySelector('.action-title-text');
+                    if (e.target.checked) {
+                        titleText.classList.replace('text-white', 'text-brand');
+                    } else {
+                        titleText.classList.replace('text-brand', 'text-white');
+                    }
+                }
+            });
+
             // Save Date Picker
-            document.getElementById('save-date-btn').addEventListener('click', () => {
+            const saveDateBtn = document.getElementById('save-date-btn');
+            if(saveDateBtn) saveDateBtn.addEventListener('click', () => {
                 const dateVal = doneDateInput.value;
                 if (!dateVal) return;
                 datePickerMenu.classList.add('hidden');
@@ -844,7 +1600,8 @@
                 updateCounters(); // RECOUNT
             });
 
-            document.getElementById('cancel-date-btn').addEventListener('click', () => {
+            const cancelDateBtn = document.getElementById('cancel-date-btn');
+            if(cancelDateBtn) cancelDateBtn.addEventListener('click', () => {
                 datePickerMenu.classList.add('hidden');
             });
 
@@ -855,7 +1612,32 @@
                 element.dataset.date = dateStr;
                 
                 const container = getTargetContainer(element);
-                if(container) container.classList.add('is-done-bg');
+                if(container) {
+                    if (element.dataset.level === 'project') {
+                        container.classList.add('is-done-bg-blue');
+                        const isExpanded = container.nextElementSibling && !container.nextElementSibling.classList.contains('hidden');
+                        if (isExpanded) {
+                            const textSpan = container.querySelector('.editable-text');
+                            const icon = container.querySelector('.project-icon');
+                            const chevron = container.querySelector('.chevron-icon');
+                            
+                            if (textSpan) {
+                                textSpan.classList.remove('text-brand', 'text-white', 'is-pending-text');
+                                textSpan.classList.add('text-blue-500');
+                            }
+                            if (icon) {
+                                icon.classList.remove('text-brand', 'text-white', 'text-yellow-500');
+                                icon.classList.add('text-blue-500');
+                            }
+                            if (chevron) {
+                                chevron.classList.remove('text-brand', 'text-white', 'text-yellow-500', 'text-textMuted');
+                                chevron.classList.add('text-blue-500');
+                            }
+                        }
+                    } else {
+                        container.classList.add('is-done-bg');
+                    }
+                }
                 
                 if(element.dataset.level === 'output') {
                     const icon = container.querySelector('.ph-check-circle');
@@ -871,7 +1653,11 @@
                     const [y, m, d] = dateStr.split('-');
                     const dateObj = new Date(y, m - 1, d);
                     const formattedDate = dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-                    badgeContainer.innerHTML = `<span class="done-badge"><i class="ph ph-check mr-1"></i> ${formattedDate}</span>`;
+                    if (element.dataset.level === 'project') {
+                        badgeContainer.innerHTML = `<span class="done-badge-blue"><i class="ph ph-check mr-1"></i> ${formattedDate}</span>`;
+                    } else {
+                        badgeContainer.innerHTML = `<span class="done-badge"><i class="ph ph-check mr-1"></i> ${formattedDate}</span>`;
+                    }
                 }
             }
 
@@ -880,7 +1666,32 @@
                 delete element.dataset.date;
                 
                 const container = getTargetContainer(element);
-                if(container) container.classList.remove('is-done-bg');
+                if(container) {
+                    if (element.dataset.level === 'project') {
+                        container.classList.remove('is-done-bg-blue');
+                        const isExpanded = container.nextElementSibling && !container.nextElementSibling.classList.contains('hidden');
+                        if (isExpanded) {
+                            const textSpan = container.querySelector('.editable-text');
+                            const icon = container.querySelector('.project-icon');
+                            const chevron = container.querySelector('.chevron-icon');
+                            
+                            if (textSpan) {
+                                textSpan.classList.remove('text-blue-500');
+                                textSpan.classList.add('text-brand');
+                            }
+                            if (icon) {
+                                icon.classList.remove('text-blue-500');
+                                icon.classList.add('text-brand');
+                            }
+                            if (chevron) {
+                                chevron.classList.remove('text-blue-500');
+                                chevron.classList.add('text-brand');
+                            }
+                        }
+                    } else {
+                        container.classList.remove('is-done-bg');
+                    }
+                }
 
                 if(element.dataset.level === 'output') {
                     const icon = container.querySelector('.ph-check-circle');
@@ -893,11 +1704,89 @@
 
                 const badgeContainer = container.querySelector('.badge-container');
                 if (badgeContainer) badgeContainer.innerHTML = '';
+                
+                updatePendingStatus(element); // Re-evaluate pending status when undone
+            }
+
+            function updatePendingStatus(element) {
+                const startDateStr = element.dataset.startDate;
+                const container = getTargetContainer(element);
+                if (!container) return;
+                
+                const editableText = container.querySelector('.editable-text');
+                const pendingBadge = container.querySelector('.pending-badge');
+                const icon = container.querySelector('.project-icon');
+                
+                if (!editableText || !pendingBadge) return;
+
+                // Nếu đã done thì không show pending nữa
+                if (element.dataset.status === 'done' || !startDateStr) {
+                    editableText.classList.remove('is-pending-text');
+                    pendingBadge.classList.add('hidden');
+                    
+                    if (icon && element.dataset.level === 'project') {
+                        const isExpanded = container.nextElementSibling && !container.nextElementSibling.classList.contains('hidden');
+                        const isDone = element.dataset.status === 'done';
+                        const colorClass = isExpanded ? (isDone ? 'text-blue-500' : 'text-brand') : 'text-white';
+                        icon.className = `ph ph-folder-notch text-2xl ${colorClass} transition-colors duration-300 mr-3 project-icon`;
+                    }
+                } else {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0); // Đưa về 0h để so sánh ngày
+                    
+                    // Parse yyyy-mm-dd
+                    const [y, m, d] = startDateStr.split('-');
+                    const startDate = new Date(y, m - 1, d);
+                    
+                    if (startDate > today) {
+                        editableText.classList.add('is-pending-text');
+                        pendingBadge.classList.remove('hidden');
+                        if (icon && element.dataset.level === 'project') {
+                            icon.className = 'ph-fill ph-clock text-2xl text-yellow-500 transition-colors duration-300 mr-3 project-icon';
+                        }
+                    } else {
+                        editableText.classList.remove('is-pending-text');
+                        pendingBadge.classList.add('hidden');
+                        if (icon && element.dataset.level === 'project') {
+                            const isExpanded = container.nextElementSibling && !container.nextElementSibling.classList.contains('hidden');
+                            const isDone = element.dataset.status === 'done';
+                            const colorClass = isExpanded ? (isDone ? 'text-blue-500' : 'text-brand') : 'text-white';
+                            icon.className = `ph ph-folder-notch text-2xl ${colorClass} transition-colors duration-300 mr-3 project-icon`;
+                        }
+                    }
+                }
+
+                // AUTO-MOVE LOGIC FOR PROJECTS (Active <-> Pending <-> Done)
+                if (element.dataset.level === 'project') {
+                    const isDone = element.dataset.status === 'done';
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const startDateObj = startDateStr ? new Date(startDateStr.split('-')[0], startDateStr.split('-')[1] - 1, startDateStr.split('-')[2]) : null;
+                    const isPendingNow = !isDone && startDateObj && startDateObj > today;
+                    
+                    const activeList = document.getElementById('active-projects-list');
+                    const pendingList = document.getElementById('pending-projects-list');
+                    const doneList = document.getElementById('done-projects-list');
+
+                    let targetList = activeList;
+                    if (isDone) {
+                        targetList = doneList;
+                    } else if (isPendingNow) {
+                        targetList = pendingList;
+                    }
+
+                    if (element.parentElement !== targetList) {
+                        targetList.appendChild(element);
+                    }
+
+                    updateProjectListsVisibility();
+                }
             }
 
             function processMarkAsDone(element, dateStr, isAutoPropagated = false) {
                 if (!isAutoPropagated || element.dataset.status !== 'done') {
                     applyDoneUI(element, dateStr);
+                    updatePendingStatus(element); // Update pending status when done
                 }
 
                 if (!isAutoPropagated) { 
@@ -952,5 +1841,1052 @@
             }
         });
     </script>
+
+<script>
+    (function () {
+        const SUPABASE_URL = 'https://ecvgbyhridhohshyyxkj.supabase.co';
+        const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_4Nfr6vF3t0gdnQe4PrlPwg_Ph48gf3N';
+        const LOCAL_KEY_PREFIX = 'liem-planner-v8';
+        const PROJECT_NAME = 'Main Workspace';
+
+        if (!window.supabase || !window.supabase.createClient) {
+            console.error('Supabase client library is missing.');
+            return;
+        }
+
+        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,
+                detectSessionInUrl: true,
+            },
+        });
+
+        let selectedScheduleDate = todayString();
+        let scheduleDaysCache = {};
+        let currentUser = null;
+        let currentWorkspaceId = null;
+        let currentProfile = null;
+        let isHydrating = false;
+        let persistTimer = null;
+        let initialGuestSnapshot = null;
+
+        function $(id) {
+            return document.getElementById(id);
+        }
+
+        function todayString() {
+            const now = new Date();
+            const offset = now.getTimezoneOffset();
+            const local = new Date(now.getTime() - offset * 60000);
+            return local.toISOString().slice(0, 10);
+        }
+
+        function isoNow() {
+            return new Date().toISOString();
+        }
+
+        function uid(prefix = 'id') {
+            return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function setFeedback(message, type = 'info') {
+            const box = $('auth-feedback');
+            if (!box) return;
+            if (!message) {
+                box.className = 'hidden mb-4 rounded-xl border px-3 py-2 text-sm';
+                box.textContent = '';
+                return;
+            }
+            const palette = {
+                info: 'border-brand/40 bg-brand/10 text-white',
+                success: 'border-green-500/40 bg-green-500/10 text-green-200',
+                error: 'border-red-500/40 bg-red-500/10 text-red-200',
+                warn: 'border-yellow-500/40 bg-yellow-500/10 text-yellow-200'
+            };
+            box.className = `mb-4 rounded-xl border px-3 py-2 text-sm ${palette[type] || palette.info}`;
+            box.textContent = message;
+        }
+
+        function setInlineStatus(message) {
+            const el = $('auth-inline-status');
+            if (el) el.textContent = message;
+        }
+
+        function setActiveAuthTab(tabName) {
+            ['login', 'signup', 'account'].forEach((tab) => {
+                const btn = $(`auth-tab-${tab}`);
+                const panel = $(`auth-panel-${tab}`);
+                const active = tab === tabName;
+                if (btn) {
+                    btn.classList.toggle('bg-brand', active);
+                    btn.classList.toggle('text-black', active);
+                    btn.classList.toggle('text-textMuted', !active);
+                }
+                if (panel) {
+                    panel.classList.toggle('hidden', !active);
+                    panel.classList.toggle('block', active);
+                }
+            });
+            setFeedback('');
+        }
+
+        function injectScheduleDateDisplay() {
+            const headerRow = document.querySelector('#schedule-view > .flex.items-center.justify-between');
+            if (!headerRow || $('schedule-date-display')) return;
+            const pill = document.createElement('div');
+            pill.id = 'schedule-date-display';
+            pill.className = 'text-sm text-textMuted mt-1';
+            headerRow.insertAdjacentElement('afterend', pill);
+        }
+
+        function updateScheduleDateUi() {
+            injectScheduleDateDisplay();
+            const display = $('schedule-date-display');
+            const calendarInput = document.querySelector('#calendar-modal input[type="date"]');
+            if (calendarInput) calendarInput.value = selectedScheduleDate;
+            const formatted = new Date(`${selectedScheduleDate}T12:00:00`).toLocaleDateString(undefined, {
+                year: 'numeric', month: 'short', day: 'numeric', weekday: 'short'
+            });
+            if (display) display.textContent = `Viewing schedule for ${formatted} · each date stores its own action list`;
+            const calendarBtn = $('schedule-calendar-btn');
+            if (calendarBtn) {
+                calendarBtn.innerHTML = `<i class="ph ph-calendar-blank text-lg"></i><span class="hidden sm:inline">${escapeHtml(formatted)}</span>`;
+            }
+        }
+
+        function clearSortableArtifacts(root = document) {
+            root.querySelectorAll('.project-item > .accordion-content, .phase-item > .accordion-content').forEach((el) => {
+                el.removeAttribute('data-sortable-init');
+            });
+            root.querySelectorAll('.sortable-ghost, .sortable-chosen, .sortable-drag, .sortable-fallback').forEach((el) => {
+                el.classList.remove('sortable-ghost', 'sortable-chosen', 'sortable-drag', 'sortable-fallback');
+            });
+        }
+
+        function sanitizeSortableHtml(html) {
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = html || '';
+            clearSortableArtifacts(wrapper);
+            return wrapper.innerHTML;
+        }
+
+        function ensureAllIds() {
+            document.querySelectorAll('[data-level]').forEach((el) => {
+                if (!el.id) el.id = uid(el.dataset.level || 'node');
+            });
+            if (typeof window.ensureProjectDragHandles === 'function') window.ensureProjectDragHandles();
+        }
+
+        function initExtraSortables() {
+            const allContainers = [
+                $('active-projects-list'),
+                $('pending-projects-list'),
+                $('done-projects-list'),
+                $('schedule-list'),
+                ...document.querySelectorAll('.project-item > .accordion-content'),
+                ...document.querySelectorAll('.phase-item > .accordion-content'),
+            ].filter(Boolean);
+
+            allContainers.forEach((el) => {
+                if (el.dataset.sortableInit === '1') return;
+                let group = 'generic';
+                if (el.id === 'active-projects-list') group = 'active-projects';
+                else if (el.id === 'pending-projects-list') group = 'pending-projects';
+                else if (el.id === 'done-projects-list') group = 'done-projects';
+                else if (el.id === 'schedule-list') group = 'schedule-actions';
+                else if (el.closest('.project-item') && el.parentElement?.classList.contains('project-item')) group = 'phases';
+                else if (el.closest('.phase-item')) group = 'outputs';
+
+                new Sortable(el, {
+                    group,
+                    animation: 150,
+                    filter: '.editable-text, button, input, textarea, .chevron-icon',
+                    preventOnFilter: false,
+                    delay: 200,
+                    delayOnTouchOnly: true,
+                    fallbackTolerance: 5,
+                    touchStartThreshold: 5,
+                    ghostClass: 'opacity-50',
+                    onStart: () => {
+                        if (typeof window.__plannerHandleDragStart === 'function') {
+                            window.__plannerHandleDragStart();
+                        }
+                    },
+                    onEnd: () => {
+                        if (typeof window.__plannerHandleDragEnd === 'function') {
+                            window.__plannerHandleDragEnd();
+                        } else {
+                            schedulePersist('drag-end');
+                        }
+                    },
+                });
+                el.dataset.sortableInit = '1';
+            });
+        }
+
+        function parseScheduleEntriesFromDom() {
+            const list = $('schedule-list');
+            if (!list) return [];
+            return Array.from(list.querySelectorAll(':scope > .schedule-item')).map((item) => {
+                if (!item.dataset.entryId) item.dataset.entryId = uid('schedule');
+                const outputs = Array.from(item.querySelectorAll('.schedule-content .output-text')).map((el) => {
+                    const checkbox = el.closest('.group\/output, .flex')?.querySelector('input[type="checkbox"]');
+                    return {
+                        text: el.innerText.trim(),
+                        done: !!checkbox?.checked,
+                    };
+                }).filter((row) => row.text);
+
+                return {
+                    id: item.dataset.entryId,
+                    sourceId: item.dataset.sourceId || '',
+                    sourceText: (item.querySelector('.navigate-to-source span')?.innerText || 'Support: Unknown Item').replace(/^Support:\s*/, ''),
+                    actionTitle: item.querySelector('.action-title-text')?.innerText.trim() || '+action',
+                    done: !!item.querySelector('.schedule-done-checkbox')?.checked,
+                    expanded: !item.querySelector('.schedule-content')?.classList.contains('hidden'),
+                    outputs,
+                };
+            });
+        }
+
+        function buildScheduleEntryHtml(entry) {
+            const outputsHtml = Array.isArray(entry.outputs) && entry.outputs.length > 0
+                ? entry.outputs.map((output) => `
+                    <div class="flex items-start gap-3 py-2 group/output hover:bg-white/5 px-2 -mx-2 rounded transition">
+                        <input type="checkbox" class="mt-1 w-4 h-4 accent-brand rounded bg-[#121212] border-[#3e3e3e] cursor-pointer shrink-0" ${output.done ? 'checked' : ''}>
+                        <span contenteditable="true" class="text-sm text-gray-300 editable-text output-text flex-1">${escapeHtml(output.text)}</span>
+                    </div>
+                `).join('')
+                : '<p class="text-xs text-textMuted italic">No outputs added.</p>';
+
+            return `
+                <div class="schedule-item border-b border-[#3e3e3e]" data-entry-id="${escapeHtml(entry.id || uid('schedule'))}" data-source-id="${escapeHtml(entry.sourceId || '')}">
+                    <div class="schedule-header w-full flex items-center justify-between py-4 text-left group cursor-pointer hover:bg-white/5 px-2 -mx-2 rounded transition">
+                        <div class="flex items-center flex-1 mr-4 cursor-grab">
+                            <input type="checkbox" class="schedule-done-checkbox w-5 h-5 accent-brand rounded bg-[#121212] border-[#3e3e3e] cursor-pointer shrink-0 mr-3" ${entry.done ? 'checked' : ''}>
+                            <div class="flex flex-col">
+                                <span contenteditable="true" class="font-bold text-base ${entry.done ? 'text-brand' : 'text-white'} editable-text inline-block transition-colors action-title-text">${escapeHtml(entry.actionTitle || '+action')}</span>
+                                <button class="navigate-to-source flex items-center text-xs text-textMuted mt-1 hover:text-brand transition text-left" data-target-id="${escapeHtml(entry.sourceId || '')}">
+                                    <i class="ph ph-arrow-elbow-down-right mr-1.5 text-brand"></i>
+                                    <span>Support: ${escapeHtml(entry.sourceText || 'Unknown Item')}</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1 sm:gap-2 shrink-0">
+                            <button class="edit-schedule-btn text-textMuted hover:text-brand transition opacity-0 group-hover:opacity-100 p-1"><i class="ph ph-pencil text-lg"></i></button>
+                            <button class="delete-schedule-btn text-textMuted hover:text-red-500 transition opacity-0 group-hover:opacity-100 p-1"><i class="ph ph-trash text-lg"></i></button>
+                            <i class="ph ph-caret-down text-xl chevron-icon ${entry.expanded ? 'rotate-180 text-white' : 'text-textMuted group-hover:text-white'} transition ml-1"></i>
+                        </div>
+                    </div>
+                    <div class="schedule-content pl-4 sm:pl-11 pb-4 ${entry.expanded ? 'block' : 'hidden'} space-y-1 min-h-[10px]">
+                        ${outputsHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderScheduleForSelectedDate() {
+            const list = $('schedule-list');
+            const emptyState = $('schedule-empty-state');
+            if (!list) return;
+            const entries = scheduleDaysCache[selectedScheduleDate] || [];
+            list.innerHTML = entries.map(buildScheduleEntryHtml).join('');
+            if (emptyState) emptyState.classList.toggle('hidden', entries.length > 0);
+            initExtraSortables();
+            updateMissedProjectsForSelectedDate();
+            updateScheduleDateUi();
+        }
+
+        function saveCurrentScheduleIntoCache() {
+            scheduleDaysCache[selectedScheduleDate] = parseScheduleEntriesFromDom();
+        }
+
+        function serializeProjectLists() {
+            return {
+                activeHTML: sanitizeSortableHtml($('active-projects-list')?.innerHTML || ''),
+                pendingHTML: sanitizeSortableHtml($('pending-projects-list')?.innerHTML || ''),
+                doneHTML: sanitizeSortableHtml($('done-projects-list')?.innerHTML || ''),
+            };
+        }
+
+        function createSnapshot() {
+            ensureAllIds();
+            saveCurrentScheduleIntoCache();
+            return {
+                schemaVersion: 1,
+                updatedAt: isoNow(),
+                selectedScheduleDate,
+                workspaceName: PROJECT_NAME,
+                projectLists: serializeProjectLists(),
+                scheduleDays: JSON.parse(JSON.stringify(scheduleDaysCache || {})),
+            };
+        }
+
+        function snapshotHasMeaningfulContent(snapshot) {
+            if (!snapshot) return false;
+            const html = snapshot.projectLists || {};
+            const projectText = `${html.activeHTML || ''}${html.pendingHTML || ''}${html.doneHTML || ''}`.replace(/\s+/g, '');
+            const scheduleCount = Object.values(snapshot.scheduleDays || {}).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
+            return projectText.length > 0 || scheduleCount > 0;
+        }
+
+        function writeLocalSnapshot(snapshot) {
+            const key = currentUser?.id ? getUserStorageKey(currentUser.id) : getGuestStorageKey();
+            localStorage.setItem(key, JSON.stringify(snapshot));
+        }
+
+        function getGuestStorageKey() {
+            return `${LOCAL_KEY_PREFIX}:guest`;
+        }
+
+        function getUserStorageKey(userId) {
+            return `${LOCAL_KEY_PREFIX}:user:${userId}`;
+        }
+
+        function readLocalSnapshotForUser(userId) {
+            try {
+                const raw = localStorage.getItem(getUserStorageKey(userId));
+                return raw ? JSON.parse(raw) : null;
+            } catch (error) {
+                console.warn('Could not parse user local snapshot', error);
+                return null;
+            }
+        }
+
+        function readGuestSnapshot() {
+            try {
+                const raw = localStorage.getItem(getGuestStorageKey());
+                return raw ? JSON.parse(raw) : null;
+            } catch (error) {
+                console.warn('Could not parse guest snapshot', error);
+                return null;
+            }
+        }
+
+        function applySnapshot(snapshot) {
+            if (!snapshot) return;
+            isHydrating = true;
+            try {
+                if (snapshot.projectLists) {
+                    if ($('active-projects-list')) $('active-projects-list').innerHTML = sanitizeSortableHtml(snapshot.projectLists.activeHTML || '');
+                    if ($('pending-projects-list')) $('pending-projects-list').innerHTML = sanitizeSortableHtml(snapshot.projectLists.pendingHTML || '');
+                    if ($('done-projects-list')) $('done-projects-list').innerHTML = sanitizeSortableHtml(snapshot.projectLists.doneHTML || '');
+                }
+                scheduleDaysCache = snapshot.scheduleDays || {};
+                selectedScheduleDate = snapshot.selectedScheduleDate || todayString();
+                ensureAllIds();
+                initExtraSortables();
+                refreshProjectCounters();
+                renderScheduleForSelectedDate();
+            } finally {
+                isHydrating = false;
+            }
+        }
+
+        function refreshProjectCounters() {
+            document.querySelectorAll('.phase-item').forEach((phase) => {
+                const outputs = phase.querySelectorAll(':scope > .accordion-content > .output-item');
+                const total = outputs.length;
+                const done = Array.from(outputs).filter((o) => o.dataset.status === 'done').length;
+                const pending = Array.from(outputs).filter((o) => {
+                    const badge = o.querySelector(':scope .pending-badge');
+                    return badge && !badge.classList.contains('hidden');
+                }).length;
+                const counter = phase.querySelector(':scope > .accordion-header .progress-counter');
+                if (!counter) return;
+                if (total > 0) {
+                    counter.textContent = pending > 0 ? `(${done}/${total} done, ${pending} pending)` : `(${done}/${total} done)`;
+                    counter.classList.remove('hidden');
+                } else {
+                    counter.classList.add('hidden');
+                }
+            });
+
+            document.querySelectorAll('.project-item').forEach((project) => {
+                const phases = project.querySelectorAll(':scope > .accordion-content > .phase-item');
+                const total = phases.length;
+                const done = Array.from(phases).filter((p) => p.dataset.status === 'done').length;
+                const pending = Array.from(phases).filter((p) => {
+                    const badge = p.querySelector(':scope > .accordion-header .pending-badge');
+                    return badge && !badge.classList.contains('hidden');
+                }).length;
+                const counter = project.querySelector(':scope > .accordion-header .progress-counter');
+                if (!counter) return;
+                if (total > 0) {
+                    counter.textContent = pending > 0 ? `(${done}/${total} done, ${pending} pending)` : `(${done}/${total} done)`;
+                    counter.classList.remove('hidden');
+                } else {
+                    counter.classList.add('hidden');
+                }
+            });
+
+            const projects = document.querySelectorAll('.project-item');
+            const totalProj = projects.length;
+            const doneProj = Array.from(projects).filter((p) => p.dataset.status === 'done').length;
+            const pendingProj = Array.from(projects).filter((p) => {
+                const badge = p.querySelector(':scope > .accordion-header .pending-badge');
+                return badge && !badge.classList.contains('hidden');
+            }).length;
+            const mainCounter = $('main-progress-counter');
+            if (mainCounter) {
+                if (totalProj > 0) {
+                    mainCounter.textContent = pendingProj > 0 ? `${doneProj}/${totalProj} done, ${pendingProj} pending` : `${doneProj}/${totalProj} done`;
+                    mainCounter.classList.remove('hidden');
+                } else {
+                    mainCounter.classList.add('hidden');
+                }
+            }
+
+            const pendingList = $('pending-projects-list');
+            const pendingHeader = $('pending-section-header');
+            if (pendingList && pendingHeader) pendingHeader.classList.toggle('hidden', pendingList.children.length === 0);
+            const doneList = $('done-projects-list');
+            const doneHeader = $('done-section-header');
+            if (doneList && doneHeader) doneHeader.classList.toggle('hidden', doneList.children.length === 0);
+        }
+
+        function updateMissedProjectsForSelectedDate() {
+            const referenceDate = new Date(`${selectedScheduleDate}T00:00:00`);
+            const allProjects = document.querySelectorAll('.project-item');
+            const scheduledSourceIds = new Set((scheduleDaysCache[selectedScheduleDate] || []).map((item) => item.sourceId).filter(Boolean));
+            const missedProjects = [];
+
+            allProjects.forEach((proj) => {
+                const isDone = proj.dataset.status === 'done';
+                const startDateStr = proj.dataset.startDate;
+                const startDateObj = startDateStr ? new Date(`${startDateStr}T00:00:00`) : null;
+                const isPending = !isDone && startDateObj && startDateObj > referenceDate;
+                const allDescendants = Array.from(proj.querySelectorAll('[data-level]'));
+                const allIds = [proj.id, ...allDescendants.map((d) => d.id).filter(Boolean)];
+                const hasAction = allIds.some((id) => scheduledSourceIds.has(id));
+                if (!isDone && !isPending && !hasAction) {
+                    const titleEl = proj.querySelector(':scope > .accordion-header .editable-text');
+                    if (titleEl) {
+                        missedProjects.push({ id: proj.id, name: titleEl.innerText.trim() || 'Untitled Project' });
+                    }
+                }
+            });
+
+            const countText = $('missed-count-text');
+            const listEl = $('missed-projects-list');
+            if (countText) countText.innerText = `${missedProjects.length} project missed`;
+            if (listEl) {
+                if (missedProjects.length > 0) {
+                    listEl.innerHTML = missedProjects.map((p) => `
+                        <button class="block text-sm text-textMuted hover:text-white text-left transition w-full missed-project-link py-1" data-target-id="${escapeHtml(p.id)}">
+                            • ${escapeHtml(p.name)}
+                        </button>
+                    `).join('');
+                } else {
+                    listEl.innerHTML = '<span class="text-sm text-textMuted italic">All projects have actions!</span>';
+                }
+            }
+        }
+
+        async function ensureWorkspaceForUser(user) {
+            const { data: existing, error: selectError } = await sb
+                .from('planner_workspaces')
+                .select('id, name')
+                .eq('owner_user_id', user.id)
+                .limit(1)
+                .maybeSingle();
+            if (selectError) throw selectError;
+            if (existing?.id) return existing.id;
+
+            const { data: created, error: insertError } = await sb
+                .from('planner_workspaces')
+                .insert({ owner_user_id: user.id, name: PROJECT_NAME })
+                .select('id')
+                .single();
+            if (insertError) throw insertError;
+            return created.id;
+        }
+
+        async function fetchProfile(userId) {
+            const { data, error } = await sb
+                .from('profiles')
+                .select('id, display_name')
+                .eq('id', userId)
+                .maybeSingle();
+            if (error) throw error;
+            return data || null;
+        }
+
+        async function fetchCloudSnapshot(workspaceId) {
+            const projectPromise = sb
+                .from('planner_project_snapshots')
+                .select('content, updated_at')
+                .eq('workspace_id', workspaceId)
+                .maybeSingle();
+
+            const schedulePromise = sb
+                .from('planner_schedule_days')
+                .select('schedule_date, content, updated_at')
+                .eq('workspace_id', workspaceId)
+                .order('schedule_date', { ascending: true });
+
+            const [{ data: projectRow, error: projectError }, { data: scheduleRows, error: scheduleError }] = await Promise.all([projectPromise, schedulePromise]);
+            if (projectError) throw projectError;
+            if (scheduleError) throw scheduleError;
+
+            const snapshot = {
+                schemaVersion: 1,
+                updatedAt: projectRow?.updated_at || null,
+                selectedScheduleDate: todayString(),
+                workspaceName: PROJECT_NAME,
+                projectLists: projectRow?.content?.projectLists || null,
+                scheduleDays: {},
+            };
+
+            (scheduleRows || []).forEach((row) => {
+                const dateKey = row.schedule_date;
+                snapshot.scheduleDays[dateKey] = Array.isArray(row.content?.entries) ? row.content.entries : (Array.isArray(row.content) ? row.content : []);
+                if (!snapshot.updatedAt || (row.updated_at && row.updated_at > snapshot.updatedAt)) {
+                    snapshot.updatedAt = row.updated_at;
+                }
+            });
+
+            if (!snapshot.projectLists) return null;
+            return snapshot;
+        }
+
+        async function saveSnapshotToCloud() {
+            if (!currentUser || !currentWorkspaceId) {
+                setFeedback('Log in first to save to cloud.', 'warn');
+                return;
+            }
+            const snapshot = createSnapshot();
+            setInlineStatus('Saving to cloud…');
+            try {
+                const { error: projectError } = await sb
+                    .from('planner_project_snapshots')
+                    .upsert({
+                        workspace_id: currentWorkspaceId,
+                        content: { schemaVersion: snapshot.schemaVersion, projectLists: snapshot.projectLists },
+                        updated_at: isoNow(),
+                    }, { onConflict: 'workspace_id' });
+                if (projectError) throw projectError;
+
+                const scheduleRows = Object.entries(snapshot.scheduleDays || {}).map(([scheduleDate, entries]) => ({
+                    workspace_id: currentWorkspaceId,
+                    schedule_date: scheduleDate,
+                    content: {
+                        schemaVersion: snapshot.schemaVersion,
+                        entries: Array.isArray(entries) ? entries : [],
+                        summary: {
+                            total: Array.isArray(entries) ? entries.length : 0,
+                            done: Array.isArray(entries) ? entries.filter((entry) => entry.done).length : 0,
+                        },
+                    },
+                    updated_at: isoNow(),
+                }));
+
+                const { data: existingDates, error: existingDatesError } = await sb
+                    .from('planner_schedule_days')
+                    .select('schedule_date')
+                    .eq('workspace_id', currentWorkspaceId);
+                if (existingDatesError) throw existingDatesError;
+
+                const localDateSet = new Set(Object.keys(snapshot.scheduleDays || {}));
+                const datesToDelete = (existingDates || []).map((row) => row.schedule_date).filter((date) => !localDateSet.has(date));
+                if (datesToDelete.length > 0) {
+                    const { error: deleteError } = await sb
+                        .from('planner_schedule_days')
+                        .delete()
+                        .eq('workspace_id', currentWorkspaceId)
+                        .in('schedule_date', datesToDelete);
+                    if (deleteError) throw deleteError;
+                }
+
+                if (scheduleRows.length > 0) {
+                    const { error: scheduleError } = await sb
+                        .from('planner_schedule_days')
+                        .upsert(scheduleRows, { onConflict: 'workspace_id,schedule_date' });
+                    if (scheduleError) throw scheduleError;
+                }
+
+                writeLocalSnapshot(snapshot);
+                setInlineStatus(`Signed in · cloud saved ${new Date().toLocaleTimeString()}`);
+                setFeedback('Saved current planner to cloud.', 'success');
+            } catch (error) {
+                console.error(error);
+                setInlineStatus('Signed in · save failed');
+                setFeedback(error.message || 'Could not save to Supabase.', 'error');
+            }
+        }
+
+        async function loadSnapshotFromCloud() {
+            if (!currentUser || !currentWorkspaceId) {
+                setFeedback('Log in first to load from cloud.', 'warn');
+                return;
+            }
+            const shouldLoad = window.confirm('Load from cloud will replace the current local planner on this device. Continue?');
+            if (!shouldLoad) return;
+
+            setInlineStatus('Loading from cloud…');
+            try {
+                const cloudSnapshot = await fetchCloudSnapshot(currentWorkspaceId);
+                if (!cloudSnapshot) {
+                    setInlineStatus(`Signed in as ${currentUser.email || 'user'}`);
+                    setFeedback('No cloud data found for this account yet.', 'warn');
+                    return;
+                }
+                applySnapshot(cloudSnapshot);
+                writeLocalSnapshot(createSnapshot());
+                setInlineStatus(`Signed in · cloud loaded ${new Date().toLocaleTimeString()}`);
+                setFeedback('Loaded planner from cloud.', 'success');
+            } catch (error) {
+                console.error(error);
+                setInlineStatus('Signed in · load failed');
+                setFeedback(error.message || 'Could not load from Supabase.', 'error');
+            }
+        }
+
+        function schedulePersist(trigger) {
+            if (isHydrating) return;
+            clearTimeout(persistTimer);
+            persistTimer = setTimeout(() => {
+                const snapshot = createSnapshot();
+                writeLocalSnapshot(snapshot);
+                refreshProjectCounters();
+                updateMissedProjectsForSelectedDate();
+            }, 250);
+        }
+        window.schedulePersist = schedulePersist;
+
+        function chooseNewestSnapshot(...snapshots) {
+            return snapshots
+                .filter(Boolean)
+                .sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''))[0] || null;
+        }
+
+        async function handleSignedIn(session) {
+            currentUser = session?.user || null;
+            if (!currentUser) return;
+
+            try {
+                currentWorkspaceId = await ensureWorkspaceForUser(currentUser);
+                currentProfile = await fetchProfile(currentUser.id).catch(() => null);
+                updateAccountUi();
+                setActiveAuthTab('account');
+
+                const localSnapshot = readLocalSnapshotForUser(currentUser.id);
+                const guestSnapshot = readGuestSnapshot();
+                const currentPageSnapshot = createSnapshot();
+                const chosen = localSnapshot || currentPageSnapshot || guestSnapshot;
+                if (chosen) applySnapshot(chosen);
+                writeLocalSnapshot(createSnapshot());
+
+                const cloudSnapshot = await fetchCloudSnapshot(currentWorkspaceId).catch((error) => {
+                    console.error(error);
+                    setFeedback(error.message || 'Could not check cloud data.', 'error');
+                    return null;
+                });
+
+                if (cloudSnapshot) {
+                    setInlineStatus(`Signed in as ${currentUser.email || 'user'} · cloud data available`);
+                } else {
+                    setInlineStatus(`Signed in as ${currentUser.email || 'user'} · cloud empty`);
+                }
+            } catch (error) {
+                console.error(error);
+                setFeedback(error.message || 'Could not initialize account data.', 'error');
+                setInlineStatus('Signed in · setup error');
+            }
+        }
+
+        function handleSignedOut() {
+            if (currentUser) {
+                try {
+                    writeLocalSnapshot(createSnapshot());
+                } catch (error) {
+                    console.warn('Could not save user snapshot before logout', error);
+                }
+            }
+            currentUser = null;
+            currentWorkspaceId = null;
+            currentProfile = null;
+            updateAccountUi();
+            setActiveAuthTab('login');
+            const guestSnapshot = readGuestSnapshot() || initialGuestSnapshot;
+            if (guestSnapshot) applySnapshot(guestSnapshot);
+            setInlineStatus('Guest mode · local only');
+            setFeedback('Signed out.', 'success');
+        }
+
+        function updateAccountUi() {
+            const accountBtn = $('account-btn');
+            const accountEmail = $('account-email');
+            const displayName = $('account-display-name');
+            const logoutBtn = $('logout-btn');
+            const saveCloudBtn = $('save-cloud-btn');
+            const loadCloudBtn = $('load-cloud-btn');
+            const authTabs = $('auth-tabs');
+            const loginTab = $('auth-tab-login');
+            const signupTab = $('auth-tab-signup');
+            const accountTab = $('auth-tab-account');
+            const loginPanel = $('auth-panel-login');
+            const signupPanel = $('auth-panel-signup');
+
+            if (currentUser) {
+                if (accountBtn) accountBtn.textContent = currentProfile?.display_name || currentUser.email || 'Account';
+                if (accountEmail) accountEmail.textContent = currentUser.email || 'Signed in';
+                if (displayName) displayName.textContent = currentProfile?.display_name || currentUser.user_metadata?.display_name || 'Signed in user';
+                if (logoutBtn) logoutBtn.disabled = false;
+                if (saveCloudBtn) saveCloudBtn.disabled = false;
+                if (loadCloudBtn) loadCloudBtn.disabled = false;
+
+                if (authTabs) authTabs.classList.remove('grid-cols-3');
+                if (authTabs) authTabs.classList.add('grid-cols-1');
+                if (loginTab) loginTab.classList.add('hidden');
+                if (signupTab) signupTab.classList.add('hidden');
+                if (accountTab) {
+                    accountTab.classList.remove('hidden');
+                    accountTab.classList.add('col-span-1');
+                }
+                if (loginPanel) loginPanel.classList.add('hidden');
+                if (signupPanel) signupPanel.classList.add('hidden');
+            } else {
+                if (accountBtn) accountBtn.textContent = 'Account';
+                if (accountEmail) accountEmail.textContent = 'Not logged in';
+                if (displayName) displayName.textContent = 'Guest';
+                if (logoutBtn) logoutBtn.disabled = true;
+                if (saveCloudBtn) saveCloudBtn.disabled = true;
+                if (loadCloudBtn) loadCloudBtn.disabled = true;
+
+                if (authTabs) authTabs.classList.remove('grid-cols-1');
+                if (authTabs) authTabs.classList.add('grid-cols-3');
+                if (loginTab) loginTab.classList.remove('hidden');
+                if (signupTab) signupTab.classList.remove('hidden');
+                if (accountTab) accountTab.classList.remove('hidden');
+            }
+        }
+
+        function switchScheduleDate(nextDate) {
+            if (!nextDate) return;
+            saveCurrentScheduleIntoCache();
+            selectedScheduleDate = nextDate;
+            if (!scheduleDaysCache[selectedScheduleDate]) scheduleDaysCache[selectedScheduleDate] = [];
+            renderScheduleForSelectedDate();
+            schedulePersist('switch-date');
+        }
+
+        function syncSelectedScheduleDay() {
+            if (isHydrating) return;
+            saveCurrentScheduleIntoCache();
+            writeLocalSnapshot(createSnapshot());
+            updateMissedProjectsForSelectedDate();
+        }
+
+        window.plannerBridge = {
+            getSelectedScheduleDate: () => selectedScheduleDate,
+            switchScheduleDate,
+            syncSelectedScheduleDay,
+            renderSelectedScheduleDay: renderScheduleForSelectedDate,
+        };
+
+        window.addEventListener('planner-sync-schedule', () => {
+            syncSelectedScheduleDay();
+        });
+
+        async function signUpWithPassword() {
+            const email = $('signup-email')?.value.trim();
+            const password = $('signup-password')?.value || '';
+            const displayName = $('signup-display-name')?.value.trim();
+            if (!email || !password) {
+                setFeedback('Please enter both email and password.', 'warn');
+                return;
+            }
+            const { data, error } = await sb.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        display_name: displayName || null,
+                    },
+                },
+            });
+            if (error) throw error;
+            if (!data.session) {
+                setFeedback('Account created. Check your inbox if email confirmation is enabled in Supabase.', 'success');
+                setActiveAuthTab('login');
+            } else {
+                setFeedback('Account created and signed in.', 'success');
+            }
+        }
+
+        async function signInWithPassword() {
+            const email = $('login-email')?.value.trim();
+            const password = $('login-password')?.value || '';
+            if (!email || !password) {
+                setFeedback('Please enter both email and password.', 'warn');
+                return;
+            }
+            const { error } = await sb.auth.signInWithPassword({ email, password });
+            if (error) throw error;
+            setFeedback('Logged in successfully.', 'success');
+        }
+
+        async function signOut() {
+            const { error } = await sb.auth.signOut();
+            if (error) throw error;
+        }
+
+        function exportSnapshotAsJson() {
+            const snapshot = createSnapshot();
+            const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = `liem-planner-${selectedScheduleDate}.json`;
+            document.body.appendChild(anchor);
+            anchor.click();
+            anchor.remove();
+            URL.revokeObjectURL(url);
+            setFeedback('Exported planner JSON.', 'success');
+        }
+
+        function importSnapshotFromFile(file) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async () => {
+                try {
+                    const parsed = JSON.parse(String(reader.result || '{}'));
+                    if (!parsed || !parsed.projectLists || !parsed.scheduleDays) {
+                        throw new Error('Invalid planner JSON format.');
+                    }
+                    applySnapshot(parsed);
+                    const snapshot = createSnapshot();
+                    writeLocalSnapshot(snapshot);
+                    if (currentUser) {
+                        setFeedback('Imported planner JSON locally. Use Save to Cloud if you want to upload it.', 'success');
+                    } else {
+                        setFeedback('Imported planner JSON successfully.', 'success');
+                    }
+                } catch (error) {
+                    setFeedback(error.message || 'Could not import JSON file.', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function bindUi() {
+            injectScheduleDateDisplay();
+            updateScheduleDateUi();
+            updateAccountUi();
+            setActiveAuthTab(currentUser ? 'account' : 'login');
+
+            $('auth-tab-login')?.addEventListener('click', () => setActiveAuthTab('login'));
+            $('auth-tab-signup')?.addEventListener('click', () => setActiveAuthTab('signup'));
+            $('auth-tab-account')?.addEventListener('click', () => setActiveAuthTab('account'));
+
+            $('account-btn')?.addEventListener('click', () => {
+                setActiveAuthTab(currentUser ? 'account' : 'login');
+            });
+
+            $('login-form')?.addEventListener('submit', async () => {
+                try {
+                    await signInWithPassword();
+                } catch (error) {
+                    setFeedback(error.message || 'Could not log in.', 'error');
+                }
+            });
+
+            $('signup-form')?.addEventListener('submit', async () => {
+                try {
+                    await signUpWithPassword();
+                } catch (error) {
+                    setFeedback(error.message || 'Could not sign up.', 'error');
+                }
+            });
+
+            $('logout-btn')?.addEventListener('click', async () => {
+                try {
+                    await signOut();
+                } catch (error) {
+                    setFeedback(error.message || 'Could not log out.', 'error');
+                }
+            });
+
+            $('save-cloud-btn')?.addEventListener('click', async () => {
+                await saveSnapshotToCloud();
+            });
+
+            $('load-cloud-btn')?.addEventListener('click', async () => {
+                await loadSnapshotFromCloud();
+            });
+
+            $('export-json-btn')?.addEventListener('click', exportSnapshotAsJson);
+            $('import-json-btn')?.addEventListener('click', () => $('import-json-file')?.click());
+            $('import-json-file')?.addEventListener('change', (event) => {
+                importSnapshotFromFile(event.target.files?.[0]);
+                event.target.value = '';
+            });
+
+            $('save-calendar-btn')?.addEventListener('click', () => {
+                const value = document.querySelector('#calendar-modal input[type="date"]')?.value;
+                if (value) switchScheduleDate(value);
+            });
+
+            document.addEventListener('input', (event) => {
+                if (event.target.closest('#project-list-container') || event.target.closest('#schedule-list')) {
+                    schedulePersist('input');
+                }
+            });
+
+            document.addEventListener('change', (event) => {
+                if (event.target.closest('#project-list-container') || event.target.closest('#schedule-list')) {
+                    schedulePersist('change');
+                }
+            });
+
+            const observerTargets = [
+                $('active-projects-list'),
+                $('pending-projects-list'),
+                $('done-projects-list'),
+                $('schedule-list'),
+            ].filter(Boolean);
+            const observer = new MutationObserver(() => schedulePersist('mutation'));
+            observerTargets.forEach((target) => observer.observe(target, { childList: true, subtree: true, characterData: true, attributes: true }));
+        }
+
+        async function boot() {
+            ensureAllIds();
+            initExtraSortables();
+            refreshProjectCounters();
+            if (!scheduleDaysCache[selectedScheduleDate]) scheduleDaysCache[selectedScheduleDate] = parseScheduleEntriesFromDom();
+            updateMissedProjectsForSelectedDate();
+            updateScheduleDateUi();
+
+            initialGuestSnapshot = createSnapshot();
+            const guestSnapshot = readGuestSnapshot();
+            if (guestSnapshot) applySnapshot(guestSnapshot);
+            writeLocalSnapshot(createSnapshot());
+            bindUi();
+
+            const { data: sessionData } = await sb.auth.getSession();
+            if (sessionData?.session) {
+                await handleSignedIn(sessionData.session);
+            } else {
+                handleSignedOut();
+            }
+
+            sb.auth.onAuthStateChange(async (event, session) => {
+                if (event === 'SIGNED_OUT') {
+                    handleSignedOut();
+                    return;
+                }
+                if (session?.user) {
+                    await handleSignedIn(session);
+                }
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', boot);
+        } else {
+            boot();
+        }
+    })();
+</script>
+
+<script>
+    (function () {
+        function normalizeText(value) {
+            return String(value || '')
+                .normalize('NFD')
+                .replace(/[̀-ͯ]/g, '')
+                .toLowerCase()
+                .trim();
+        }
+
+        function visibleProjectCount(list) {
+            if (!list) return 0;
+            return Array.from(list.children).filter((item) => item.classList.contains('project-item') && item.style.display !== 'none').length;
+        }
+
+        function applyProjectSearch() {
+            const input = document.getElementById('project-search-input');
+            const clearBtn = document.getElementById('project-search-clear-btn');
+            const status = document.getElementById('project-search-status');
+            if (!input) return;
+
+            const query = normalizeText(input.value);
+            const projects = Array.from(document.querySelectorAll('#project-list-container .project-item'));
+            let visibleCount = 0;
+
+            projects.forEach((project) => {
+                const haystack = normalizeText(project.innerText);
+                const matched = !query || haystack.includes(query);
+                project.style.display = matched ? '' : 'none';
+                if (matched) visibleCount += 1;
+            });
+
+            const pendingHeader = document.getElementById('pending-section-header');
+            const doneHeader = document.getElementById('done-section-header');
+            const pendingList = document.getElementById('pending-projects-list');
+            const doneList = document.getElementById('done-projects-list');
+
+            if (pendingHeader && pendingList) pendingHeader.classList.toggle('hidden', visibleProjectCount(pendingList) === 0);
+            if (doneHeader && doneList) doneHeader.classList.toggle('hidden', visibleProjectCount(doneList) === 0);
+
+            if (clearBtn) clearBtn.classList.toggle('hidden', !query);
+            if (status) {
+                if (query) {
+                    status.classList.remove('hidden');
+                    status.textContent = visibleCount > 0
+                        ? `${visibleCount} matching project${visibleCount === 1 ? '' : 's'}`
+                        : 'No matching projects';
+                } else {
+                    status.classList.add('hidden');
+                    status.textContent = '';
+                }
+            }
+        }
+
+        function bootSearch() {
+            const input = document.getElementById('project-search-input');
+            const clearBtn = document.getElementById('project-search-clear-btn');
+            const container = document.getElementById('project-list-container');
+            if (!input || !container) return;
+
+            input.addEventListener('input', applyProjectSearch);
+            clearBtn?.addEventListener('click', () => {
+                input.value = '';
+                applyProjectSearch();
+                input.focus();
+            });
+
+            document.addEventListener('input', (event) => {
+                if (!input.value.trim()) return;
+                if (event.target.closest('#project-list-container')) {
+                    requestAnimationFrame(applyProjectSearch);
+                }
+            });
+
+            const observer = new MutationObserver(() => requestAnimationFrame(applyProjectSearch));
+            observer.observe(container, { childList: true, subtree: true, characterData: true });
+
+            applyProjectSearch();
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bootSearch);
+        } else {
+            bootSearch();
+        }
+    })();
+</script>
+
 </body>
 </html>
