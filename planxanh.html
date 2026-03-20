@@ -134,38 +134,32 @@
             color: var(--black-text) !important;
             border: none !important;
             position: relative;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
             padding-right: 16px !important;
-            max-width: min(48vw, 280px);
+            max-width: 220px;
         }
 
-        #account-btn-label {
-            display: inline-block;
-            min-width: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+        #account-btn[data-check="true"] {
+            padding-right: 28px !important;
         }
 
-        #account-btn-check {
+        #account-btn::after {
+            content: '';
+            position: absolute;
+            right: 11px;
+            top: 50%;
+            transform: translateY(-54%);
             display: none;
-            flex: 0 0 auto;
             font-size: 10px;
-            font-weight: 800;
+            font-weight: 700;
             line-height: 1;
+            color: currentColor;
             opacity: 0.72;
-            transform: translateY(-0.5px);
+            pointer-events: none;
         }
 
-        #account-btn[data-transient="true"] {
-            max-width: min(62vw, 360px);
-        }
-
-        #account-btn[data-check="true"] #account-btn-check {
-            display: inline-block;
+        #account-btn[data-check="true"]::after {
+            content: '✓';
+            display: block;
         }
 
         #account-btn[data-tone="success"] {
@@ -219,26 +213,8 @@
             opacity: 0.95;
         }
 
-        .project-item .project-text-stack,
-        .project-item .accordion-header > .flex.items-center.flex-1 > div.flex.flex-col.flex-1 {
-            gap: 0 !important;
-        }
-
-        .project-item .project-title-row {
-            margin: 0 !important;
-            padding: 0 !important;
-            min-height: 0 !important;
-            line-height: 1 !important;
-            align-items: flex-end !important;
-        }
-
-        .project-item .project-title-row .editable-text,
-        .project-item .project-main-label {
-            display: inline-block;
-            line-height: 0.94 !important;
-            padding: 0 !important;
-            margin: 0 0 -7px 0 !important;
-            transform: translateY(1px);
+        .project-subtext-row {
+            margin-top: -4px !important;
         }
 
         main#projects-view,
@@ -481,8 +457,12 @@
         }
 
         .delete-btn,
+        .delete-schedule-btn {
+            color: var(--text-sub) !important;
+            opacity: 0.72;
+        }
+
         .edit-schedule-btn,
-        .delete-schedule-btn,
         #close-auth-btn,
         #close-calendar-btn,
         #close-time-range-btn {
@@ -623,6 +603,17 @@
 
         .schedule-item:hover .edit-schedule-btn,
         .schedule-item:hover .delete-schedule-btn {
+            opacity: 1;
+        }
+
+        .edit-schedule-btn i,
+        .delete-schedule-btn i {
+            opacity: 0.72;
+            transition: opacity 0.2s ease;
+        }
+
+        .edit-schedule-btn:hover i,
+        .delete-schedule-btn:hover i {
             opacity: 1;
         }
 
@@ -1164,33 +1155,7 @@
             }
 
             #account-btn {
-                max-width: 52vw;
-            }
-
-            #account-btn[data-transient="true"] {
-                max-width: 64vw;
-            }
-
-            #project-search-input,
-            #done-date-input,
-            #auth-modal input,
-            #action-modal input,
-            #action-modal textarea,
-            #calendar-modal input,
-            #time-range-modal input,
-            #date-picker-menu input,
-            input,
-            textarea,
-            select {
-                font-size: 16px !important;
-            }
-
-            button,
-            [role="button"],
-            .accordion-header,
-            .editable-text,
-            a {
-                touch-action: manipulation;
+                max-width: 196px;
             }
         }
 </style>
@@ -1670,7 +1635,7 @@
             color: rgba(255,255,255,0.22);
             font-size: 1.28rem;
             line-height: 1;
-            transform: translateY(-2px);
+            transform: translateY(-1px);
             user-select: none;
         }
 
@@ -1810,8 +1775,54 @@
         }
 </style>
 
+<style id="project-title-subtext-tighten-v1">
+        .project-item > .accordion-header > div:first-child > .flex.flex-col.flex-1 {
+            gap: 0 !important;
+        }
+
+        .project-item .project-subtext-row {
+            margin-top: -7px !important;
+        }
+
+        .project-item > .accordion-header .editable-text {
+            line-height: 1.02 !important;
+        }
+</style>
+
+
+<style id="font-hierarchy-output-spacing-v5">
+        .project-item > .accordion-header .editable-text {
+            font-size: 21px !important;
+        }
+
+        .phase-item .editable-text {
+            font-size: 16px !important;
+        }
+
+        .output-item .editable-text,
+        .schedule-item .editable-text {
+            font-size: 15px !important;
+        }
+
+        .output-item {
+            padding-top: 3px !important;
+            padding-bottom: 3px !important;
+        }
+
+        @media (max-width: 640px) {
+            .project-item > .accordion-header .editable-text {
+                font-size: 19px !important;
+            }
+
+            .output-item {
+                padding-top: 3px !important;
+                padding-bottom: 3px !important;
+            }
+        }
+</style>
+
 </head>
-<body class="min-h-screen font-sans" style="-webkit-text-size-adjust:100%;">
+<body class="min-h-screen font-sans">
 
     <!-- Header -->
     <header class="bg-black py-4 px-5 sm:px-8 flex items-center justify-between sticky top-0 z-50">
@@ -1824,8 +1835,7 @@
                 Actions
             </button>
             <button id="account-btn" class="bg-brand text-black font-bold py-2 px-4 sm:px-6 rounded-full text-sm sm:text-base hover:scale-105 transition-transform shrink-0" data-tone="muted" data-check="false">
-                <span id="account-btn-label">Account</span>
-                <span id="account-btn-check" aria-hidden="true">✓</span>
+                Account
             </button>
         </div>
     </header>
@@ -1871,10 +1881,10 @@
                     <div class="accordion-header w-full flex items-center justify-between py-3 sm:py-4 text-left group cursor-pointer hover:bg-white/5 px-2 -mx-2 rounded transition">
                         <div class="flex items-center flex-1 mr-3 sm:mr-4">
                             <i class="ph ph-folder-notch text-2xl text-brand transition-colors duration-300 mr-3 project-icon"></i>
-                            <div class="project-text-stack flex flex-col flex-1">
-                                <div class="project-title-row flex items-center flex-wrap">
+                            <div class="flex flex-col flex-1">
+                                <div class="flex items-center flex-wrap">
                                     <span class="pending-badge hidden bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold mr-2">Pending</span>
-                                    <span contenteditable="true" class="editable-text project-main-label font-bold text-lg leading-none text-brand">Payment and billing</span>
+                                    <span contenteditable="true" class="editable-text font-bold text-lg text-brand">Payment and billing</span>
                                     <span class="badge-container"></span>
                                 </div>
                                 <div class="project-subtext-row flex flex-wrap items-center gap-2.5 leading-tight">
@@ -1895,8 +1905,8 @@
                         <div class="phase-item mb-1 border-b border-transparent" data-level="phase">
                             <div class="accordion-header w-full flex items-center justify-between py-1.5 sm:py-2.5 text-left group cursor-pointer hover:bg-white/5 px-2 -mx-2 rounded transition">
                                 <div class="flex items-center flex-1 mr-3 sm:mr-4">
-                                    <div class="project-text-stack flex flex-col flex-1">
-                                        <div class="project-title-row flex items-center flex-wrap">
+                                    <div class="flex flex-col flex-1">
+                                        <div class="flex items-center flex-wrap">
                                             <span class="pending-badge hidden bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold mr-2">Pending</span>
                                             <span contenteditable="true" class="font-bold text-base text-white group-hover:text-brand transition editable-text">Suggested topics</span>
                                             <span class="badge-container"></span>
@@ -2564,10 +2574,10 @@
                         <div class="accordion-header w-full flex items-center justify-between py-3 sm:py-4 text-left group cursor-pointer hover:bg-white/5 px-2 -mx-2 rounded transition">
                             <div class="flex items-center flex-1 mr-3 sm:mr-4">
                                 <i class="ph ph-folder-notch text-2xl text-brand transition-colors duration-300 mr-3 project-icon"></i>
-                                <div class="project-text-stack flex flex-col flex-1">
-                                    <div class="project-title-row flex items-center flex-wrap">
+                                <div class="flex flex-col flex-1">
+                                    <div class="flex items-center flex-wrap">
                                         <span class="pending-badge hidden bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold mr-2">Pending</span>
-                                        <span contenteditable="true" class="editable-text project-main-label font-bold text-lg leading-none text-brand">New Project</span>
+                                        <span contenteditable="true" class="editable-text font-bold text-lg text-brand">New Project</span>
                                         <span class="badge-container"></span>
                                     </div>
                                     <div class="project-subtext-row flex flex-wrap items-center gap-2.5 leading-tight">
@@ -3596,7 +3606,7 @@
         let accountButtonTransientLabel = null;
         let accountButtonTransientTone = 'muted';
         let accountButtonTransientCheck = false;
-        let accountButtonStickyCheck = false;
+        let accountButtonSavedCheck = false;
         let cloudSavePromise = null;
 
         function $(id) {
@@ -3705,21 +3715,18 @@
 
         function renderAccountButton() {
             const accountBtn = $('account-btn');
-            const accountBtnLabel = $('account-btn-label');
-            const accountBtnCheck = $('account-btn-check');
-            if (!accountBtn || !accountBtnLabel) return;
+            if (!accountBtn) return;
 
             const baseLabel = currentUser ? getCompactHeaderUserLabel() : 'Account';
             const buttonLabel = currentUser
                 ? (accountButtonTransientLabel || baseLabel)
                 : 'Account';
-            const showCheck = !!(currentUser && (accountButtonTransientCheck || (accountButtonStickyCheck && !accountButtonTransientLabel)));
+            const hasPersistentCheck = !!currentUser && !!accountButtonSavedCheck && !cloudDirty;
+            const showCheck = !!currentUser && (!!accountButtonTransientCheck || hasPersistentCheck);
 
-            accountBtnLabel.textContent = buttonLabel;
-            if (accountBtnCheck) accountBtnCheck.style.display = showCheck ? 'inline-block' : 'none';
+            accountBtn.textContent = buttonLabel;
             accountBtn.dataset.tone = currentUser ? (accountButtonTransientTone || 'muted') : 'muted';
             accountBtn.dataset.check = showCheck ? 'true' : 'false';
-            accountBtn.dataset.transient = currentUser && buttonLabel !== baseLabel ? 'true' : 'false';
             accountBtn.title = buttonLabel;
         }
 
@@ -3739,14 +3746,12 @@
             accountButtonTransientCheck = false;
 
             if (!currentUser) {
-                accountButtonStickyCheck = false;
+                accountButtonSavedCheck = false;
                 if (detail) detail.textContent = 'Sign in to enable cloud save.';
                 if (lastSaved) lastSaved.textContent = 'No cloud saves yet';
                 renderAccountButton();
                 return;
             }
-
-            if (lastCloudSavedAt) accountButtonStickyCheck = true;
 
             const timeText = lastCloudSavedAt ? formatShortTime(lastCloudSavedAt) : '';
             if (detail) {
@@ -4456,14 +4461,14 @@
 
                         writeLocalSnapshot(snapshot);
                         cloudDirty = false;
+                        accountButtonSavedCheck = true;
                         lastCloudSavedAt = isoNow();
                         const saveStateElapsed = Date.now() - saveStateStartedAt;
-                        if (saveStateElapsed < 800) {
-                            await new Promise((resolve) => setTimeout(resolve, 800 - saveStateElapsed));
+                        if (saveStateElapsed < 420) {
+                            await new Promise((resolve) => setTimeout(resolve, 420 - saveStateElapsed));
                         }
                         setInlineStatus(`Signed in · cloud saved ${formatShortTime(lastCloudSavedAt)}`);
                         updateAutoSaveUi();
-                        accountButtonStickyCheck = true;
                         flashHeaderSaveStatus(getCompactHeaderUserLabel(), 'success', 1400, true);
                         if (!silentFeedback) setFeedback(source === 'auto' ? 'Auto-saved current planner to cloud.' : 'Saved current planner to cloud.', 'success');
                     });
@@ -4496,10 +4501,10 @@
                     applySnapshot(cloudSnapshot);
                     writeLocalSnapshot(createSnapshot());
                     cloudDirty = false;
+                    accountButtonSavedCheck = true;
                     lastCloudSavedAt = cloudSnapshot.updatedAt || isoNow();
                     setInlineStatus(`Signed in · cloud loaded ${formatShortTime(lastCloudSavedAt)}`);
                     updateAutoSaveUi();
-                    accountButtonStickyCheck = true;
                     flashHeaderSaveStatus(getCompactHeaderUserLabel(), 'success', 1400, true);
                     setFeedback('Loaded planner from cloud.', 'success');
                 });
@@ -4518,7 +4523,10 @@
             persistTimer = setTimeout(() => {
                 const snapshot = createSnapshot();
                 writeLocalSnapshot(snapshot);
-                if (currentUser) cloudDirty = true;
+                if (currentUser) {
+                    cloudDirty = true;
+                    renderAccountButton();
+                }
                 refreshProjectCounters();
                 updateMissedProjectsForSelectedDate();
             }, 250);
@@ -4584,6 +4592,7 @@
             currentProfile = null;
             lastCloudSavedAt = null;
             cloudDirty = false;
+            accountButtonSavedCheck = false;
             loadAutoSavePreference('guest');
             stopAutoSaveLoop();
             updateAccountUi();
@@ -4630,7 +4639,6 @@
                 if (loginPanel) loginPanel.classList.add('hidden');
                 if (signupPanel) signupPanel.classList.add('hidden');
             } else {
-                accountButtonStickyCheck = false;
                 if (accountSignedAs) accountSignedAs.textContent = 'Signed as Guest';
                 if (logoutBtn) logoutBtn.disabled = true;
                 if (saveCloudBtn) saveCloudBtn.disabled = true;
@@ -4643,7 +4651,6 @@
                 if (accountTab) accountTab.classList.remove('hidden');
             }
 
-            renderAccountButton();
             updateAutoSaveUi();
         }
 
