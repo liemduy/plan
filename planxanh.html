@@ -14,102 +14,323 @@
     <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@500;700;800&display=swap" rel="stylesheet">
     
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Montserrat', 'sans-serif']
+                    },
                     colors: {
-                        brand: '#1ed760',
-                        brandLight: 'rgba(30, 215, 96, 0.15)',
-                        darkBg: '#000000',
-                        darkCard: '#121212',
+                        brand: '#ffc8d2',
+                        brandLight: 'rgba(255, 200, 210, 0.14)',
+                        darkBg: '#121212',
+                        darkCard: '#242424',
                         textMuted: '#b3b3b3',
-                        borderGray: '#2a2a2a'
+                        borderGray: '#3e3e3e'
                     }
                 }
             }
         }
     </script>
     <style>
-        body {
-            background-color: #121212;
-            color: #ffffff;
+        :root {
+            --bg-color: #121212;
+            --card-bg: #242424;
+            --card-hover: #2a2a2a;
+            --text-main: #ffffff;
+            --text-sub: #b3b3b3;
+            --accent: #ffc8d2;
+            --accent-soft: rgba(255, 200, 210, 0.14);
+            --divider: #3e3e3e;
+            --black-text: #000000;
+            --pending: #facc15;
+            --done: #60a5fa;
+            --done-soft: rgba(96, 165, 250, 0.14);
+        }
+
+        * {
+            box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
-            user-select: none; /* Tránh bôi đen text ngẫu nhiên khi ấn giữ */
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            user-select: none;
             padding-left: env(safe-area-inset-left, 0px);
             padding-right: env(safe-area-inset-right, 0px);
+            font-family: 'Inter', -apple-system, sans-serif;
         }
-        @media (max-width: 640px) {
-            header,
-            main#projects-view,
-            main#schedule-view {
-                padding-left: 1.25rem !important;
-                padding-right: 1.25rem !important;
-            }
-            #schedule-view .schedule-content {
-                padding-left: 0.75rem !important;
-            }
-            #projects-view {
-                padding-top: 1.25rem !important;
-            }
-            #projects-view > .relative {
-                margin-bottom: 1.5rem !important;
-            }
-            #projects-view > .group {
-                margin-bottom: 1rem !important;
-            }
-            #projects-view .project-item > .accordion-header {
-                padding-top: 1rem !important;
-                padding-bottom: 1rem !important;
-            }
-            #projects-view .phase-item > .accordion-header {
-                padding-top: 0.75rem !important;
-                padding-bottom: 0.75rem !important;
-            }
-            #projects-view .output-item {
-                padding-top: 0.625rem !important;
-                padding-bottom: 0.625rem !important;
-            }
-            #projects-view .project-item > .accordion-content {
-                padding-left: 1rem !important;
-                padding-bottom: 0.875rem !important;
-            }
-            #projects-view .phase-item > .accordion-content {
-                padding-left: 0.625rem !important;
-                padding-bottom: 0.25rem !important;
-            }
-            #projects-view .project-item > .accordion-header > div:last-child,
-            #projects-view .phase-item > .accordion-header > div:last-child {
-                gap: 0.5rem !important;
-            }
-            #projects-view .project-item .project-icon {
-                margin-right: 0.75rem !important;
-            }
-            #projects-view .output-item > div:first-child {
-                margin-right: 0.75rem !important;
-            }
-            #pending-section-header,
-            #done-section-header {
-                margin-top: 2rem !important;
-                margin-bottom: 0.75rem !important;
-            }
-            #action-modal-dialog,
-            #calendar-modal-dialog,
-            #delete-modal-dialog,
-            #time-range-modal-dialog,
-            #auth-modal-dialog {
-                width: min(94vw, 28rem) !important;
-            }
+
+        h1, h2, h3, .logo-title, #projects-view > .group h1, #schedule-view > .flex h1 {
+            font-family: 'Montserrat', sans-serif;
+            letter-spacing: -0.5px;
         }
+
+        header,
+        main#projects-view,
+        main#schedule-view {
+            width: min(100%, 640px);
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        header {
+            background: linear-gradient(to bottom, rgba(18,18,18,0.98), rgba(18,18,18,0.92)) !important;
+            padding: 24px 20px 0 20px !important;
+            align-items: center;
+        }
+
+        #logo-btn {
+            gap: 12px !important;
+        }
+
+        #logo-btn > i {
+            color: var(--accent) !important;
+        }
+
+        .logo-title {
+            font-size: 1.375rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .logo-title b {
+            color: var(--accent);
+            font-weight: 800;
+        }
+
+        #nav-actions-btn,
+        #account-btn {
+            border-radius: 999px !important;
+            font-size: 13px !important;
+            font-weight: 700 !important;
+            line-height: 1;
+            padding: 10px 16px !important;
+            transition: all 0.2s ease !important;
+            white-space: nowrap;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #nav-actions-btn {
+            background: transparent !important;
+            border: 1px solid var(--text-sub) !important;
+            color: var(--text-main) !important;
+        }
+
+        #nav-actions-btn:hover {
+            border-color: var(--text-main) !important;
+            transform: scale(1.02);
+        }
+
+        #account-btn {
+            background: var(--accent) !important;
+            color: var(--black-text) !important;
+            border: none !important;
+        }
+
+        #account-btn:hover {
+            transform: scale(1.03);
+        }
+
+        #header-save-status {
+            color: var(--text-sub) !important;
+            opacity: 0.78;
+            transition: color 0.18s ease, opacity 0.18s ease;
+        }
+
+        #header-save-status[data-tone="success"] {
+            color: #bde7c8 !important;
+            opacity: 0.95;
+        }
+
+        #header-save-status[data-tone="error"] {
+            color: #f6b0b0 !important;
+            opacity: 0.95;
+        }
+
+        #header-save-status[data-tone="warn"] {
+            color: #f2d08a !important;
+            opacity: 0.95;
+        }
+
+        main#projects-view,
+        main#schedule-view {
+            padding: 0 20px 88px 20px !important;
+        }
+
+        #projects-view {
+            padding-top: 0 !important;
+        }
+
+        #project-search-wrap {
+            margin-top: 10px !important;
+            margin-bottom: 26px !important;
+        }
+
+        #schedule-view {
+            padding-top: 6px !important;
+        }
+
+        #project-search-input {
+            background: var(--card-bg) !important;
+            color: var(--text-main) !important;
+            border: 1px solid transparent !important;
+            border-radius: 4px !important;
+            box-shadow: none !important;
+            padding-left: 48px !important;
+            padding-right: 48px !important;
+        }
+
+        #project-search-input::placeholder {
+            color: var(--text-sub) !important;
+        }
+
+        #project-search-input:focus {
+            outline: none !important;
+            background: var(--card-hover) !important;
+            border-color: #444 !important;
+        }
+
+        #project-search-clear-btn,
+        #project-search-input + button,
+        #projects-view .absolute.inset-y-0.left-0 {
+            color: var(--text-sub) !important;
+        }
+
+        #project-search-clear-btn:hover {
+            color: var(--text-main) !important;
+        }
+
+        #add-project-btn,
+        #schedule-calendar-btn,
+        #schedule-back-btn {
+            background: transparent !important;
+            color: var(--accent) !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        #add-project-btn:hover,
+        #schedule-calendar-btn:hover,
+        #schedule-back-btn:hover {
+            background: var(--card-bg) !important;
+            color: var(--text-main) !important;
+        }
+
+        #schedule-back-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 999px;
+        }
+
+        #project-list-container {
+            position: relative;
+        }
+
+        #active-projects-list,
+        #pending-projects-list,
+        #done-projects-list {
+            min-height: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .project-item {
+            background-color: var(--card-bg);
+            border: none !important;
+            border-radius: 8px;
+            padding: 24px 20px 8px 20px;
+            margin-bottom: 0;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .project-item > .accordion-header {
+            border-bottom: 1px solid var(--divider);
+            border-radius: 0 !important;
+            padding: 0 0 16px 0 !important;
+            margin: 0 !important;
+            background: transparent !important;
+        }
+
+        .project-item > .accordion-header:hover,
+        .phase-item > .accordion-header:hover,
+        .output-item:hover,
+        .schedule-header:hover {
+            background: transparent !important;
+        }
+
+        .project-item > .accordion-content {
+            padding: 12px 0 4px 0 !important;
+            margin: 0 !important;
+        }
+
+        .project-item .project-icon {
+            margin-right: 12px !important;
+        }
+
+        .project-item > .accordion-header .editable-text {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 20px !important;
+            font-weight: 700 !important;
+        }
+
+        .phase-item {
+            border-bottom: 1px solid var(--divider) !important;
+            margin-bottom: 0 !important;
+        }
+
+        .phase-item:last-child,
+        .output-item:last-child {
+            border-bottom: none !important;
+        }
+
+        .phase-item > .accordion-header {
+            padding: 16px 0 !important;
+            margin: 0 !important;
+            border-radius: 0 !important;
+            background: transparent !important;
+        }
+
+        .phase-item > .accordion-content {
+            padding: 0 0 4px 0 !important;
+            margin: 0 !important;
+        }
+
+        .phase-item .editable-text,
+        .output-item .editable-text,
+        .schedule-item .editable-text {
+            font-size: 15px !important;
+        }
+
+        .output-item {
+            padding: 16px 0 !important;
+            margin: 0 !important;
+            border-bottom: 1px solid var(--divider);
+            border-radius: 0 !important;
+        }
+
+        .output-item .ph-check-circle {
+            color: var(--text-sub) !important;
+            opacity: 0.55 !important;
+        }
+
         .accordion-content {
             transition: all 0.3s ease-in-out;
             overflow: hidden;
         }
-        .chevron-icon { transition: transform 0.3s ease; }
-        
+
+        .chevron-icon {
+            transition: transform 0.3s ease, color 0.2s ease;
+        }
+
         .editable-text {
             cursor: text;
             padding: 2px 4px;
@@ -118,53 +339,109 @@
             border: 1px solid transparent;
             transition: border-color 0.2s, background-color 0.2s, color 0.3s ease;
             word-break: break-word;
-            user-select: text; /* Cho phép bôi đen text để sửa */
+            user-select: text;
         }
+
         .editable-text:focus {
             outline: none;
-            border-color: #1ed760;
-            background-color: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 200, 210, 0.55);
+            background-color: rgba(255, 255, 255, 0.06);
         }
+
         .editable-text:empty:before {
             content: "Nhập nội dung...";
-            color: #b3b3b3;
+            color: var(--text-sub);
             pointer-events: none;
         }
 
-        /* --- Custom Done Styling --- */
+        .project-item > .accordion-header .editable-text,
+        .phase-item > .accordion-header .editable-text {
+            line-height: 1.08 !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+        }
+
+        .project-item > .accordion-header .progress-counter,
+        .phase-item > .accordion-header .progress-counter {
+            line-height: 1.05 !important;
+        }
+
+        .project-item > .accordion-header > div:first-child > .flex.flex-col.flex-1,
+        .phase-item > .accordion-header > div:first-child > .flex.flex-col.flex-1 {
+            gap: 3px !important;
+        }
+
+        .project-item > .accordion-header > div:first-child > .flex.flex-col.flex-1 > div:first-child,
+        .phase-item > .accordion-header > div:first-child > .flex.flex-col.flex-1 > div:first-child {
+            margin: 0 !important;
+            line-height: 1.08 !important;
+        }
+
+        .project-item > .accordion-header .flex.flex-wrap.items-center.gap-2\.5,
+        .phase-item > .accordion-header .flex.flex-wrap.items-center.gap-2\.5 {
+            margin-top: 0 !important;
+            gap: 8px !important;
+        }
+
+        .add-phase-btn,
+        .add-output-btn {
+            background-color: rgba(255, 255, 255, 0.06) !important;
+            color: var(--text-main) !important;
+            border-radius: 999px !important;
+            padding: 6px 12px !important;
+            font-size: 12px !important;
+            font-weight: 600 !important;
+        }
+
+        .add-phase-btn:hover,
+        .add-output-btn:hover {
+            background-color: var(--accent) !important;
+            color: var(--black-text) !important;
+        }
+
+        .delete-btn,
+        .edit-schedule-btn,
+        .delete-schedule-btn,
+        #close-auth-btn,
+        #close-calendar-btn,
+        #close-time-range-btn {
+            color: var(--text-sub) !important;
+        }
+
+        .delete-btn:hover,
+        .delete-schedule-btn:hover {
+            color: #ff453a !important;
+        }
+
+        .edit-schedule-btn:hover,
+        #close-auth-btn:hover,
+        #close-calendar-btn:hover,
+        #close-time-range-btn:hover {
+            color: var(--text-main) !important;
+        }
+
         .is-done-bg {
-            background-color: theme('colors.brandLight') !important;
-            border-radius: 0.375rem;
+            background-color: var(--accent-soft) !important;
+            border-radius: 6px;
             transition: background-color 0.3s ease;
         }
+
         .is-done-bg-blue {
-            background-color: rgba(59, 130, 246, 0.15) !important; /* Tailwind blue-500 at 15% */
-            border-radius: 0.375rem;
+            background-color: var(--done-soft) !important;
+            border-radius: 6px;
             transition: background-color 0.3s ease;
         }
+
         .is-pending-text {
-            color: #eab308 !important; /* Tailwind yellow-500 */
+            color: var(--pending) !important;
         }
-        .done-badge {
-            display: inline-flex;
-            align-items: center;
-            font-size: 0.65rem;
-            font-weight: 600;
-            background-color: rgba(30, 215, 96, 0.15);
-            color: #1ed760;
-            padding: 2px 6px;
-            border-radius: 9999px;
-            margin-left: 8px;
-            white-space: nowrap;
-            vertical-align: middle;
-        }
+
+        .done-badge,
         .done-badge-blue {
             display: inline-flex;
             align-items: center;
             font-size: 0.65rem;
             font-weight: 600;
-            background-color: rgba(59, 130, 246, 0.15);
-            color: #3b82f6; /* Tailwind blue-500 */
             padding: 2px 6px;
             border-radius: 9999px;
             margin-left: 8px;
@@ -172,34 +449,1256 @@
             vertical-align: middle;
         }
 
-        /* Modal Overlays */
-        #custom-context-menu, #date-picker-menu, #auth-modal-dialog {
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-            border: 1px solid #2a2a2a;
+        .done-badge {
+            background-color: var(--accent-soft);
+            color: var(--accent);
+        }
+
+        .done-badge-blue {
+            background-color: var(--done-soft);
+            color: var(--done);
+        }
+
+        #done-projects-list > .project-item {
+            background-color: rgba(59, 130, 246, 0.11) !important;
         }
 
         #done-projects-list > .project-item > .accordion-header {
-            background-color: rgba(59, 130, 246, 0.15) !important;
-            border-radius: 0.5rem;
+            background: transparent !important;
+            border-bottom-color: rgba(96, 165, 250, 0.18) !important;
+            border-radius: 0 !important;
         }
-        #done-projects-list > .project-item > .accordion-header .editable-text,
-        #done-projects-list > .project-item > .accordion-header .project-icon,
-        #done-projects-list > .project-item > .accordion-header .chevron-icon {
-            color: #3b82f6 !important;
-        }
+
         #done-projects-list > .project-item > .accordion-header .add-phase-btn {
-            color: #60a5fa !important;
-            background-color: rgba(59, 130, 246, 0.12) !important;
+            color: #bfdbfe !important;
+            background-color: rgba(96, 165, 250, 0.14) !important;
         }
+
         #done-projects-list > .project-item > .accordion-header .add-phase-btn:hover {
-            color: #000000 !important;
-            background-color: #3b82f6 !important;
+            color: var(--black-text) !important;
+            background-color: var(--done) !important;
+        }
+
+        #pending-section-header,
+        #done-section-header {
+            margin-top: 6px !important;
+            margin-bottom: 14px !important;
+            padding-bottom: 8px !important;
+            border-bottom: 1px solid var(--divider) !important;
+            font-size: 12px !important;
+            letter-spacing: 0.08em;
+        }
+
+        #missed-projects-wrapper {
+            margin-bottom: 22px !important;
+        }
+
+        #toggle-missed-btn,
+        #missed-projects-list,
+        .missed-project-link {
+            color: var(--text-sub) !important;
+        }
+
+        .missed-project-link:hover,
+        .navigate-to-source:hover {
+            color: var(--text-main) !important;
+        }
+
+        #schedule-empty-state {
+            border: 1px dashed var(--divider) !important;
+            border-radius: 8px !important;
+            background: var(--card-bg);
+            margin-top: 8px !important;
+        }
+
+        .schedule-item {
+            background-color: var(--card-bg);
+            border: none !important;
+            border-radius: 8px;
+            padding: 0 20px;
+            margin-bottom: 16px;
+        }
+
+        .schedule-header {
+            border-bottom: 1px solid var(--divider);
+            padding: 16px 0 !important;
+            margin: 0 !important;
+            border-radius: 0 !important;
+        }
+
+        .schedule-content {
+            padding: 12px 0 16px 32px !important;
+        }
+
+        .schedule-done-checkbox {
+            accent-color: #ffc8d2;
+        }
+
+        .schedule-item .edit-schedule-btn,
+        .schedule-item .delete-schedule-btn {
+            opacity: 0;
+            transition: opacity 0.2s ease, color 0.2s ease;
+        }
+
+        .schedule-item:hover .edit-schedule-btn,
+        .schedule-item:hover .delete-schedule-btn {
+            opacity: 1;
+        }
+
+        #custom-context-menu,
+        #date-picker-menu,
+        #auth-modal-dialog,
+        #action-modal-dialog,
+        #calendar-modal-dialog,
+        #delete-modal-dialog,
+        #time-range-modal-dialog {
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5) !important;
+            border: none !important;
+        }
+
+        #auth-modal-dialog,
+        #action-modal-dialog,
+        #calendar-modal-dialog,
+        #delete-modal-dialog,
+        #time-range-modal-dialog,
+        #custom-context-menu,
+        #date-picker-menu {
+            background: var(--card-bg) !important;
+            border-radius: 12px !important;
+        }
+
+        #auth-modal-dialog,
+        #action-modal-dialog,
+        #calendar-modal-dialog,
+        #delete-modal-dialog,
+        #time-range-modal-dialog {
+            padding: 32px 24px !important;
+        }
+
+        #auth-tabs {
+            display: flex !important;
+            gap: 24px !important;
+            background: transparent !important;
+            border-bottom: 1px solid var(--divider);
+            border-radius: 0 !important;
+            padding: 0 !important;
+            margin-bottom: 24px !important;
+        }
+
+        .auth-tab-btn {
+            background: transparent !important;
+            border-radius: 0 !important;
+            color: var(--text-sub) !important;
+            font-size: 18px !important;
+            font-weight: 700 !important;
+            font-family: 'Montserrat', sans-serif;
+            padding: 0 0 12px 0 !important;
+            margin-bottom: -1px;
+        }
+
+        .auth-tab-btn:hover {
+            color: var(--text-main) !important;
+        }
+
+        .auth-tab-btn.bg-brand {
+            background: transparent !important;
+            color: var(--text-main) !important;
+            border-bottom: 2px solid var(--accent);
+        }
+
+        #auth-modal input,
+        #action-modal input,
+        #action-modal textarea,
+        #calendar-modal input,
+        #time-range-modal input,
+        #date-picker-menu input {
+            background: #333 !important;
+            border: 1px solid transparent !important;
+            color: var(--text-main) !important;
+            border-radius: 4px !important;
+        }
+
+        #auth-modal input:focus,
+        #action-modal input:focus,
+        #action-modal textarea:focus,
+        #calendar-modal input:focus,
+        #time-range-modal input:focus,
+        #date-picker-menu input:focus {
+            outline: none !important;
+            border-color: var(--text-sub) !important;
+            background: #3e3e3e !important;
+        }
+
+        #login-submit-btn,
+        #signup-submit-btn,
+        #save-cloud-btn,
+        #save-action-btn,
+        #save-calendar-btn,
+        #save-date-btn,
+        #save-time-range-btn,
+        #confirm-delete-btn {
+            background: var(--accent) !important;
+            color: var(--black-text) !important;
+            border: none !important;
+            border-radius: 24px !important;
+            font-weight: 700 !important;
+        }
+
+        #confirm-delete-btn {
+            background: #ff453a !important;
+            color: white !important;
+        }
+
+        #cancel-action-btn,
+        #cancel-calendar-btn,
+        #cancel-delete-btn,
+        #cancel-time-range-btn,
+        #load-cloud-btn,
+        #logout-btn,
+        #export-json-btn,
+        #import-json-btn,
+        #cancel-date-btn {
+            background: transparent !important;
+            color: var(--text-sub) !important;
+            border: 1px solid var(--divider) !important;
+            border-radius: 24px !important;
+        }
+
+        #cancel-action-btn:hover,
+        #cancel-calendar-btn:hover,
+        #cancel-delete-btn:hover,
+        #cancel-time-range-btn:hover,
+        #load-cloud-btn:hover,
+        #logout-btn:hover,
+        #export-json-btn:hover,
+        #import-json-btn:hover,
+        #cancel-date-btn:hover {
+            color: var(--text-main) !important;
+            border-color: var(--text-main) !important;
+            background: transparent !important;
         }
 
         #project-search-clear-btn.hidden {
             display: none;
         }
+
+        @media (hover: none) {
+            .schedule-item .edit-schedule-btn,
+            .schedule-item .delete-schedule-btn {
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 640px) {
+            header,
+            main#projects-view,
+            main#schedule-view {
+                width: 100%;
+                padding-left: 20px !important;
+                padding-right: 20px !important;
+            }
+
+            header {
+                padding-top: 20px !important;
+            }
+
+            .project-item {
+                padding: 20px 16px 6px 16px;
+                margin-bottom: 18px;
+            }
+
+            .project-item > .accordion-header .editable-text {
+                font-size: 18px !important;
+            }
+
+            .project-item > .accordion-header > div:last-child,
+            .phase-item > .accordion-header > div:last-child {
+                gap: 0.5rem !important;
+            }
+
+            .project-item > .accordion-content {
+                padding-bottom: 2px !important;
+            }
+
+            .schedule-content {
+                padding-left: 18px !important;
+            }
+
+            #pending-section-header,
+            #done-section-header {
+                margin-top: 2px !important;
+                margin-bottom: 10px !important;
+            }
+
+            #action-modal-dialog,
+            #calendar-modal-dialog,
+            #delete-modal-dialog,
+            #time-range-modal-dialog,
+            #auth-modal-dialog {
+                width: min(94vw, 28rem) !important;
+                padding: 28px 20px !important;
+            }
+        }
 </style>
+
+<style id="index-polish-v2">
+        header {
+            background: #121212 !important;
+            box-shadow: none !important;
+        }
+
+        #nav-actions-btn,
+        #account-btn {
+            background: transparent !important;
+            color: var(--text-main) !important;
+            border: 1px solid var(--text-sub) !important;
+            padding: 8px 14px !important;
+            transform: none !important;
+        }
+
+        #nav-actions-btn {
+            color: var(--text-sub) !important;
+        }
+
+        #nav-actions-btn:hover,
+        #account-btn:hover {
+            color: var(--text-main) !important;
+            border-color: var(--text-main) !important;
+            background: transparent !important;
+            transform: scale(1.02) !important;
+        }
+
+        #projects-view {
+            padding-top: 2px !important;
+        }
+
+        #schedule-view {
+            padding-top: 26px !important;
+        }
+
+        #projects-view > .group {
+            margin-bottom: 30px !important;
+        }
+
+        #schedule-header-block {
+            margin-bottom: 32px !important;
+        }
+
+        #projects-view > .group h1,
+        #schedule-header-block h1 {
+            font-size: 1.95rem !important;
+            letter-spacing: -0.5px;
+        }
+
+        #project-search-input {
+            height: 48px !important;
+            font-size: 15px !important;
+            font-weight: 500 !important;
+        }
+
+        #project-search-status {
+            color: var(--text-sub) !important;
+        }
+
+        #main-progress-counter {
+            color: var(--text-sub) !important;
+            margin-top: 4px !important;
+        }
+
+        #add-project-btn,
+        #schedule-calendar-btn {
+            background: transparent !important;
+            border: none !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
+            color: var(--accent) !important;
+            gap: 8px !important;
+        }
+
+        #add-project-btn:hover,
+        #schedule-calendar-btn:hover {
+            color: var(--text-main) !important;
+            background: transparent !important;
+        }
+
+        #schedule-header-block {
+            margin-bottom: 30px !important;
+        }
+
+        #schedule-date-nav-wrap {
+            margin-top: 18px !important;
+            padding-top: 2px !important;
+        }
+
+        #schedule-date-nav {
+            gap: 10px !important;
+            flex-wrap: wrap !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            position: relative !important;
+            z-index: 2 !important;
+        }
+
+        #schedule-prev-day-btn,
+        #schedule-next-day-btn {
+            width: 34px !important;
+            height: 34px !important;
+            border-radius: 999px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            color: var(--accent) !important;
+            background: rgba(255, 150, 170, 0.06) !important;
+            border: 1px solid rgba(255, 150, 170, 0.16) !important;
+            transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.18s ease !important;
+            cursor: pointer !important;
+            pointer-events: auto !important;
+            flex: 0 0 auto !important;
+        }
+
+        #schedule-prev-day-btn:hover,
+        #schedule-next-day-btn:hover {
+            color: #ffd8e1 !important;
+            background: rgba(255, 150, 170, 0.12) !important;
+            border-color: rgba(255, 150, 170, 0.28) !important;
+            transform: translateY(-1px) !important;
+        }
+
+        #schedule-calendar-btn {
+            min-height: 36px !important;
+            padding: 0 14px !important;
+            border-radius: 999px !important;
+            color: var(--accent) !important;
+            background: rgba(255, 150, 170, 0.08) !important;
+            border: 1px solid rgba(255, 150, 170, 0.18) !important;
+            white-space: nowrap !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.01em !important;
+            cursor: pointer !important;
+            pointer-events: auto !important;
+            flex: 0 0 auto !important;
+        }
+
+        #schedule-calendar-btn:hover {
+            color: #ffd8e1 !important;
+            background: rgba(255, 150, 170, 0.14) !important;
+            border-color: rgba(255, 150, 170, 0.3) !important;
+        }
+
+        #schedule-calendar-btn span {
+            line-height: 1.2 !important;
+        }
+
+
+        @media (max-width: 640px) {
+            #schedule-header-block {
+                margin-bottom: 28px !important;
+            }
+
+            #schedule-date-nav-wrap {
+                margin-top: 16px !important;
+            }
+
+            #schedule-date-nav {
+                gap: 8px !important;
+            }
+
+            #schedule-calendar-btn {
+                min-height: 34px !important;
+                padding: 0 12px !important;
+            }
+        }
+
+        .project-item,
+        .schedule-item,
+        #schedule-empty-state,
+        #missed-projects-list {
+            box-shadow: none !important;
+        }
+
+        .project-item,
+        .schedule-item {
+            background-color: var(--card-bg) !important;
+        }
+
+        .project-item:hover,
+        .schedule-item:hover {
+            background-color: var(--card-hover) !important;
+            transform: none !important;
+        }
+
+        .phase-item > .accordion-header,
+        .output-item {
+            padding-top: 14px !important;
+            padding-bottom: 14px !important;
+        }
+
+        .project-item > .accordion-content {
+            padding-top: 10px !important;
+        }
+
+        .project-item > .accordion-header .editable-text {
+            color: var(--accent) !important;
+        }
+
+        .phase-item .editable-text {
+            color: var(--text-main) !important;
+        }
+
+        .output-item .editable-text,
+        .schedule-item .editable-text {
+            color: #e5e7eb !important;
+        }
+
+        .add-phase-btn,
+        .add-output-btn {
+            background: transparent !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+            color: var(--text-sub) !important;
+            padding: 5px 10px !important;
+            border-radius: 999px !important;
+        }
+
+        .add-phase-btn:hover,
+        .add-output-btn:hover {
+            background: rgba(255, 255, 255, 0.06) !important;
+            color: var(--text-main) !important;
+            border-color: var(--text-main) !important;
+        }
+
+        #done-projects-list > .project-item {
+            background-color: rgba(59, 130, 246, 0.10) !important;
+        }
+
+        #done-projects-list > .project-item:hover {
+            background-color: rgba(59, 130, 246, 0.16) !important;
+        }
+
+        #pending-section-header,
+        #done-section-header {
+            margin-top: 4px !important;
+            margin-bottom: 16px !important;
+            padding-bottom: 8px !important;
+            font-size: 12px !important;
+            letter-spacing: 0.08em !important;
+        }
+
+        #pending-section-header {
+            color: #f5c451 !important;
+        }
+
+        #done-section-header {
+            color: #93c5fd !important;
+        }
+
+        #schedule-empty-state {
+            padding: 40px 24px !important;
+            background: transparent !important;
+        }
+
+        .schedule-item {
+            padding: 0 20px !important;
+            margin-bottom: 24px !important;
+        }
+
+        .schedule-header {
+            padding: 18px 0 14px 0 !important;
+        }
+
+        .schedule-content {
+            padding: 12px 0 18px 32px !important;
+        }
+
+        #auth-modal-dialog,
+        #action-modal-dialog,
+        #calendar-modal-dialog,
+        #delete-modal-dialog,
+        #time-range-modal-dialog {
+            max-width: 360px !important;
+            text-align: left !important;
+        }
+
+        #auth-tabs {
+            gap: 20px !important;
+        }
+
+        .auth-tab-btn {
+            font-size: 17px !important;
+        }
+
+        #auth-modal .auth-tab-btn.bg-brand {
+            color: var(--text-main) !important;
+        }
+
+        #auth-modal label,
+        #action-modal label,
+        #calendar-modal label,
+        #time-range-modal label,
+        #date-picker-menu label {
+            color: var(--text-sub) !important;
+            font-size: 13px !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.03em;
+        }
+
+        #auth-feedback {
+            border-radius: 8px !important;
+        }
+
+        #login-submit-btn,
+        #signup-submit-btn,
+        #save-cloud-btn,
+        #save-action-btn,
+        #save-calendar-btn,
+        #save-date-btn,
+        #save-time-range-btn,
+        #confirm-delete-btn,
+        #cancel-action-btn,
+        #cancel-calendar-btn,
+        #cancel-delete-btn,
+        #cancel-time-range-btn,
+        #load-cloud-btn,
+        #logout-btn,
+        #export-json-btn,
+        #import-json-btn,
+        #cancel-date-btn {
+            min-height: 44px !important;
+        }
+
+        #custom-context-menu,
+        #date-picker-menu {
+            border: 1px solid rgba(255,255,255,0.08) !important;
+        }
+
+        @media (max-width: 640px) {
+            #projects-view > .group h1,
+            #schedule-view > .flex h1 {
+                font-size: 1.75rem !important;
+            }
+
+            #nav-actions-btn,
+            #account-btn {
+                padding: 8px 12px !important;
+                font-size: 12px !important;
+            }
+        }
+</style>
+
+
+<style id="popup-theme-fix-v1">
+        #auth-modal-dialog,
+        #action-modal-dialog,
+        #calendar-modal-dialog,
+        #delete-modal-dialog,
+        #time-range-modal-dialog,
+        #custom-context-menu,
+        #date-picker-menu {
+            background: var(--card-bg) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45) !important;
+            color: var(--text-main) !important;
+            color-scheme: dark;
+        }
+
+        #auth-modal-dialog,
+        #action-modal-dialog,
+        #calendar-modal-dialog,
+        #delete-modal-dialog,
+        #time-range-modal-dialog {
+            border-radius: 16px !important;
+        }
+
+        #custom-context-menu,
+        #date-picker-menu {
+            border-radius: 14px !important;
+            overflow: hidden;
+            backdrop-filter: blur(12px);
+        }
+
+        #custom-context-menu button,
+        #date-picker-menu button {
+            color: var(--text-main) !important;
+        }
+
+        #custom-context-menu button:hover,
+        #date-picker-menu button:hover {
+            background: rgba(255, 255, 255, 0.06) !important;
+        }
+
+        #custom-context-menu .h-px {
+            background: rgba(255, 255, 255, 0.08) !important;
+        }
+
+        #menu-mark-undone {
+            color: #f5c451 !important;
+        }
+
+        #menu-add-time,
+        #menu-add-actions {
+            color: var(--text-main) !important;
+        }
+
+        #date-picker-menu {
+            padding: 14px !important;
+            width: 272px !important;
+        }
+
+        #date-picker-menu input,
+        #calendar-modal input,
+        #time-range-modal input,
+        #auth-modal input,
+        #action-modal input,
+        #action-modal textarea {
+            color-scheme: dark;
+            background: #2f2f2f !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+        }
+
+        #date-picker-menu input::-webkit-calendar-picker-indicator,
+        #calendar-modal input::-webkit-calendar-picker-indicator,
+        #time-range-modal input::-webkit-calendar-picker-indicator {
+            filter: invert(0.88);
+            opacity: 0.9;
+            cursor: pointer;
+        }
+
+        #auth-modal input:-webkit-autofill,
+        #auth-modal input:-webkit-autofill:hover,
+        #auth-modal input:-webkit-autofill:focus,
+        #action-modal input:-webkit-autofill,
+        #action-modal input:-webkit-autofill:hover,
+        #action-modal input:-webkit-autofill:focus {
+            -webkit-text-fill-color: var(--text-main) !important;
+            -webkit-box-shadow: 0 0 0px 1000px #2f2f2f inset !important;
+            box-shadow: 0 0 0px 1000px #2f2f2f inset !important;
+            transition: background-color 9999s ease-in-out 0s;
+        }
+
+        #cancel-action-btn,
+        #cancel-calendar-btn,
+        #cancel-delete-btn,
+        #cancel-time-range-btn,
+        #cancel-date-btn,
+        #load-cloud-btn,
+        #logout-btn,
+        #export-json-btn,
+        #import-json-btn {
+            background: transparent !important;
+        }
+
+        #save-date-btn,
+        #save-action-btn,
+        #save-calendar-btn,
+        #save-time-range-btn,
+        #login-submit-btn,
+        #signup-submit-btn,
+        #save-cloud-btn {
+            box-shadow: none !important;
+        }
+
+        #auth-tabs {
+            background: transparent !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
+        }
+
+        #auth-tab-login,
+        #auth-tab-signup,
+        #auth-tab-account {
+            border-radius: 0 !important;
+        }
+
+        #auth-modal .rounded-2xl.border,
+        #auth-panel-account .rounded-2xl.border {
+            background: rgba(255, 255, 255, 0.02) !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+        }
+
+        #auth-modal h3,
+        #action-modal h3,
+        #calendar-modal h3,
+        #delete-modal h3,
+        #time-range-modal h3 {
+            color: var(--text-main) !important;
+            letter-spacing: -0.02em;
+        }
+
+        #delete-modal p,
+        #auth-inline-status {
+            color: var(--text-sub) !important;
+        }
+</style>
+
+
+<style id="spacing-tune-v1">
+        /* Reduce overall vertical rhythm to be "vừa phải" */
+        #active-projects-list,
+        #pending-projects-list,
+        #done-projects-list {
+            gap: 16px !important;
+        }
+
+        .project-item {
+            padding: 18px 18px 6px 18px !important;
+            border-radius: 10px !important;
+        }
+
+        .project-item > .accordion-header {
+            padding-bottom: 12px !important;
+        }
+
+        .project-item > .accordion-content {
+            padding-top: 8px !important;
+            padding-bottom: 2px !important;
+        }
+
+        .phase-item > .accordion-header {
+            padding: 12px 0 !important;
+        }
+
+        .output-item {
+            padding: 8px 0 !important;
+        }
+
+        .schedule-item {
+            margin-bottom: 18px !important;
+        }
+
+        .schedule-header {
+            padding: 14px 0 12px 0 !important;
+        }
+
+        .schedule-content {
+            padding-top: 10px !important;
+            padding-bottom: 14px !important;
+        }
+
+        @media (max-width: 640px) {
+            #active-projects-list,
+            #pending-projects-list,
+            #done-projects-list {
+                gap: 14px !important;
+            }
+
+            .project-item {
+                padding: 18px 14px 6px 14px !important;
+            }
+
+            .project-item > .accordion-header {
+                padding-bottom: 10px !important;
+            }
+
+            .phase-item > .accordion-header {
+                padding: 10px 0 !important;
+            }
+
+            .output-item {
+                padding: 7px 0 !important;
+            }
+        }
+</style>
+
+
+<style id="section-hierarchy-and-drag-smooth-v2">
+        /* Make section hierarchy clearer without reopening large spacing everywhere */
+        #pending-section-header,
+        #done-section-header {
+            margin-bottom: 12px !important;
+        }
+
+        #pending-section-header {
+            margin-top: 22px !important;
+        }
+
+        #done-section-header {
+            margin-top: 22px !important;
+        }
+
+        #pending-projects-list {
+            margin-bottom: 24px !important;
+        }
+
+        #pending-section-header.hidden + #pending-projects-list {
+            margin-bottom: 0 !important;
+        }
+
+        /* Reduce drag jank */
+        .accordion-content {
+            transition: opacity 0.2s ease !important;
+        }
+
+        body.dragging .accordion-content,
+        body.dragging .project-item,
+        body.dragging .phase-item,
+        body.dragging .output-item,
+        body.dragging .schedule-item,
+        body.dragging .schedule-header,
+        body.dragging .schedule-content,
+        body.dragging .editable-text,
+        body.dragging .chevron-icon {
+            transition: none !important;
+        }
+
+        body.dragging .project-item,
+        body.dragging .phase-item,
+        body.dragging .output-item,
+        body.dragging .schedule-item {
+            will-change: transform;
+        }
+
+        .sortable-ghost {
+            opacity: 0.35 !important;
+        }
+
+        .sortable-chosen {
+            opacity: 0.92 !important;
+        }
+
+        .sortable-drag {
+            cursor: grabbing !important;
+        }
+
+        @media (max-width: 640px) {
+            #pending-section-header,
+            #done-section-header {
+                margin-bottom: 10px !important;
+            }
+
+            #pending-section-header {
+                margin-top: 18px !important;
+            }
+
+            #done-section-header {
+                margin-top: 18px !important;
+            }
+
+            #pending-projects-list {
+                margin-bottom: 20px !important;
+            }
+        }
+</style>
+
+
+<style id="actions-header-date-fix-v1">
+        #schedule-view {
+            padding-top: 52px !important;
+        }
+
+        #schedule-header-block {
+            margin-bottom: 20px !important;
+        }
+
+        #schedule-date-nav-wrap {
+            margin-top: 12px !important;
+        }
+
+        #schedule-date-nav {
+            gap: 12px !important;
+            align-items: center !important;
+        }
+
+        #schedule-calendar-btn {
+            background: transparent !important;
+            border: none !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
+            min-height: auto !important;
+            box-shadow: none !important;
+            color: var(--accent) !important;
+        }
+
+        #schedule-calendar-btn:hover {
+            background: transparent !important;
+            border-color: transparent !important;
+            color: #ffd8e1 !important;
+            transform: none !important;
+        }
+
+        #schedule-prev-day-btn,
+        #schedule-next-day-btn {
+            background: transparent !important;
+            border: none !important;
+            width: 28px !important;
+            height: 28px !important;
+            box-shadow: none !important;
+        }
+
+        #schedule-prev-day-btn:hover,
+        #schedule-next-day-btn:hover {
+            background: transparent !important;
+            border-color: transparent !important;
+            color: #ffd8e1 !important;
+            transform: none !important;
+        }
+
+        @media (max-width: 640px) {
+            #schedule-view {
+                padding-top: 42px !important;
+            }
+
+            #schedule-header-block {
+                margin-bottom: 18px !important;
+            }
+
+            #schedule-date-nav-wrap {
+                margin-top: 10px !important;
+            }
+        }
+</style>
+
+
+<style id="global-page-divider-v1">
+        header {
+            position: sticky !important;
+        }
+
+        header::after {
+            content: "";
+            position: absolute;
+            left: 20px;
+            right: 20px;
+            bottom: -1px;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.09), rgba(255,255,255,0.02));
+            pointer-events: none;
+        }
+
+        #projects-view > .group,
+        #schedule-header-block {
+            border-bottom: none !important;
+        }
+
+        @media (min-width: 640px) {
+            header::after {
+                left: 32px;
+                right: 32px;
+            }
+        }
+</style>
+
+
+<style id="global-page-divider-spacing-v2">
+        header {
+            padding-bottom: 10px !important;
+        }
+
+        #projects-view {
+            padding-top: 18px !important;
+        }
+
+        #schedule-view {
+            padding-top: 28px !important;
+        }
+
+        @media (max-width: 640px) {
+            header {
+                padding-bottom: 8px !important;
+            }
+
+            #projects-view {
+                padding-top: 16px !important;
+            }
+
+            #schedule-view {
+                padding-top: 24px !important;
+            }
+        }
+</style>
+
+
+<style id="actions-title-offset-v1">
+        #schedule-header-block > .flex:first-child {
+            margin-top: 8px !important;
+        }
+
+        @media (max-width: 640px) {
+            #schedule-header-block > .flex:first-child {
+                margin-top: 6px !important;
+            }
+        }
+</style>
+
+
+<style id="final-spacing-tune-v2">
+        #schedule-header-block > .flex:first-child {
+            margin-top: 16px !important;
+        }
+
+        #project-search-wrap {
+            margin-top: 16px !important;
+        }
+
+        @media (max-width: 640px) {
+            #schedule-header-block > .flex:first-child {
+                margin-top: 14px !important;
+            }
+
+            #project-search-wrap {
+                margin-top: 14px !important;
+            }
+        }
+</style>
+
+<style id="nav-tabs-replace-schedule-v1">
+        #nav-actions-btn {
+            display: none !important;
+        }
+
+        header .flex.items-center.gap-3.sm\:gap-4.min-w-0 {
+            gap: 12px !important;
+        }
+
+        .view-nav {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            min-width: 0;
+        }
+
+        .view-nav-sep {
+            color: rgba(255,255,255,0.22);
+            font-size: 1.28rem;
+            line-height: 1;
+            transform: translateY(-1px);
+            user-select: none;
+        }
+
+        .view-tab {
+            background: transparent;
+            border: none;
+            padding: 0;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.84rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            color: var(--text-sub);
+            transition: color 0.18s ease, opacity 0.18s ease;
+            white-space: nowrap;
+        }
+
+        .view-tab:hover {
+            color: var(--text-main);
+        }
+
+        .view-tab.is-active {
+            color: var(--text-main);
+        }
+
+        #projects-view > .group .view-nav {
+            transform: translateY(1px);
+        }
+
+        #schedule-view {
+            padding-top: 30px !important;
+        }
+
+        #schedule-header-block {
+            margin-bottom: 22px !important;
+        }
+
+        .schedule-top-nav-row {
+            margin-top: 10px;
+        }
+
+        #schedule-date-nav-wrap {
+            margin-top: 14px !important;
+        }
+
+        #schedule-back-btn {
+            display: none !important;
+        }
+
+        .autosave-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            padding: 0;
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+
+        .autosave-toggle-track {
+            width: 46px;
+            height: 28px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            position: relative;
+            transition: background 0.18s ease, border-color 0.18s ease;
+            display: inline-flex;
+            align-items: center;
+            padding: 3px;
+        }
+
+        .autosave-toggle-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 999px;
+            background: #fff;
+            transform: translateX(0);
+            transition: transform 0.18s ease;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.28);
+        }
+
+        .autosave-toggle.is-on .autosave-toggle-track {
+            background: rgba(255, 200, 210, 0.22);
+            border-color: rgba(255, 200, 210, 0.42);
+        }
+
+        .autosave-toggle.is-on .autosave-toggle-thumb {
+            transform: translateX(18px);
+            background: var(--accent);
+        }
+
+        .autosave-toggle:disabled {
+            cursor: not-allowed;
+            opacity: 0.45;
+        }
+
+        #account-sync-pill[data-state="on"] {
+            color: #f6d6dc;
+            border-color: rgba(255, 200, 210, 0.24);
+            background: rgba(255, 200, 210, 0.08);
+        }
+
+        #account-sync-pill[data-state="off"] {
+            color: var(--text-sub);
+        }
+
+        @media (max-width: 640px) {
+            .view-nav {
+                gap: 8px;
+            }
+
+            .view-nav-sep {
+                font-size: 1.12rem;
+            }
+
+            .view-tab {
+                font-size: 1.72rem;
+            }
+
+            #schedule-view {
+                padding-top: 26px !important;
+            }
+
+            .schedule-top-nav-row {
+                margin-top: 8px;
+            }
+
+            #schedule-date-nav-wrap {
+                margin-top: 12px !important;
+            }
+
+            #header-save-status {
+                max-width: 96px !important;
+                font-size: 11px;
+            }
+        }
+</style>
+
 </head>
 <body class="min-h-screen font-sans">
 
@@ -207,13 +1706,14 @@
     <header class="bg-black py-4 px-5 sm:px-8 flex items-center justify-between sticky top-0 z-50">
         <div id="logo-btn" class="flex items-center gap-2 cursor-pointer hover:opacity-80 transition">
             <i class="ph-fill ph-notebook text-3xl text-white"></i>
-            <span class="text-xl font-bold tracking-tight text-white">Liem's Planner</span>
+            <span class="logo-title text-xl font-bold tracking-tight text-white">Liem's <b>Planner</b></span>
         </div>
-        <div class="flex items-center gap-2 sm:gap-4">
+        <div class="flex items-center gap-3 sm:gap-4 min-w-0">
             <button id="nav-actions-btn" class="text-white border border-[#3e3e3e] hover:border-white font-bold py-2 px-4 rounded-full text-sm sm:text-base transition-colors">
                 Actions
             </button>
-            <button id="account-btn" class="bg-brand text-black font-bold py-2 px-4 sm:px-6 rounded-full text-sm sm:text-base hover:scale-105 transition-transform">
+            <span id="header-save-status" class="text-xs text-textMuted text-right truncate max-w-[120px] sm:max-w-[180px]">Local only</span>
+            <button id="account-btn" class="bg-brand text-black font-bold py-2 px-4 sm:px-6 rounded-full text-sm sm:text-base hover:scale-105 transition-transform shrink-0">
                 Account
             </button>
         </div>
@@ -223,7 +1723,7 @@
     <main id="projects-view" class="px-5 sm:px-8 py-6 max-w-3xl mx-auto pb-32 block">
         
         <!-- Search Bar -->
-        <div class="relative mb-6 sm:mb-7">
+        <div id="project-search-wrap" class="relative mb-6 sm:mb-7">
             <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-gray-500">
                 <i class="ph ph-magnifying-glass text-xl"></i>
             </div>
@@ -238,15 +1738,17 @@
 
         <!-- Main Title Area -->
         <div class="mb-5 sm:mb-6 group">
-            <div class="flex items-center justify-between">
-                <h1 class="text-2xl sm:text-3xl font-bold flex items-center">
-                    Projects 
-                </h1>
+            <div class="flex items-center justify-between gap-4">
+                <nav class="view-nav" aria-label="Primary navigation">
+                    <button type="button" class="view-tab is-active" data-view="projects">Projects</button>
+                    <span class="view-nav-sep">/</span>
+                    <button type="button" class="view-tab" data-view="schedule">Actions</button>
+                </nav>
                 <button id="add-project-btn" class="flex items-center gap-1 text-sm font-semibold text-brand hover:text-white transition px-3 py-1.5 rounded-full bg-brand/10 hover:bg-brand/20">
                     <i class="ph ph-plus-circle text-lg"></i> project
                 </button>
             </div>
-            <div id="main-progress-counter" class="text-sm font-normal text-textMuted mt-1 select-none hidden"></div>
+            <div id="main-progress-counter" class="text-sm font-normal text-textMuted mt-0.5 select-none hidden leading-tight"></div>
         </div>
 
         <!-- Dynamic Accordion System -->
@@ -264,9 +1766,9 @@
                                     <span contenteditable="true" class="editable-text font-bold text-lg text-brand">Payment and billing</span>
                                     <span class="badge-container"></span>
                                 </div>
-                                <div class="flex flex-wrap items-center gap-3 mt-1">
-                                    <span class="progress-counter text-xs font-normal text-textMuted select-none hidden" contenteditable="false"></span>
-                                    <div class="time-range-container text-xs text-textMuted hidden flex-row items-center gap-1"></div>
+                                <div class="flex flex-wrap items-center gap-2.5 mt-0.5 leading-tight">
+                                    <span class="progress-counter text-xs font-normal text-textMuted select-none hidden leading-tight" contenteditable="false"></span>
+                                    <div class="time-range-container text-xs text-textMuted hidden flex-row items-center gap-1 leading-tight"></div>
                                 </div>
                             </div>
                         </div>
@@ -288,9 +1790,9 @@
                                             <span contenteditable="true" class="font-bold text-base text-white group-hover:text-brand transition editable-text">Suggested topics</span>
                                             <span class="badge-container"></span>
                                         </div>
-                                        <div class="flex flex-wrap items-center gap-3 mt-0.5">
-                                            <span class="progress-counter text-xs font-normal text-textMuted select-none hidden" contenteditable="false"></span>
-                                            <div class="time-range-container text-xs text-textMuted hidden flex-row items-center gap-1"></div>
+                                        <div class="flex flex-wrap items-center gap-2.5 mt-0.5 leading-tight">
+                                            <span class="progress-counter text-xs font-normal text-textMuted select-none hidden leading-tight" contenteditable="false"></span>
+                                            <div class="time-range-container text-xs text-textMuted hidden flex-row items-center gap-1 leading-tight"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -310,7 +1812,7 @@
                                                 <span contenteditable="true" class="text-base text-gray-200 editable-text">Price update information</span>
                                                 <span class="badge-container"></span>
                                             </div>
-                                            <div class="time-range-container text-xs text-textMuted mt-0.5 hidden flex-row items-center gap-1"></div>
+                                            <div class="time-range-container text-xs text-textMuted mt-0 hidden flex-row items-center gap-1 leading-tight"></div>
                                         </div>
                                     </div>
                                     <button class="delete-btn text-textMuted hover:text-red-500 transition p-1 shrink-0"><i class="ph ph-trash text-base"></i></button>
@@ -324,7 +1826,7 @@
                                                 <span contenteditable="true" class="text-base text-gray-200 editable-text">How to cancel Premium plan</span>
                                                 <span class="badge-container"></span>
                                             </div>
-                                            <div class="time-range-container text-xs text-textMuted mt-0.5 hidden flex-row items-center gap-1"></div>
+                                            <div class="time-range-container text-xs text-textMuted mt-0 hidden flex-row items-center gap-1 leading-tight"></div>
                                         </div>
                                     </div>
                                     <button class="delete-btn text-textMuted hover:text-red-500 transition p-1 shrink-0"><i class="ph ph-trash text-base"></i></button>
@@ -355,17 +1857,28 @@
     </main>
 
     <!-- Main Content: Schedule View (Hidden by default) -->
-    <main id="schedule-view" class="px-5 sm:px-8 py-6 max-w-3xl mx-auto pb-32 hidden">
-        <div class="flex items-center justify-between mb-2 group">
-            <div class="flex items-center gap-2.5">
-                <button id="schedule-back-btn" class="w-9 h-9 rounded-full flex items-center justify-center text-textMuted hover:text-white hover:bg-white/5 transition" aria-label="Back to projects">
-                    <i class="ph ph-arrow-left text-xl"></i>
-                </button>
-                <h1 class="text-2xl sm:text-3xl font-bold flex items-center">Schedule</h1>
+    <main id="schedule-view" class="px-5 sm:px-8 pt-8 sm:pt-10 max-w-3xl mx-auto pb-32 hidden">
+        <div id="schedule-header-block" class="mb-8 sm:mb-10">
+            <div class="schedule-top-nav-row">
+                <nav class="view-nav" aria-label="Primary navigation">
+                    <button type="button" class="view-tab" data-view="projects">Projects</button>
+                    <span class="view-nav-sep">/</span>
+                    <button type="button" class="view-tab is-active" data-view="schedule">Actions</button>
+                </nav>
             </div>
-            <button id="schedule-calendar-btn" class="flex items-center gap-1 text-sm font-semibold text-brand hover:text-white transition px-3 py-1.5 rounded-full bg-brand/10 hover:bg-brand/20">
-                <i class="ph ph-calendar-blank text-lg"></i>
-            </button>
+            <div id="schedule-date-nav-wrap" class="mt-5 sm:mt-6">
+                <div id="schedule-date-nav" class="flex items-center">
+                    <button id="schedule-prev-day-btn" type="button" aria-label="Previous day">
+                        <i class="ph ph-caret-left text-base"></i>
+                    </button>
+                    <button id="schedule-calendar-btn" type="button" class="flex items-center gap-2 text-sm font-semibold transition" aria-label="Choose date">
+                        <i class="ph ph-calendar-blank text-base"></i>
+                    </button>
+                    <button id="schedule-next-day-btn" type="button" aria-label="Next day">
+                        <i class="ph ph-caret-right text-base"></i>
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Missed Projects Tracker -->
@@ -395,16 +1908,11 @@
 <!-- HTML for Auth/Account Modal -->
 <div id="auth-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center">
     <div class="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity" id="auth-modal-backdrop"></div>
-    <div class="bg-[#181818] border border-[#2a2a2a] rounded-lg shadow-2xl p-6 z-10 w-[92%] max-w-md transform scale-95 opacity-0 transition-all duration-200" id="auth-modal-dialog">
-        <div class="flex justify-between items-center mb-5">
-            <div>
-                <h3 class="text-xl font-bold">Account</h3>
-                <p id="auth-inline-status" class="text-xs text-textMuted mt-1">Guest mode · local only</p>
-            </div>
-            <button id="close-auth-btn" class="text-textMuted hover:text-white transition"><i class="ph ph-x text-xl"></i></button>
-        </div>
+    <div class="relative bg-[#181818] border border-[#2a2a2a] rounded-lg shadow-2xl p-6 z-10 w-[92%] max-w-md transform scale-95 opacity-0 transition-all duration-200" id="auth-modal-dialog">
+        <button id="close-auth-btn" class="absolute top-5 right-5 text-textMuted hover:text-white transition"><i class="ph ph-x text-xl"></i></button>
+        <p id="auth-inline-status" class="hidden"></p>
 
-        <div id="auth-tabs" class="grid grid-cols-3 gap-2 mb-5 rounded-xl bg-white/5 p-1">
+        <div id="auth-tabs" class="grid grid-cols-3 gap-2 mb-5 rounded-xl bg-white/5 p-1 pr-10">
             <button type="button" id="auth-tab-login" class="auth-tab-btn rounded-lg px-3 py-2 text-sm font-semibold bg-brand text-black">Log in</button>
             <button type="button" id="auth-tab-signup" class="auth-tab-btn rounded-lg px-3 py-2 text-sm font-semibold text-textMuted hover:text-white transition">Sign up</button>
             <button type="button" id="auth-tab-account" class="auth-tab-btn rounded-lg px-3 py-2 text-sm font-semibold text-textMuted hover:text-white transition">Account</button>
@@ -445,18 +1953,24 @@
         </div>
 
         <div id="auth-panel-account" class="auth-panel hidden space-y-4">
-            <div class="rounded-2xl border border-[#2a2a2a] bg-[#121212] p-4">
-                <p class="text-xs font-semibold text-textMuted uppercase tracking-wider mb-2">Current user</p>
-                <div class="space-y-1">
-                    <p id="account-display-name" class="font-semibold text-white">Guest</p>
-                    <p id="account-email" class="text-sm text-textMuted break-all">Not logged in</p>
-                </div>
-            </div>
+            <p id="account-signed-as" class="px-1 text-sm text-white">Signed as Guest</p>
 
-            <div class="grid grid-cols-3 gap-3">
-                <button type="button" id="save-cloud-btn" class="px-4 py-2 rounded-full text-sm font-semibold bg-brand text-black hover:scale-105 transition disabled:opacity-40 disabled:cursor-not-allowed">Save to Cloud</button>
-                <button type="button" id="load-cloud-btn" class="px-4 py-2 rounded-full text-sm font-semibold bg-white/10 hover:bg-white/15 transition disabled:opacity-40 disabled:cursor-not-allowed">Load from Cloud</button>
-                <button type="button" id="logout-btn" class="px-4 py-2 rounded-full text-sm font-semibold bg-white/10 hover:bg-white/15 transition disabled:opacity-40 disabled:cursor-not-allowed">Log out</button>
+            <div class="rounded-2xl border border-[#2a2a2a] p-4 space-y-4">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-xs font-semibold text-textMuted uppercase tracking-wider mb-2">Cloud sync</p>
+                        <p id="account-sync-detail" class="text-sm text-white">Sign in to enable cloud save.</p>
+                        <p id="account-last-saved" class="text-xs text-textMuted mt-1">No cloud saves yet</p>
+                    </div>
+                    <button type="button" id="autosave-toggle" class="autosave-toggle is-on" role="switch" aria-checked="true" aria-label="Auto Save to Cloud">
+                        <span class="autosave-toggle-track"><span class="autosave-toggle-thumb"></span></span>
+                    </button>
+                </div>
+                <button type="button" id="save-cloud-btn" class="w-full px-4 py-3 rounded-full text-sm font-semibold bg-brand text-black hover:scale-105 transition disabled:opacity-40 disabled:cursor-not-allowed">Save now</button>
+                <div class="grid grid-cols-2 gap-3">
+                    <button type="button" id="load-cloud-btn" class="px-4 py-2 rounded-full text-sm font-semibold bg-white/10 hover:bg-white/15 transition disabled:opacity-40 disabled:cursor-not-allowed">Load from Cloud</button>
+                    <button type="button" id="logout-btn" class="px-4 py-2 rounded-full text-sm font-semibold bg-white/10 hover:bg-white/15 transition disabled:opacity-40 disabled:cursor-not-allowed">Log out</button>
+                </div>
             </div>
 
             <div class="rounded-2xl border border-[#2a2a2a] p-4 space-y-3">
@@ -524,8 +2038,8 @@
     <div id="delete-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center">
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity" id="delete-modal-backdrop"></div>
         <div class="bg-[#181818] border border-[#2a2a2a] rounded-lg shadow-2xl p-6 z-10 w-[90%] max-w-sm transform scale-95 opacity-0 transition-all duration-200" id="delete-modal-dialog">
-            <h3 class="text-xl font-bold mb-2">Confirm Deletion</h3>
-            <p class="text-textMuted text-sm mb-6">Are you sure you want to delete this item? This action cannot be undone and will delete all items inside it.</p>
+            <h3 id="delete-modal-title" class="text-xl font-bold mb-2">Confirm Deletion</h3>
+            <p id="delete-modal-message" class="text-textMuted text-sm mb-6">Are you sure you want to delete this item? This action cannot be undone and will delete all items inside it.</p>
             <div class="flex gap-3 justify-end">
                 <button id="cancel-delete-btn" class="px-4 py-2 rounded-full text-sm font-semibold hover:bg-white/10 transition">Cancel</button>
                 <button id="confirm-delete-btn" class="px-4 py-2 rounded-full text-sm font-semibold bg-red-600 text-white hover:bg-red-700 transition">Delete</button>
@@ -591,9 +2105,15 @@
             const addProjectBtn = document.getElementById('add-project-btn');
 
             let isDragging = false;
-            window.__plannerHandleDragStart = () => { isDragging = true; };
+            window.__plannerHandleDragStart = () => {
+                isDragging = true;
+                document.body.classList.add('dragging');
+            };
             window.__plannerHandleDragEnd = () => {
-                setTimeout(() => { isDragging = false; }, 50);
+                setTimeout(() => {
+                    isDragging = false;
+                    document.body.classList.remove('dragging');
+                }, 50);
                 updateAll();
                 if (typeof window.schedulePersist === 'function') window.schedulePersist('drag-end');
             };
@@ -611,12 +2131,12 @@
                 if (!el || el.dataset.sortableInit === '1') return;
                 new Sortable(el, {
                     group: groupName,
-                    animation: 150,
+                    animation: 110,
                     filter: '.editable-text, button, input, textarea, .chevron-icon',
                     preventOnFilter: false,
                     delay: 200,
                     delayOnTouchOnly: true,
-                    fallbackTolerance: 5,
+                    fallbackTolerance: 3,
                     touchStartThreshold: 5,
                     ghostClass: 'opacity-50',
                     onStart: function() {
@@ -895,8 +2415,8 @@
                                     <span contenteditable="true" class="text-base text-gray-200 editable-text">New Output</span>
                                     <span class="badge-container"></span>
                                 </div>
-                                <div class="flex flex-wrap items-center gap-3 mt-0.5">
-                                    <div class="time-range-container text-xs text-textMuted hidden flex-row items-center gap-1"></div>
+                                <div class="flex flex-wrap items-center gap-2.5 mt-0.5 leading-tight">
+                                    <div class="time-range-container text-xs text-textMuted hidden flex-row items-center gap-1 leading-tight"></div>
                                 </div>
                             </div>
                         </div>
@@ -913,9 +2433,9 @@
                                         <span contenteditable="true" class="font-bold text-base text-white group-hover:text-brand transition editable-text">New Phase</span>
                                         <span class="badge-container"></span>
                                     </div>
-                                    <div class="flex flex-wrap items-center gap-3 mt-0.5">
-                                        <span class="progress-counter text-xs font-normal text-textMuted select-none hidden" contenteditable="false"></span>
-                                        <div class="time-range-container text-xs text-textMuted hidden flex-row items-center gap-1"></div>
+                                    <div class="flex flex-wrap items-center gap-2.5 mt-0.5 leading-tight">
+                                        <span class="progress-counter text-xs font-normal text-textMuted select-none hidden leading-tight" contenteditable="false"></span>
+                                        <div class="time-range-container text-xs text-textMuted hidden flex-row items-center gap-1 leading-tight"></div>
                                     </div>
                                 </div>
                             </div>
@@ -939,9 +2459,9 @@
                                         <span contenteditable="true" class="editable-text font-bold text-lg text-brand">New Project</span>
                                         <span class="badge-container"></span>
                                     </div>
-                                    <div class="flex flex-wrap items-center gap-3 mt-1">
-                                        <span class="progress-counter text-xs font-normal text-textMuted select-none hidden" contenteditable="false"></span>
-                                        <div class="time-range-container text-xs text-textMuted hidden flex-row items-center gap-1"></div>
+                                    <div class="flex flex-wrap items-center gap-2.5 mt-0.5 leading-tight">
+                                        <span class="progress-counter text-xs font-normal text-textMuted select-none hidden leading-tight" contenteditable="false"></span>
+                                        <div class="time-range-container text-xs text-textMuted hidden flex-row items-center gap-1 leading-tight"></div>
                                     </div>
                                 </div>
                             </div>
@@ -958,13 +2478,24 @@
 
             // --- DELETE MODAL LOGIC ---
             let itemToDelete = null;
+            let deleteConfirmCallback = null;
+
             const deleteModal = document.getElementById('delete-modal');
             const deleteModalDialog = document.getElementById('delete-modal-dialog');
+            const deleteModalBackdrop = document.getElementById('delete-modal-backdrop');
             const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
             const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+            const deleteModalTitle = document.getElementById('delete-modal-title');
+            const deleteModalMessage = document.getElementById('delete-modal-message');
 
-            function showDeleteModal(item) {
-                itemToDelete = item;
+            function showDeleteModal(item, opts = {}) {
+                itemToDelete = item || null;
+                deleteConfirmCallback = typeof opts.onConfirm === 'function' ? opts.onConfirm : null;
+
+                if (deleteModalTitle) deleteModalTitle.textContent = opts.title || 'Confirm Deletion';
+                if (deleteModalMessage) deleteModalMessage.textContent = opts.message ||
+                    'Are you sure you want to delete this item? This action cannot be undone and will delete all items inside it.';
+
                 deleteModal.classList.remove('hidden');
                 requestAnimationFrame(() => {
                     deleteModalDialog.classList.remove('scale-95', 'opacity-0');
@@ -978,20 +2509,31 @@
                 setTimeout(() => {
                     deleteModal.classList.add('hidden');
                     itemToDelete = null;
+                    deleteConfirmCallback = null;
                 }, 200);
             }
 
-            if(cancelDeleteBtn) cancelDeleteBtn.addEventListener('click', hideDeleteModal);
-            if(confirmDeleteBtn) confirmDeleteBtn.addEventListener('click', () => {
+            if (cancelDeleteBtn) cancelDeleteBtn.addEventListener('click', hideDeleteModal);
+            if (deleteModalBackdrop) deleteModalBackdrop.addEventListener('click', hideDeleteModal);
+
+            if (confirmDeleteBtn) confirmDeleteBtn.addEventListener('click', () => {
+                // Custom confirm flow (e.g., schedule actions)
+                if (deleteConfirmCallback) {
+                    try { deleteConfirmCallback(); } catch (e) { console.error(e); }
+                    hideDeleteModal();
+                    return;
+                }
+
+                // Default: delete a tree item (project/phase/output)
                 if (itemToDelete) {
                     const item = itemToDelete;
-                    const parentToCheck = item.parentElement.closest('[data-level]');
+                    const parentToCheck = item.parentElement?.closest('[data-level]');
                     item.style.opacity = '0';
                     item.style.transform = 'scale(0.98)';
                     item.style.transition = 'all 0.3s';
                     setTimeout(() => {
                         item.remove();
-                        if(parentToCheck) updateParentStatus(parentToCheck);
+                        if (parentToCheck) updateParentStatus(parentToCheck);
                         updateAll(); // RECOUNT & MISSED
                     }, 300);
                 }
@@ -1159,15 +2701,25 @@
             const scheduleView = document.getElementById('schedule-view');
             const logoBtn = document.getElementById('logo-btn');
             const navActionsBtn = document.getElementById('nav-actions-btn');
+            const viewTabs = document.querySelectorAll('.view-tab');
+
+            function updateViewTabs(viewName) {
+                viewTabs.forEach((tab) => {
+                    const isActive = tab.dataset.view === viewName;
+                    tab.classList.toggle('is-active', isActive);
+                });
+            }
 
             function showView(viewName) {
                 if (viewName === 'schedule') {
                     projectsView.classList.replace('block', 'hidden');
                     scheduleView.classList.replace('hidden', 'block');
+                    window.plannerBridge?.renderSelectedScheduleDay?.();
                 } else {
                     scheduleView.classList.replace('block', 'hidden');
                     projectsView.classList.replace('hidden', 'block');
                 }
+                updateViewTabs(viewName);
             }
 
             if(logoBtn) logoBtn.addEventListener('click', () => {
@@ -1178,15 +2730,25 @@
                 showView('schedule');
             });
 
+            viewTabs.forEach((tab) => {
+                tab.addEventListener('click', () => {
+                    showView(tab.dataset.view || 'projects');
+                });
+            });
+
             const scheduleBackBtn = document.getElementById('schedule-back-btn');
             if(scheduleBackBtn) scheduleBackBtn.addEventListener('click', () => {
                 showView('projects');
             });
 
+            updateViewTabs(projectsView.classList.contains('hidden') ? 'schedule' : 'projects');
+
             // --- CALENDAR MODAL LOGIC ---
             const calendarModal = document.getElementById('calendar-modal');
             const calendarDialog = document.getElementById('calendar-modal-dialog');
             const scheduleCalendarBtn = document.getElementById('schedule-calendar-btn');
+            const schedulePrevDayBtn = document.getElementById('schedule-prev-day-btn');
+            const scheduleNextDayBtn = document.getElementById('schedule-next-day-btn');
             const closeCalendarBtn = document.getElementById('close-calendar-btn');
             const cancelCalendarBtn = document.getElementById('cancel-calendar-btn');
             const calendarModalBackdrop = document.getElementById('calendar-modal-backdrop');
@@ -1208,7 +2770,41 @@
                 setTimeout(() => calendarModal.classList.add('hidden'), 200);
             }
 
-            if(scheduleCalendarBtn) scheduleCalendarBtn.addEventListener('click', openCalendarModal);
+            if(scheduleCalendarBtn) scheduleCalendarBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openCalendarModal();
+            };
+            function offsetIsoDateLocal(isoDate, dayDelta) {
+                const [year, month, day] = String(isoDate || '').split('-').map(Number);
+                if (!year || !month || !day) return '';
+                const shifted = new Date(year, month - 1, day + dayDelta, 12, 0, 0, 0);
+                const yyyy = shifted.getFullYear();
+                const mm = String(shifted.getMonth() + 1).padStart(2, '0');
+                const dd = String(shifted.getDate()).padStart(2, '0');
+                return `${yyyy}-${mm}-${dd}`;
+            }
+
+            if(schedulePrevDayBtn) schedulePrevDayBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const bridge = window.plannerBridge;
+                const currentDate = bridge?.getSelectedScheduleDate?.();
+                const nextDate = offsetIsoDateLocal(currentDate, -1);
+                if (bridge?.switchScheduleDate && nextDate) {
+                    bridge.switchScheduleDate(nextDate);
+                }
+            };
+            if(scheduleNextDayBtn) scheduleNextDayBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const bridge = window.plannerBridge;
+                const currentDate = bridge?.getSelectedScheduleDate?.();
+                const nextDate = offsetIsoDateLocal(currentDate, 1);
+                if (bridge?.switchScheduleDate && nextDate) {
+                    bridge.switchScheduleDate(nextDate);
+                }
+            };
             if(closeCalendarBtn) closeCalendarBtn.addEventListener('click', closeCalendarModal);
             if(cancelCalendarBtn) cancelCalendarBtn.addEventListener('click', closeCalendarModal);
             if(calendarModalBackdrop) calendarModalBackdrop.addEventListener('click', closeCalendarModal);
@@ -1535,26 +3131,32 @@
                 }
 
                 const delBtn = e.target.closest('.delete-schedule-btn');
-                if(delBtn) {
-                     e.stopPropagation();
-                     const item = delBtn.closest('.schedule-item');
-                     if(item) {
-                         item.style.opacity = '0';
-                         item.style.transform = 'scale(0.98)';
-                         item.style.transition = 'all 0.3s';
-                         setTimeout(() => {
-                             item.remove();
-                             // Nếu xóa hết thì hiện lại Empty State
-                             const listContainer = document.getElementById('schedule-list');
-                             if(listContainer && listContainer.children.length === 0) {
-                                 const emptyState = document.getElementById('schedule-empty-state');
-                                 if(emptyState) emptyState.classList.remove('hidden');
-                             }
-                             window.dispatchEvent(new CustomEvent('planner-sync-schedule'));
-                             updateMissedProjects();
-                         }, 300);
-                     }
-                     return;
+                if (delBtn) {
+                    e.stopPropagation();
+                    const item = delBtn.closest('.schedule-item');
+                    if (!item) return;
+
+                    showDeleteModal(item, {
+                        title: 'Delete action?',
+                        message: 'Are you sure you want to delete this scheduled action? This cannot be undone.',
+                        onConfirm: () => {
+                            item.style.opacity = '0';
+                            item.style.transform = 'scale(0.98)';
+                            item.style.transition = 'all 0.3s';
+                            setTimeout(() => {
+                                item.remove();
+                                // If empty, show Empty State
+                                const listContainer = document.getElementById('schedule-list');
+                                if (listContainer && listContainer.children.length === 0) {
+                                    const emptyState = document.getElementById('schedule-empty-state');
+                                    if (emptyState) emptyState.classList.remove('hidden');
+                                }
+                                window.dispatchEvent(new CustomEvent('planner-sync-schedule'));
+                                updateMissedProjects();
+                            }, 300);
+                        }
+                    });
+                    return;
                 }
 
                 // Accordion Toggle cho Schedule
@@ -1870,6 +3472,17 @@
         let isHydrating = false;
         let persistTimer = null;
         let initialGuestSnapshot = null;
+        let authOpQueue = Promise.resolve();
+        let authRefreshPromise = null;
+        let authStateTimer = null;
+        let authPulseTimer = null;
+        let lastSessionCheckAt = 0;
+        let autoSaveEnabled = true;
+        let autoSaveTimer = null;
+        let cloudDirty = false;
+        let lastCloudSavedAt = null;
+        let headerStatusTimer = null;
+        let cloudSavePromise = null;
 
         function $(id) {
             return document.getElementById(id);
@@ -1888,6 +3501,25 @@
 
         function uid(prefix = 'id') {
             return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+        }
+
+        function sleep(ms) {
+            return new Promise((resolve) => setTimeout(resolve, ms));
+        }
+
+        function queueAuthOp(task) {
+            const queued = authOpQueue.catch(() => {}).then(task);
+            authOpQueue = queued.catch(() => {});
+            return queued;
+        }
+
+        function isLockContentionError(error) {
+            const message = String(error?.message || error || '').toLowerCase();
+            return message.includes('another request stole it')
+                || message.includes('lock:sb-')
+                || message.includes('navigator lockmanager')
+                || message.includes('lock acquisition')
+                || message.includes('acquiring an exclusive');
         }
 
         function escapeHtml(value) {
@@ -1922,6 +3554,104 @@
             if (el) el.textContent = message;
         }
 
+        function getPrefsStorageKey(scope = currentUser?.id || 'guest') {
+            return `${LOCAL_KEY_PREFIX}:prefs:${scope}`;
+        }
+
+        function readPrefs(scope = currentUser?.id || 'guest') {
+            try {
+                const raw = localStorage.getItem(getPrefsStorageKey(scope));
+                return raw ? JSON.parse(raw) : {};
+            } catch (error) {
+                console.warn('Could not parse planner prefs', error);
+                return {};
+            }
+        }
+
+        function writePrefs(nextPrefs, scope = currentUser?.id || 'guest') {
+            const merged = { ...readPrefs(scope), ...(nextPrefs || {}) };
+            localStorage.setItem(getPrefsStorageKey(scope), JSON.stringify(merged));
+            return merged;
+        }
+
+        function formatShortTime(dateValue) {
+            if (!dateValue) return '';
+            return new Date(dateValue).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function setHeaderSaveStatus(message, tone = 'muted') {
+            const el = $('header-save-status');
+            if (!el) return;
+            el.textContent = message || '';
+            el.dataset.tone = tone;
+        }
+
+        function syncCloudStatusUi() {
+            const detail = $('account-sync-detail');
+            const lastSaved = $('account-last-saved');
+
+            if (!currentUser) {
+                if (detail) detail.textContent = 'Sign in to enable cloud save.';
+                if (lastSaved) lastSaved.textContent = 'No cloud saves yet';
+                setHeaderSaveStatus('Local only', 'muted');
+                return;
+            }
+
+            const timeText = lastCloudSavedAt ? formatShortTime(lastCloudSavedAt) : '';
+            if (detail) {
+                detail.textContent = autoSaveEnabled
+                    ? 'Auto Save to Cloud is on. Changes sync every 1 minute.'
+                    : 'Auto Save to Cloud is off. Use Save now when needed.';
+            }
+            if (lastSaved) {
+                lastSaved.textContent = timeText ? `Last saved ${timeText}` : 'No cloud saves yet';
+            }
+            setHeaderSaveStatus(timeText ? `Last saved ${timeText}` : (autoSaveEnabled ? 'Cloud sync on' : 'Auto save off'), 'muted');
+        }
+
+        function flashHeaderSaveStatus(message, tone = 'muted', timeoutMs = 0) {
+            clearTimeout(headerStatusTimer);
+            setHeaderSaveStatus(message, tone);
+            if (timeoutMs > 0) {
+                headerStatusTimer = setTimeout(() => {
+                    syncCloudStatusUi();
+                }, timeoutMs);
+            }
+        }
+
+        function updateAutoSaveUi() {
+            const toggle = $('autosave-toggle');
+            if (toggle) {
+                toggle.classList.toggle('is-on', !!autoSaveEnabled);
+                toggle.setAttribute('aria-checked', autoSaveEnabled ? 'true' : 'false');
+                toggle.disabled = !currentUser;
+            }
+            syncCloudStatusUi();
+        }
+
+        function stopAutoSaveLoop() {
+            if (autoSaveTimer) {
+                clearInterval(autoSaveTimer);
+                autoSaveTimer = null;
+            }
+        }
+
+        function startAutoSaveLoop() {
+            stopAutoSaveLoop();
+            if (!currentUser || !autoSaveEnabled) return;
+            autoSaveTimer = setInterval(() => {
+                if (!currentUser || !autoSaveEnabled || !cloudDirty || isHydrating) return;
+                saveSnapshotToCloud({ silentFeedback: true, source: 'auto' });
+            }, 60 * 1000);
+        }
+
+        function loadAutoSavePreference(scope = currentUser?.id || 'guest') {
+            const prefs = readPrefs(scope);
+            autoSaveEnabled = prefs.autoSave !== false;
+            updateAutoSaveUi();
+            startAutoSaveLoop();
+        }
+
         function setActiveAuthTab(tabName) {
             ['login', 'signup', 'account'].forEach((tab) => {
                 const btn = $(`auth-tab-${tab}`);
@@ -1941,26 +3671,30 @@
         }
 
         function injectScheduleDateDisplay() {
-            const headerRow = document.querySelector('#schedule-view > .flex.items-center.justify-between');
-            if (!headerRow || $('schedule-date-display')) return;
-            const pill = document.createElement('div');
-            pill.id = 'schedule-date-display';
-            pill.className = 'text-sm text-textMuted mt-1';
-            headerRow.insertAdjacentElement('afterend', pill);
+            const staleDisplay = $('schedule-date-display');
+            if (staleDisplay) staleDisplay.remove();
+        }
+
+        function offsetIsoDate(isoDate, dayDelta) {
+            const [year, month, day] = String(isoDate || '').split('-').map(Number);
+            if (!year || !month || !day) return todayString();
+            const shifted = new Date(year, month - 1, day + dayDelta, 12, 0, 0, 0);
+            const yyyy = shifted.getFullYear();
+            const mm = String(shifted.getMonth() + 1).padStart(2, '0');
+            const dd = String(shifted.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
         }
 
         function updateScheduleDateUi() {
             injectScheduleDateDisplay();
-            const display = $('schedule-date-display');
             const calendarInput = document.querySelector('#calendar-modal input[type="date"]');
             if (calendarInput) calendarInput.value = selectedScheduleDate;
             const formatted = new Date(`${selectedScheduleDate}T12:00:00`).toLocaleDateString(undefined, {
                 year: 'numeric', month: 'short', day: 'numeric', weekday: 'short'
             });
-            if (display) display.textContent = `Viewing schedule for ${formatted} · each date stores its own action list`;
             const calendarBtn = $('schedule-calendar-btn');
             if (calendarBtn) {
-                calendarBtn.innerHTML = `<i class="ph ph-calendar-blank text-lg"></i><span class="hidden sm:inline">${escapeHtml(formatted)}</span>`;
+                calendarBtn.innerHTML = `<i class="ph ph-calendar-blank text-base"></i><span>${escapeHtml(formatted)}</span>`;
             }
         }
 
@@ -2009,12 +3743,12 @@
 
                 new Sortable(el, {
                     group,
-                    animation: 150,
+                    animation: 110,
                     filter: '.editable-text, button, input, textarea, .chevron-icon',
                     preventOnFilter: false,
                     delay: 200,
                     delayOnTouchOnly: true,
-                    fallbackTolerance: 5,
+                    fallbackTolerance: 3,
                     touchStartThreshold: 5,
                     ghostClass: 'opacity-50',
                     onStart: () => {
@@ -2360,104 +4094,273 @@
             return snapshot;
         }
 
-        async function saveSnapshotToCloud() {
-            if (!currentUser || !currentWorkspaceId) {
-                setFeedback('Log in first to save to cloud.', 'warn');
-                return;
+                function getErrorMessage(error) {
+            return String(error?.message || error?.error_description || error?.details || error || '');
+        }
+
+        function isLikelyAuthError(error) {
+            const message = getErrorMessage(error).toLowerCase();
+            const status = Number(error?.status || error?.statusCode || 0);
+            return status === 401
+                || status === 403
+                || message.includes('jwt')
+                || message.includes('token')
+                || message.includes('session')
+                || message.includes('not authenticated')
+                || message.includes('invalid claim')
+                || message.includes('refresh token')
+                || message.includes('auth session');
+        }
+
+        function getSessionExpiresAtMs(session) {
+            if (!session?.expires_at) return 0;
+            return Number(session.expires_at) * 1000;
+        }
+
+        function sessionExpiresSoon(session, thresholdMs = 90 * 1000) {
+            const expiresAtMs = getSessionExpiresAtMs(session);
+            if (!expiresAtMs) return false;
+            return expiresAtMs - Date.now() <= thresholdMs;
+        }
+
+        async function getFreshCloudSession(actionLabel = 'use cloud sync', options = {}) {
+            const { silent = false, forceRefresh = false } = options;
+            return queueAuthOp(async () => {
+                let data = null;
+                let error = null;
+
+                try {
+                    const sessionResult = await sb.auth.getSession();
+                    data = sessionResult.data;
+                    error = sessionResult.error;
+                } catch (sessionError) {
+                    error = sessionError;
+                }
+
+                if (error && isLockContentionError(error)) {
+                    if (!silent) console.warn(`Auth lock contention before ${actionLabel}; retrying getSession once`, error);
+                    await sleep(80);
+                    const retryResult = await sb.auth.getSession();
+                    data = retryResult.data;
+                    error = retryResult.error;
+                }
+
+                if (error) throw error;
+
+                let session = data?.session || null;
+                const canRefresh = !!session?.refresh_token;
+                const shouldRefresh = canRefresh && (forceRefresh || sessionExpiresSoon(session));
+
+                if (shouldRefresh) {
+                    if (!authRefreshPromise) {
+                        authRefreshPromise = sb.auth.refreshSession().finally(() => {
+                            authRefreshPromise = null;
+                        });
+                    }
+
+                    try {
+                        const { data: refreshedData, error: refreshError } = await authRefreshPromise;
+                        if (refreshError) {
+                            if (!silent) console.warn(`Could not refresh session before ${actionLabel}`, refreshError);
+                        } else if (refreshedData?.session) {
+                            session = refreshedData.session;
+                        }
+                    } catch (refreshError) {
+                        if (isLockContentionError(refreshError)) {
+                            if (!silent) console.warn(`Auth lock contention during refresh before ${actionLabel}; using latest known session`, refreshError);
+                        } else {
+                            throw refreshError;
+                        }
+                    }
+                }
+
+                lastSessionCheckAt = Date.now();
+                return session;
+            });
+        }
+
+        async function ensureActiveCloudSession(actionLabel = 'use cloud sync', options = {}) {
+            const { silent = false, forceRefresh = false } = options;
+            const session = await getFreshCloudSession(actionLabel, { silent, forceRefresh });
+
+            if (!session?.user) {
+                handleSignedOut();
+                if (!silent) {
+                    setInlineStatus('Session expired · local only');
+                    setFeedback(`Your session expired. Please log in again to ${actionLabel}.`, 'warn');
+                    setActiveAuthTab('login');
+                }
+                return null;
             }
-            const snapshot = createSnapshot();
-            setInlineStatus('Saving to cloud…');
+
+            const sessionUser = session.user;
+            const userChanged = !currentUser || currentUser.id !== sessionUser.id;
+            currentUser = sessionUser;
+
+            if (userChanged || !currentWorkspaceId) {
+                currentWorkspaceId = await ensureWorkspaceForUser(sessionUser);
+            }
+            if (userChanged || !currentProfile) {
+                currentProfile = await fetchProfile(sessionUser.id).catch(() => currentProfile);
+            }
+
+            updateAccountUi();
+            return session;
+        }
+
+        async function runCloudAction(actionLabel, actionFn, options = {}) {
+            const { forceRefresh = false } = options;
+            const session = await ensureActiveCloudSession(actionLabel, { forceRefresh });
+            if (!session) return null;
+
             try {
-                const { error: projectError } = await sb
-                    .from('planner_project_snapshots')
-                    .upsert({
-                        workspace_id: currentWorkspaceId,
-                        content: { schemaVersion: snapshot.schemaVersion, projectLists: snapshot.projectLists },
-                        updated_at: isoNow(),
-                    }, { onConflict: 'workspace_id' });
-                if (projectError) throw projectError;
-
-                const scheduleRows = Object.entries(snapshot.scheduleDays || {}).map(([scheduleDate, entries]) => ({
-                    workspace_id: currentWorkspaceId,
-                    schedule_date: scheduleDate,
-                    content: {
-                        schemaVersion: snapshot.schemaVersion,
-                        entries: Array.isArray(entries) ? entries : [],
-                        summary: {
-                            total: Array.isArray(entries) ? entries.length : 0,
-                            done: Array.isArray(entries) ? entries.filter((entry) => entry.done).length : 0,
-                        },
-                    },
-                    updated_at: isoNow(),
-                }));
-
-                const { data: existingDates, error: existingDatesError } = await sb
-                    .from('planner_schedule_days')
-                    .select('schedule_date')
-                    .eq('workspace_id', currentWorkspaceId);
-                if (existingDatesError) throw existingDatesError;
-
-                const localDateSet = new Set(Object.keys(snapshot.scheduleDays || {}));
-                const datesToDelete = (existingDates || []).map((row) => row.schedule_date).filter((date) => !localDateSet.has(date));
-                if (datesToDelete.length > 0) {
-                    const { error: deleteError } = await sb
-                        .from('planner_schedule_days')
-                        .delete()
-                        .eq('workspace_id', currentWorkspaceId)
-                        .in('schedule_date', datesToDelete);
-                    if (deleteError) throw deleteError;
-                }
-
-                if (scheduleRows.length > 0) {
-                    const { error: scheduleError } = await sb
-                        .from('planner_schedule_days')
-                        .upsert(scheduleRows, { onConflict: 'workspace_id,schedule_date' });
-                    if (scheduleError) throw scheduleError;
-                }
-
-                writeLocalSnapshot(snapshot);
-                setInlineStatus(`Signed in · cloud saved ${new Date().toLocaleTimeString()}`);
-                setFeedback('Saved current planner to cloud.', 'success');
+                return await actionFn(session);
             } catch (error) {
-                console.error(error);
-                setInlineStatus('Signed in · save failed');
-                setFeedback(error.message || 'Could not save to Supabase.', 'error');
+                if (!isLikelyAuthError(error)) throw error;
+
+                const refreshedSession = await ensureActiveCloudSession(actionLabel, { silent: true, forceRefresh: true });
+                if (!refreshedSession) {
+                    setInlineStatus('Session expired · local only');
+                    setFeedback(`Your session expired. Please log in again to ${actionLabel}.`, 'warn');
+                    setActiveAuthTab('login');
+                    return null;
+                }
+
+                return await actionFn(refreshedSession);
             }
         }
 
+        function pulseCloudSession(reason = 'use cloud sync') {
+            if (!currentUser) return;
+            const now = Date.now();
+            if (now - lastSessionCheckAt < 4000) return;
+            clearTimeout(authPulseTimer);
+            authPulseTimer = setTimeout(async () => {
+                try {
+                    await ensureActiveCloudSession(reason, { silent: true, forceRefresh: false });
+                } catch (error) {
+                    console.warn(`Could not refresh session state for ${reason}`, error);
+                }
+            }, 120);
+        }
+
+        async function saveSnapshotToCloud(options = {}) {
+            const { silentFeedback = false, source = 'manual' } = options;
+            if (cloudSavePromise) return cloudSavePromise;
+
+            cloudSavePromise = (async () => {
+                try {
+                    await runCloudAction('save to cloud', async () => {
+                        const snapshot = createSnapshot();
+                        setInlineStatus('Saving to cloud…');
+                        flashHeaderSaveStatus('Saving...', 'muted');
+
+                        const { error: projectError } = await sb
+                        .from('planner_project_snapshots')
+                        .upsert({
+                            workspace_id: currentWorkspaceId,
+                            content: { schemaVersion: snapshot.schemaVersion, projectLists: snapshot.projectLists },
+                            updated_at: isoNow(),
+                        }, { onConflict: 'workspace_id' });
+                    if (projectError) throw projectError;
+
+                    const scheduleRows = Object.entries(snapshot.scheduleDays || {}).map(([scheduleDate, entries]) => ({
+                        workspace_id: currentWorkspaceId,
+                        schedule_date: scheduleDate,
+                        content: {
+                            schemaVersion: snapshot.schemaVersion,
+                            entries: Array.isArray(entries) ? entries : [],
+                            summary: {
+                                total: Array.isArray(entries) ? entries.length : 0,
+                                done: Array.isArray(entries) ? entries.filter((entry) => entry.done).length : 0,
+                            },
+                        },
+                        updated_at: isoNow(),
+                    }));
+
+                    const { data: existingDates, error: existingDatesError } = await sb
+                        .from('planner_schedule_days')
+                        .select('schedule_date')
+                        .eq('workspace_id', currentWorkspaceId);
+                    if (existingDatesError) throw existingDatesError;
+
+                    const localDateSet = new Set(Object.keys(snapshot.scheduleDays || {}));
+                    const datesToDelete = (existingDates || []).map((row) => row.schedule_date).filter((date) => !localDateSet.has(date));
+                    if (datesToDelete.length > 0) {
+                        const { error: deleteError } = await sb
+                            .from('planner_schedule_days')
+                            .delete()
+                            .eq('workspace_id', currentWorkspaceId)
+                            .in('schedule_date', datesToDelete);
+                        if (deleteError) throw deleteError;
+                    }
+
+                    if (scheduleRows.length > 0) {
+                        const { error: scheduleError } = await sb
+                            .from('planner_schedule_days')
+                            .upsert(scheduleRows, { onConflict: 'workspace_id,schedule_date' });
+                        if (scheduleError) throw scheduleError;
+                    }
+
+                        writeLocalSnapshot(snapshot);
+                        cloudDirty = false;
+                        lastCloudSavedAt = isoNow();
+                        setInlineStatus(`Signed in · cloud saved ${formatShortTime(lastCloudSavedAt)}`);
+                        flashHeaderSaveStatus('Saved', 'success', 1500);
+                        updateAutoSaveUi();
+                        if (!silentFeedback) setFeedback(source === 'auto' ? 'Auto-saved current planner to cloud.' : 'Saved current planner to cloud.', 'success');
+                    });
+                } catch (error) {
+                    console.error(error);
+                    setInlineStatus('Signed in · save failed');
+                    flashHeaderSaveStatus('Save failed', 'error', 2200);
+                    if (!silentFeedback) setFeedback(getErrorMessage(error) || 'Could not save to Supabase.', 'error');
+                } finally {
+                    cloudSavePromise = null;
+                }
+            })();
+
+            return cloudSavePromise;
+        }
+
         async function loadSnapshotFromCloud() {
-            if (!currentUser || !currentWorkspaceId) {
-                setFeedback('Log in first to load from cloud.', 'warn');
-                return;
-            }
             const shouldLoad = window.confirm('Load from cloud will replace the current local planner on this device. Continue?');
             if (!shouldLoad) return;
 
-            setInlineStatus('Loading from cloud…');
             try {
-                const cloudSnapshot = await fetchCloudSnapshot(currentWorkspaceId);
-                if (!cloudSnapshot) {
-                    setInlineStatus(`Signed in as ${currentUser.email || 'user'}`);
-                    setFeedback('No cloud data found for this account yet.', 'warn');
-                    return;
-                }
-                applySnapshot(cloudSnapshot);
-                writeLocalSnapshot(createSnapshot());
-                setInlineStatus(`Signed in · cloud loaded ${new Date().toLocaleTimeString()}`);
-                setFeedback('Loaded planner from cloud.', 'success');
+                await runCloudAction('load from cloud', async () => {
+                    setInlineStatus('Loading from cloud…');
+                    const cloudSnapshot = await fetchCloudSnapshot(currentWorkspaceId);
+                    if (!cloudSnapshot) {
+                        setInlineStatus(`Signed in as ${currentUser.email || 'user'}`);
+                        setFeedback('No cloud data found for this account yet.', 'warn');
+                        return;
+                    }
+                    applySnapshot(cloudSnapshot);
+                    writeLocalSnapshot(createSnapshot());
+                    cloudDirty = false;
+                    lastCloudSavedAt = cloudSnapshot.updatedAt || isoNow();
+                    setInlineStatus(`Signed in · cloud loaded ${formatShortTime(lastCloudSavedAt)}`);
+                    flashHeaderSaveStatus('Loaded', 'success', 1500);
+                    updateAutoSaveUi();
+                    setFeedback('Loaded planner from cloud.', 'success');
+                });
             } catch (error) {
                 console.error(error);
                 setInlineStatus('Signed in · load failed');
-                setFeedback(error.message || 'Could not load from Supabase.', 'error');
+                flashHeaderSaveStatus('Load failed', 'error', 2200);
+                setFeedback(getErrorMessage(error) || 'Could not load from Supabase.', 'error');
             }
         }
 
         function schedulePersist(trigger) {
+
             if (isHydrating) return;
             clearTimeout(persistTimer);
             persistTimer = setTimeout(() => {
                 const snapshot = createSnapshot();
                 writeLocalSnapshot(snapshot);
+                if (currentUser) cloudDirty = true;
                 refreshProjectCounters();
                 updateMissedProjectsForSelectedDate();
             }, 250);
@@ -2477,6 +4380,7 @@
             try {
                 currentWorkspaceId = await ensureWorkspaceForUser(currentUser);
                 currentProfile = await fetchProfile(currentUser.id).catch(() => null);
+                loadAutoSavePreference(currentUser.id);
                 updateAccountUi();
                 setActiveAuthTab('account');
 
@@ -2493,11 +4397,15 @@
                     return null;
                 });
 
+                cloudDirty = false;
+                lastCloudSavedAt = cloudSnapshot?.updatedAt || null;
                 if (cloudSnapshot) {
                     setInlineStatus(`Signed in as ${currentUser.email || 'user'} · cloud data available`);
                 } else {
                     setInlineStatus(`Signed in as ${currentUser.email || 'user'} · cloud empty`);
                 }
+                updateAutoSaveUi();
+                startAutoSaveLoop();
             } catch (error) {
                 console.error(error);
                 setFeedback(error.message || 'Could not initialize account data.', 'error');
@@ -2516,6 +4424,10 @@
             currentUser = null;
             currentWorkspaceId = null;
             currentProfile = null;
+            lastCloudSavedAt = null;
+            cloudDirty = false;
+            loadAutoSavePreference('guest');
+            stopAutoSaveLoop();
             updateAccountUi();
             setActiveAuthTab('login');
             const guestSnapshot = readGuestSnapshot() || initialGuestSnapshot;
@@ -2526,8 +4438,7 @@
 
         function updateAccountUi() {
             const accountBtn = $('account-btn');
-            const accountEmail = $('account-email');
-            const displayName = $('account-display-name');
+            const accountSignedAs = $('account-signed-as');
             const logoutBtn = $('logout-btn');
             const saveCloudBtn = $('save-cloud-btn');
             const loadCloudBtn = $('load-cloud-btn');
@@ -2539,9 +4450,14 @@
             const signupPanel = $('auth-panel-signup');
 
             if (currentUser) {
-                if (accountBtn) accountBtn.textContent = currentProfile?.display_name || currentUser.email || 'Account';
-                if (accountEmail) accountEmail.textContent = currentUser.email || 'Signed in';
-                if (displayName) displayName.textContent = currentProfile?.display_name || currentUser.user_metadata?.display_name || 'Signed in user';
+                const displayValue = currentProfile?.display_name || currentUser.user_metadata?.display_name || '';
+                const emailValue = currentUser.email || '';
+                const signedAsValue = displayValue && emailValue && displayValue !== emailValue
+                    ? `Signed as ${displayValue} / ${emailValue}`
+                    : `Signed as ${displayValue || emailValue || 'user'}`;
+
+                if (accountBtn) accountBtn.textContent = displayValue || emailValue || 'Account';
+                if (accountSignedAs) accountSignedAs.textContent = signedAsValue;
                 if (logoutBtn) logoutBtn.disabled = false;
                 if (saveCloudBtn) saveCloudBtn.disabled = false;
                 if (loadCloudBtn) loadCloudBtn.disabled = false;
@@ -2558,8 +4474,7 @@
                 if (signupPanel) signupPanel.classList.add('hidden');
             } else {
                 if (accountBtn) accountBtn.textContent = 'Account';
-                if (accountEmail) accountEmail.textContent = 'Not logged in';
-                if (displayName) displayName.textContent = 'Guest';
+                if (accountSignedAs) accountSignedAs.textContent = 'Signed as Guest';
                 if (logoutBtn) logoutBtn.disabled = true;
                 if (saveCloudBtn) saveCloudBtn.disabled = true;
                 if (loadCloudBtn) loadCloudBtn.disabled = true;
@@ -2570,6 +4485,8 @@
                 if (signupTab) signupTab.classList.remove('hidden');
                 if (accountTab) accountTab.classList.remove('hidden');
             }
+
+            updateAutoSaveUi();
         }
 
         function switchScheduleDate(nextDate) {
@@ -2587,6 +4504,37 @@
             writeLocalSnapshot(createSnapshot());
             updateMissedProjectsForSelectedDate();
         }
+
+        document.addEventListener('click', (e) => {
+            const prevBtn = e.target.closest('#schedule-prev-day-btn');
+            if (prevBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                switchScheduleDate(offsetIsoDate(selectedScheduleDate, -1));
+                return;
+            }
+            const nextBtn = e.target.closest('#schedule-next-day-btn');
+            if (nextBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                switchScheduleDate(offsetIsoDate(selectedScheduleDate, 1));
+                return;
+            }
+            const calendarBtn = e.target.closest('#schedule-calendar-btn');
+            if (calendarBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                const modal = document.getElementById('calendar-modal');
+                const dialog = document.getElementById('calendar-modal-dialog');
+                if (modal && dialog) {
+                    modal.classList.remove('hidden');
+                    requestAnimationFrame(() => {
+                        dialog.classList.remove('scale-95', 'opacity-0');
+                        dialog.classList.add('scale-100', 'opacity-100');
+                    });
+                }
+            }
+        });
 
         window.plannerBridge = {
             getSelectedScheduleDate: () => selectedScheduleDate,
@@ -2694,19 +4642,21 @@
                 setActiveAuthTab(currentUser ? 'account' : 'login');
             });
 
-            $('login-form')?.addEventListener('submit', async () => {
+            $('login-form')?.addEventListener('submit', async (event) => {
+                event.preventDefault();
                 try {
                     await signInWithPassword();
                 } catch (error) {
-                    setFeedback(error.message || 'Could not log in.', 'error');
+                    setFeedback(getErrorMessage(error) || 'Could not log in.', 'error');
                 }
             });
 
-            $('signup-form')?.addEventListener('submit', async () => {
+            $('signup-form')?.addEventListener('submit', async (event) => {
+                event.preventDefault();
                 try {
                     await signUpWithPassword();
                 } catch (error) {
-                    setFeedback(error.message || 'Could not sign up.', 'error');
+                    setFeedback(getErrorMessage(error) || 'Could not sign up.', 'error');
                 }
             });
 
@@ -2719,11 +4669,20 @@
             });
 
             $('save-cloud-btn')?.addEventListener('click', async () => {
-                await saveSnapshotToCloud();
+                await saveSnapshotToCloud({ silentFeedback: false, source: 'manual' });
             });
 
             $('load-cloud-btn')?.addEventListener('click', async () => {
                 await loadSnapshotFromCloud();
+            });
+
+            $('autosave-toggle')?.addEventListener('click', () => {
+                if (!currentUser) return;
+                autoSaveEnabled = !autoSaveEnabled;
+                writePrefs({ autoSave: autoSaveEnabled }, currentUser.id);
+                updateAutoSaveUi();
+                startAutoSaveLoop();
+                setFeedback(autoSaveEnabled ? 'Auto Save to Cloud is on.' : 'Auto Save to Cloud is off. Save manually when needed.', 'success');
             });
 
             $('export-json-btn')?.addEventListener('click', exportSnapshotAsJson);
@@ -2758,6 +4717,15 @@
             ].filter(Boolean);
             const observer = new MutationObserver(() => schedulePersist('mutation'));
             observerTargets.forEach((target) => observer.observe(target, { childList: true, subtree: true, characterData: true, attributes: true }));
+
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState !== 'visible') return;
+                pulseCloudSession('resume cloud sync');
+            });
+
+            window.addEventListener('focus', () => {
+                pulseCloudSession('resume cloud sync');
+            });
         }
 
         async function boot() {
@@ -2772,23 +4740,31 @@
             const guestSnapshot = readGuestSnapshot();
             if (guestSnapshot) applySnapshot(guestSnapshot);
             writeLocalSnapshot(createSnapshot());
+            loadAutoSavePreference('guest');
             bindUi();
 
-            const { data: sessionData } = await sb.auth.getSession();
-            if (sessionData?.session) {
-                await handleSignedIn(sessionData.session);
+            const initialSession = await ensureActiveCloudSession('start cloud sync', { silent: true, forceRefresh: false });
+            if (initialSession) {
+                await handleSignedIn(initialSession);
             } else {
                 handleSignedOut();
             }
 
-            sb.auth.onAuthStateChange(async (event, session) => {
-                if (event === 'SIGNED_OUT') {
-                    handleSignedOut();
-                    return;
-                }
-                if (session?.user) {
-                    await handleSignedIn(session);
-                }
+            sb.auth.onAuthStateChange((event, session) => {
+                clearTimeout(authStateTimer);
+                authStateTimer = setTimeout(() => {
+                    if (event === 'SIGNED_OUT') {
+                        handleSignedOut();
+                        return;
+                    }
+                    if (session?.user) {
+                        handleSignedIn(session).catch((error) => {
+                            console.error(error);
+                            setFeedback(error.message || 'Could not initialize account data.', 'error');
+                            setInlineStatus('Signed in · setup error');
+                        });
+                    }
+                }, 0);
             });
         }
 
