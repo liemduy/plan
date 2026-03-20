@@ -66,7 +66,6 @@
             background-color: var(--bg-color);
             color: var(--text-main);
             user-select: none;
-            padding-top: env(safe-area-inset-top, 0px);
             padding-left: env(safe-area-inset-left, 0px);
             padding-right: env(safe-area-inset-right, 0px);
             padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -88,7 +87,7 @@
 
         header {
             background: linear-gradient(to bottom, rgba(18,18,18,0.98), rgba(18,18,18,0.92)) !important;
-            padding: calc(env(safe-area-inset-top, 0px) + 24px) 20px 0 20px !important;
+            padding: calc(env(safe-area-inset-top, 0px) + 8px) 20px 0 20px !important;
             align-items: center;
         }
 
@@ -778,7 +777,7 @@
             }
 
             header {
-                padding-top: calc(env(safe-area-inset-top, 0px) + 20px) !important;
+                padding-top: calc(env(safe-area-inset-top, 0px) + 6px) !important;
             }
 
             .project-item {
@@ -2526,6 +2525,7 @@
             }
 
             function updateAll() {
+                syncAllTimeRangesAndPendingStates();
                 updateCounters();
                 updateMissedProjects();
                 updateProjectListsVisibility();
@@ -2820,6 +2820,7 @@
 
             // --- LONG PRESS & MARK AS DONE LOGIC ---
             let longPressTarget = null;
+            let activeContextTarget = null;
             let lastClientX = 0;
             let lastClientY = 0;
             let pressStartedAt = 0;
@@ -3034,15 +3035,32 @@
             window.addEventListener('touchcancel', cancelPress);
             window.addEventListener('blur', cancelPress);
 
-            document.addEventListener('mousedown', (e) => {
-                if (contextMenu && !contextMenu.contains(e.target) && datePickerMenu && !datePickerMenu.contains(e.target)) {
-                    contextMenu.classList.add('hidden');
-                    datePickerMenu.classList.add('hidden');
+            function hideFloatingMenus(clearTarget = false) {
+                if (contextMenu) contextMenu.classList.add('hidden');
+                if (datePickerMenu) datePickerMenu.classList.add('hidden');
+                if (clearTarget) activeContextTarget = null;
+            }
+
+            function getActiveContextTarget() {
+                return activeContextTarget || longPressTarget || null;
+            }
+
+            function handleGlobalMenuDismiss(e) {
+                const clickedInsideContextMenu = contextMenu && contextMenu.contains(e.target);
+                const clickedInsideDatePicker = datePickerMenu && datePickerMenu.contains(e.target);
+                const clickedInsideTimeRangeModal = timeRangeModal && timeRangeModal.contains(e.target);
+                if (!clickedInsideContextMenu && !clickedInsideDatePicker && !clickedInsideTimeRangeModal) {
+                    hideFloatingMenus(true);
                 }
-            });
+            }
+
+            document.addEventListener('mousedown', handleGlobalMenuDismiss);
+            document.addEventListener('touchstart', handleGlobalMenuDismiss, { passive: true });
 
             function showContextMenu(item) {
                 cancelPress();
+                longPressTarget = item;
+                activeContextTarget = item;
                 
                 // Huỷ bôi đen text nếu có
                 window.getSelection().removeAllRanges();
@@ -3078,6 +3096,9 @@
             // Click "Mark as done" -> Show Date Picker
             if(menuMarkDone) menuMarkDone.addEventListener('click', (e) => {
                 e.stopPropagation();
+                const target = getActiveContextTarget();
+                if (!target) return;
+                activeContextTarget = target;
                 contextMenu.classList.add('hidden');
                 
                 const today = new Date();
@@ -3094,19 +3115,22 @@
             // Click "Mark as undone"
             if(menuMarkUndone) menuMarkUndone.addEventListener('click', (e) => {
                 e.stopPropagation();
+                const target = getActiveContextTarget();
+                if (!target) return;
                 contextMenu.classList.add('hidden');
                 
                 // 1. Gỡ hiệu ứng của chính nó
-                applyUndoneUI(longPressTarget);
+                applyUndoneUI(target);
                 
                 // 2. Tự động gỡ các mục con bên trong (nếu có)
-                const children = longPressTarget.querySelectorAll('[data-level]');
+                const children = target.querySelectorAll('[data-level]');
                 children.forEach(child => applyUndoneUI(child));
 
                 // 3. Gọi lên cha để check
-                const parent = longPressTarget.parentElement.closest('[data-level]');
+                const parent = target.parentElement.closest('[data-level]');
                 if (parent) updateParentStatus(parent);
 
+                activeContextTarget = null;
                 // RECOUNT
                 updateCounters();
             });
@@ -3137,54 +3161,101 @@
                 });
             }
 
-            function closeTimeRangeModal() {
+            function closeTimeRangeModal(clearTarget = false) {
                 if(!timeRangeModal) return;
                 timeRangeDialog.classList.remove('scale-100', 'opacity-100');
                 timeRangeDialog.classList.add('scale-95', 'opacity-0');
                 setTimeout(() => timeRangeModal.classList.add('hidden'), 200);
+                if (clearTarget) activeContextTarget = null;
             }
 
-            document.getElementById('close-time-range-btn').addEventListener('click', closeTimeRangeModal);
-            document.getElementById('cancel-time-range-btn').addEventListener('click', closeTimeRangeModal);
-            document.getElementById('time-range-modal-backdrop').addEventListener('click', closeTimeRangeModal);
+            document.getElementById('close-time-range-btn').addEventListener('click', () => closeTimeRangeModal(true));
+            document.getElementById('cancel-time-range-btn').addEventListener('click', () => closeTimeRangeModal(true));
+            document.getElementById('time-range-modal-backdrop').addEventListener('click', () => closeTimeRangeModal(true));
             
             if(menuAddTime) menuAddTime.addEventListener('click', (e) => {
                 e.stopPropagation();
+                const target = getActiveContextTarget();
+                if (!target) return;
+                activeContextTarget = target;
                 contextMenu.classList.add('hidden');
                 
                 // Đọc date hiện tại nếu đã có
-                startTimeInput.value = longPressTarget.dataset.startDate || '';
-                endTimeInput.value = longPressTarget.dataset.endDate || '';
+                startTimeInput.value = target.dataset.startDate || '';
+                endTimeInput.value = target.dataset.endDate || '';
                 
                 openTimeRangeModal();
             });
 
+            function syncTimeRangeUI(element) {
+                const container = getTargetContainer(element);
+                const timeRangeContainer = container ? container.querySelector('.time-range-container') : null;
+                if (!timeRangeContainer) return;
+
+                const startVal = element.dataset.startDate || '';
+                const endVal = element.dataset.endDate || '';
+
+                if (!startVal || !endVal) {
+                    timeRangeContainer.innerHTML = '';
+                    timeRangeContainer.classList.add('hidden');
+                    timeRangeContainer.classList.remove('flex');
+                    return;
+                }
+
+                const [sy, sm, sd] = startVal.split('-');
+                const [ey, em, ed] = endVal.split('-');
+                const formattedStart = `${sd}/${sm}/${sy.slice(2)}`;
+                const formattedEnd = `${ed}/${em}/${ey.slice(2)}`;
+
+                timeRangeContainer.innerHTML = `${formattedStart} <i class="ph ph-arrow-right text-brand"></i> ${formattedEnd}`;
+                timeRangeContainer.classList.remove('hidden');
+                timeRangeContainer.classList.add('flex');
+            }
+
+            function syncAllTimeRangesAndPendingStates() {
+                document.querySelectorAll('[data-level]').forEach((element) => {
+                    syncTimeRangeUI(element);
+                    updatePendingStatus(element);
+                });
+            }
+
             document.getElementById('save-time-range-btn').addEventListener('click', () => {
+                const target = getActiveContextTarget();
+                if (!target) {
+                    closeTimeRangeModal();
+                    return;
+                }
+
                 const startVal = startTimeInput.value;
                 const endVal = endTimeInput.value;
-                
-                if (startVal && endVal) {
-                    longPressTarget.dataset.startDate = startVal;
-                    longPressTarget.dataset.endDate = endVal;
-                    
-                    const container = getTargetContainer(longPressTarget);
-                    const timeRangeContainer = container.querySelector('.time-range-container');
-                    
-                    if (timeRangeContainer) {
-                        const [sy, sm, sd] = startVal.split('-');
-                        const [ey, em, ed] = endVal.split('-');
-                        // Format DD/MM/YY
-                        const formattedStart = `${sd}/${sm}/${sy.slice(2)}`;
-                        const formattedEnd = `${ed}/${em}/${ey.slice(2)}`;
-                        
-                        timeRangeContainer.innerHTML = `${formattedStart} <i class="ph ph-arrow-right text-brand"></i> ${formattedEnd}`;
-                        timeRangeContainer.classList.remove('hidden');
-                        timeRangeContainer.classList.add('flex');
-                    }
-                    
-                    updatePendingStatus(longPressTarget);
+
+                if (!startVal && !endVal) {
+                    delete target.dataset.startDate;
+                    delete target.dataset.endDate;
+                    syncTimeRangeUI(target);
+                    updatePendingStatus(target);
+                    updateAll();
+                    activeContextTarget = null;
+                    closeTimeRangeModal();
+                    return;
                 }
-                
+
+                if (!startVal || !endVal) {
+                    alert('Please choose both start and end date, or clear both to remove the range.');
+                    return;
+                }
+
+                if (endVal < startVal) {
+                    alert('End date must be on or after start date.');
+                    return;
+                }
+
+                target.dataset.startDate = startVal;
+                target.dataset.endDate = endVal;
+                syncTimeRangeUI(target);
+                updatePendingStatus(target);
+                updateAll();
+                activeContextTarget = null;
                 closeTimeRangeModal();
             });
             // --- END TIME RANGE MODAL LOGIC ---
@@ -3388,16 +3459,19 @@
             const saveDateBtn = document.getElementById('save-date-btn');
             if(saveDateBtn) saveDateBtn.addEventListener('click', () => {
                 const dateVal = doneDateInput.value;
-                if (!dateVal) return;
+                const target = getActiveContextTarget();
+                if (!dateVal || !target) return;
                 datePickerMenu.classList.add('hidden');
                 
-                processMarkAsDone(longPressTarget, dateVal, false);
+                processMarkAsDone(target, dateVal, false);
+                activeContextTarget = null;
                 updateCounters(); // RECOUNT
             });
 
             const cancelDateBtn = document.getElementById('cancel-date-btn');
             if(cancelDateBtn) cancelDateBtn.addEventListener('click', () => {
                 datePickerMenu.classList.add('hidden');
+                activeContextTarget = null;
             });
 
             // --- CORE LOGIC HIERARCHY ---
@@ -3514,10 +3588,20 @@
                 
                 if (!editableText || !pendingBadge) return;
 
+                const showPendingBadge = () => {
+                    pendingBadge.classList.remove('hidden');
+                    pendingBadge.style.display = 'inline-flex';
+                };
+
+                const hidePendingBadge = () => {
+                    pendingBadge.classList.add('hidden');
+                    pendingBadge.style.display = '';
+                };
+
                 // Nếu đã done thì không show pending nữa
                 if (element.dataset.status === 'done' || !startDateStr) {
                     editableText.classList.remove('is-pending-text');
-                    pendingBadge.classList.add('hidden');
+                    hidePendingBadge();
                     
                     if (icon && element.dataset.level === 'project') {
                         const isExpanded = container.nextElementSibling && !container.nextElementSibling.classList.contains('hidden');
@@ -3535,13 +3619,13 @@
                     
                     if (startDate > today) {
                         editableText.classList.add('is-pending-text');
-                        pendingBadge.classList.remove('hidden');
+                        showPendingBadge();
                         if (icon && element.dataset.level === 'project') {
                             icon.className = 'ph-fill ph-clock text-2xl text-yellow-500 transition-colors duration-300 mr-3 project-icon';
                         }
                     } else {
                         editableText.classList.remove('is-pending-text');
-                        pendingBadge.classList.add('hidden');
+                        hidePendingBadge();
                         if (icon && element.dataset.level === 'project') {
                             const isExpanded = container.nextElementSibling && !container.nextElementSibling.classList.contains('hidden');
                             const isDone = element.dataset.status === 'done';
