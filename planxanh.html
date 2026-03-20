@@ -2228,6 +2228,9 @@
             let isDragging = false;
             window.__plannerHandleDragStart = () => {
                 isDragging = true;
+                cancelPress();
+                if (contextMenu) contextMenu.classList.add('hidden');
+                if (datePickerMenu) datePickerMenu.classList.add('hidden');
                 document.body.classList.add('dragging');
             };
             window.__plannerHandleDragEnd = () => {
@@ -2674,6 +2677,11 @@
             });
 
             if(projectListContainer) projectListContainer.addEventListener('click', (e) => {
+                if (Date.now() < suppressClickUntil) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                }
                 if (isDragging) return; // Chống click nhầm sau khi thả kéo
                 if (e.target.classList.contains('editable-text')) return;
                 if (e.target.closest('.drag-handle')) {
@@ -2804,10 +2812,14 @@
 
 
             // --- LONG PRESS & MARK AS DONE LOGIC ---
-            let pressTimer;
             let longPressTarget = null;
             let lastClientX = 0;
             let lastClientY = 0;
+            let pressStartedAt = 0;
+            let pressMoved = false;
+            let suppressClickUntil = 0;
+            const LONG_PRESS_DURATION = 420;
+            const PRESS_MOVE_THRESHOLD = 8;
 
             const contextMenu = document.getElementById('custom-context-menu');
             const datePickerMenu = document.getElementById('date-picker-menu');
@@ -2936,31 +2948,84 @@
                 return Array.from(element.children).find(c => c.classList.contains('accordion-header'));
             }
 
+            function resetPressState() {
+                longPressTarget = null;
+                pressStartedAt = 0;
+                pressMoved = false;
+            }
+
+            function getClientPoint(e) {
+                if (e.touches && e.touches[0]) {
+                    return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+                if (e.changedTouches && e.changedTouches[0]) {
+                    return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+                }
+                if (typeof e.clientX === 'number' && typeof e.clientY === 'number') {
+                    return { x: e.clientX, y: e.clientY };
+                }
+                return null;
+            }
+
             function startPress(e) {
-                if (e.target.closest('button') || e.target.closest('.drag-handle')) return; // Ignore buttons / drag handles
-                // Lấy toạ độ client
-                lastClientX = e.clientX || (e.touches && e.touches[0].clientX);
-                lastClientY = e.clientY || (e.touches && e.touches[0].clientY);
+                if (isDragging) return;
+                if (e.target.closest('button') || e.target.closest('.drag-handle') || e.target.closest('.editable-text') || e.target.closest('input, textarea, select')) return;
+                if (e.touches && e.touches.length > 1) return;
+
+                const point = getClientPoint(e);
+                if (!point) return;
 
                 const item = e.target.closest('[data-level]');
                 if (!item) return;
 
+                lastClientX = point.x;
+                lastClientY = point.y;
+                pressStartedAt = Date.now();
+                pressMoved = false;
                 longPressTarget = item;
-                pressTimer = setTimeout(() => {
-                    showContextMenu(item);
-                }, 500); 
             }
 
-            function cancelPress() { clearTimeout(pressTimer); }
+            function trackPressMove(e) {
+                if (!longPressTarget) return;
+                const point = getClientPoint(e);
+                if (!point) return;
+
+                const dx = Math.abs(point.x - lastClientX);
+                const dy = Math.abs(point.y - lastClientY);
+                if (dx > PRESS_MOVE_THRESHOLD || dy > PRESS_MOVE_THRESHOLD || isDragging) {
+                    pressMoved = true;
+                }
+            }
+
+            function endPress() {
+                if (!longPressTarget) return;
+
+                const item = longPressTarget;
+                const pressDuration = Date.now() - pressStartedAt;
+                const shouldShowContextMenu = !pressMoved && !isDragging && pressDuration >= LONG_PRESS_DURATION;
+
+                resetPressState();
+
+                if (shouldShowContextMenu) {
+                    suppressClickUntil = Date.now() + 350;
+                    showContextMenu(item);
+                }
+            }
+
+            function cancelPress() {
+                resetPressState();
+            }
 
             if(projectListContainer) {
                 projectListContainer.addEventListener('mousedown', startPress);
                 projectListContainer.addEventListener('touchstart', startPress, {passive: true});
             }
-            window.addEventListener('mouseup', cancelPress);
-            window.addEventListener('touchend', cancelPress);
-            window.addEventListener('mousemove', cancelPress);
-            window.addEventListener('touchmove', cancelPress);
+            window.addEventListener('mousemove', trackPressMove);
+            window.addEventListener('touchmove', trackPressMove, {passive: true});
+            window.addEventListener('mouseup', endPress);
+            window.addEventListener('touchend', endPress);
+            window.addEventListener('touchcancel', cancelPress);
+            window.addEventListener('blur', cancelPress);
 
             document.addEventListener('mousedown', (e) => {
                 if (contextMenu && !contextMenu.contains(e.target) && datePickerMenu && !datePickerMenu.contains(e.target)) {
