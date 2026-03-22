@@ -1,5 +1,6 @@
 
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -330,6 +331,15 @@
             background: transparent !important;
         }
 
+        .schedule-main-trigger:hover {
+            background: transparent !important;
+        }
+
+        .schedule-header:hover .schedule-main-trigger,
+        .schedule-header:focus-within .schedule-main-trigger {
+            background: rgba(255, 255, 255, 0.05) !important;
+        }
+
         .project-item > .accordion-content {
             padding: 12px 0 4px 0 !important;
             margin: 0 !important;
@@ -591,6 +601,38 @@
             padding: 16px 0 !important;
             margin: 0 !important;
             border-radius: 0 !important;
+            position: relative;
+            display: block;
+            min-height: 50px;
+            padding-right: 122px !important;
+        }
+
+        .schedule-main-trigger {
+            min-width: 0;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            margin: 0;
+            padding: 8px 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.18s ease;
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .schedule-main-trigger:hover {
+            background: transparent;
+        }
+
+        .schedule-header:hover .schedule-main-trigger,
+        .schedule-header:focus-within .schedule-main-trigger {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .schedule-main-trigger-text {
+            min-width: 0;
         }
 
         .schedule-content {
@@ -601,26 +643,199 @@
             accent-color: #ffc8d2;
         }
 
-        .schedule-item .edit-schedule-btn,
-        .schedule-item .delete-schedule-btn {
-            opacity: 0;
-            transition: opacity 0.2s ease, color 0.2s ease;
-        }
-
-        .schedule-item:hover .edit-schedule-btn,
-        .schedule-item:hover .delete-schedule-btn {
+        .schedule-header-actions {
+            min-width: 112px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 8px;
             opacity: 1;
+            position: absolute;
+            top: 50%;
+            right: 0;
+            transform: translateY(-50%);
+            z-index: 8;
+            isolation: isolate;
+            margin: 0;
+            padding: 0;
+            pointer-events: none;
         }
 
-        .edit-schedule-btn i,
-        .delete-schedule-btn i {
-            opacity: 0.72;
-            transition: opacity 0.2s ease;
+        .schedule-header > * {
+            min-width: 0;
         }
 
-        .edit-schedule-btn:hover i,
-        .delete-schedule-btn:hover i {
-            opacity: 1;
+        .schedule-header-actions,
+        .schedule-header-actions button {
+            will-change: auto;
+        }
+
+        .schedule-header-actions .edit-schedule-btn,
+        .schedule-header-actions .delete-schedule-btn,
+        .schedule-header-actions .schedule-toggle-btn {
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 34px;
+            padding: 0;
+            margin: 0;
+            border: 0 !important;
+            outline: none !important;
+            box-shadow: none !important;
+            appearance: none;
+            border-radius: 999px;
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+            background: transparent !important;
+            color: var(--text-sub) !important;
+            transform: none !important;
+            transition: none !important;
+            position: relative;
+            z-index: 9;
+            overflow: hidden;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            -webkit-tap-highlight-color: transparent;
+            pointer-events: auto !important;
+        }
+
+        .schedule-header-actions .edit-schedule-btn:hover,
+        .schedule-header-actions .schedule-toggle-btn:hover,
+        .schedule-header-actions .edit-schedule-btn:focus-visible,
+        .schedule-header-actions .schedule-toggle-btn:focus-visible {
+            background-color: rgba(255, 255, 255, 0.065) !important;
+            color: var(--text-main) !important;
+        }
+
+        .schedule-header-actions .delete-schedule-btn:hover,
+        .schedule-header-actions .delete-schedule-btn:focus-visible {
+            background-color: rgba(255, 69, 58, 0.12) !important;
+            color: #ff7b72 !important;
+        }
+
+        .nav-flash-target {
+            position: relative;
+            animation: navTargetFlash 1.45s cubic-bezier(0.22, 1, 0.36, 1) 1;
+        }
+
+        .project-item.nav-flash-target::after,
+        .phase-item.nav-flash-target::after,
+        .output-item.nav-flash-target::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            pointer-events: none;
+            background: rgba(255, 200, 210, 0);
+            box-shadow:
+                0 0 0 0 rgba(255, 200, 210, 0),
+                inset 0 0 0 0 rgba(255, 200, 210, 0);
+            animation: navTargetOverlay 1.45s cubic-bezier(0.22, 1, 0.36, 1) 1;
+            z-index: 4;
+        }
+
+        .project-item.nav-flash-target {
+            animation: navTargetFlashProject 1.45s cubic-bezier(0.22, 1, 0.36, 1) 1;
+        }
+
+        @keyframes navTargetFlash {
+            0% {
+                box-shadow:
+                    0 0 0 0 rgba(255, 200, 210, 0),
+                    inset 0 0 0 0 rgba(255, 200, 210, 0);
+            }
+            18% {
+                box-shadow:
+                    0 0 0 3px rgba(255, 200, 210, 0.34),
+                    inset 0 0 0 999px rgba(255, 200, 210, 0.14);
+            }
+            55% {
+                box-shadow:
+                    0 0 0 2px rgba(255, 200, 210, 0.20),
+                    inset 0 0 0 999px rgba(255, 200, 210, 0.08);
+            }
+            100% {
+                box-shadow:
+                    0 0 0 0 rgba(255, 200, 210, 0),
+                    inset 0 0 0 0 rgba(255, 200, 210, 0);
+            }
+        }
+
+        @keyframes navTargetOverlay {
+            0% {
+                background: rgba(255, 200, 210, 0);
+                box-shadow:
+                    0 0 0 0 rgba(255, 200, 210, 0),
+                    inset 0 0 0 0 rgba(255, 200, 210, 0);
+            }
+            18% {
+                background: rgba(255, 200, 210, 0.22);
+                box-shadow:
+                    0 0 0 2px rgba(255, 200, 210, 0.38),
+                    inset 0 0 0 999px rgba(255, 200, 210, 0.14);
+            }
+            55% {
+                background: rgba(255, 200, 210, 0.12);
+                box-shadow:
+                    0 0 0 1px rgba(255, 200, 210, 0.24),
+                    inset 0 0 0 999px rgba(255, 200, 210, 0.06);
+            }
+            100% {
+                background: rgba(255, 200, 210, 0);
+                box-shadow:
+                    0 0 0 0 rgba(255, 200, 210, 0),
+                    inset 0 0 0 0 rgba(255, 200, 210, 0);
+            }
+        }
+
+        @keyframes navTargetFlashProject {
+            0% {
+                background-color: var(--card-bg);
+                box-shadow: 0 0 0 0 rgba(255, 200, 210, 0);
+            }
+            18% {
+                background-color: rgba(255, 200, 210, 0.16);
+                box-shadow: 0 0 0 2px rgba(255, 200, 210, 0.36);
+            }
+            55% {
+                background-color: rgba(255, 200, 210, 0.09);
+                box-shadow: 0 0 0 1px rgba(255, 200, 210, 0.20);
+            }
+            100% {
+                background-color: var(--card-bg);
+                box-shadow: 0 0 0 0 rgba(255, 200, 210, 0);
+            }
+        }
+
+        .schedule-header-actions .edit-schedule-btn i,
+        .schedule-header-actions .delete-schedule-btn i,
+        .schedule-header-actions .schedule-toggle-btn i {
+            color: inherit;
+            transition: none !important;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            transform-origin: 50% 50%;
+        }
+
+        .schedule-header-actions svg,
+        .schedule-header-actions i {
+            width: 18px;
+            height: 18px;
+            display: block;
+            flex: 0 0 18px;
+            line-height: 18px;
+            text-align: center;
+            pointer-events: none;
+            shape-rendering: geometricPrecision;
+            font-style: normal;
+        }
+
+        .schedule-header-actions .schedule-toggle-btn svg,
+        .schedule-header-actions .schedule-toggle-btn .schedule-toggle-icon {
+            transition: transform 0.18s ease;
         }
 
         #custom-context-menu,
@@ -761,9 +976,10 @@
         }
 
         @media (hover: none) {
-            .schedule-item .edit-schedule-btn,
-            .schedule-item .delete-schedule-btn {
+            .schedule-header-actions .edit-schedule-btn,
+            .schedule-header-actions .delete-schedule-btn {
                 opacity: 1;
+                visibility: visible;
             }
         }
 
@@ -1081,6 +1297,10 @@
 
         .schedule-header {
             padding: 18px 0 14px 0 !important;
+        }
+
+        .schedule-main-trigger-text {
+            min-width: 0;
         }
 
         .schedule-content {
@@ -1827,6 +2047,37 @@
         }
 </style>
 
+
+<style id="actions-hover-drag-fix-v11">
+        .schedule-header {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            align-items: center !important;
+            gap: 10px !important;
+            padding-right: 0 !important;
+        }
+
+        .schedule-main-trigger {
+            width: auto !important;
+            min-width: 0 !important;
+        }
+
+        .schedule-header-actions {
+            position: static !important;
+            top: auto !important;
+            right: auto !important;
+            transform: none !important;
+            min-width: auto !important;
+            flex: 0 0 auto !important;
+            pointer-events: auto !important;
+            z-index: auto !important;
+        }
+
+        .schedule-header:hover .schedule-main-trigger,
+        .schedule-header:focus-within .schedule-main-trigger {
+            background: rgba(255, 255, 255, 0.05) !important;
+        }
+</style>
 </head>
 <body class="min-h-screen font-sans">
 
@@ -2134,8 +2385,8 @@
                 </div>
             </div>
             <div class="flex gap-3 justify-end mt-6">
-                <button id="cancel-action-btn" class="px-4 py-2 rounded-full text-sm font-semibold hover:bg-white/10 transition">Cancel</button>
-                <button id="save-action-btn" class="px-4 py-2 rounded-full text-sm font-semibold bg-brand text-black hover:scale-105 transition">Done</button>
+                <button type="button" id="cancel-action-btn" class="px-4 py-2 rounded-full text-sm font-semibold hover:bg-white/10 transition">Cancel</button>
+                <button type="button" id="save-action-btn" class="px-4 py-2 rounded-full text-sm font-semibold bg-brand text-black hover:scale-105 transition">Done</button>
             </div>
         </div>
     </div>
@@ -2168,8 +2419,8 @@
             <h3 id="delete-modal-title" class="text-xl font-bold mb-2">Confirm Deletion</h3>
             <p id="delete-modal-message" class="text-textMuted text-sm mb-6">Are you sure you want to delete this item? This action cannot be undone and will delete all items inside it.</p>
             <div class="flex gap-3 justify-end">
-                <button id="cancel-delete-btn" class="px-4 py-2 rounded-full text-sm font-semibold hover:bg-white/10 transition">Cancel</button>
-                <button id="confirm-delete-btn" class="px-4 py-2 rounded-full text-sm font-semibold bg-red-600 text-white hover:bg-red-700 transition">Delete</button>
+                <button type="button" id="cancel-delete-btn" class="px-4 py-2 rounded-full text-sm font-semibold hover:bg-white/10 transition">Cancel</button>
+                <button type="button" id="confirm-delete-btn" class="px-4 py-2 rounded-full text-sm font-semibold bg-red-600 text-white hover:bg-red-700 transition">Delete</button>
             </div>
         </div>
     </div>
@@ -2245,6 +2496,9 @@
                     document.body.classList.remove('dragging');
                 }, 50);
                 updateAll();
+                if (!document.getElementById('schedule-view')?.classList.contains('hidden')) {
+                    window.plannerBridge?.syncSelectedScheduleDay?.();
+                }
                 if (typeof window.schedulePersist === 'function') window.schedulePersist('drag-end');
             };
 
@@ -2259,8 +2513,16 @@
 
             function initSortable(el, groupName) {
                 if (!el || el.dataset.sortableInit === '1') return;
+                const draggable = groupName === 'schedule-actions'
+                    ? '.schedule-item'
+                    : (groupName === 'phases'
+                        ? '.phase-item'
+                        : (groupName === 'outputs'
+                            ? '.output-item'
+                            : '.project-item'));
                 new Sortable(el, {
                     group: groupName,
+                    draggable,
                     animation: 110,
                     filter: '.editable-text, button, input, textarea, .chevron-icon',
                     preventOnFilter: false,
@@ -2395,44 +2657,85 @@
                 });
             }
 
+            function flashNavigationTarget(targetEl) {
+                const highlightTarget = targetEl?.closest('.project-item, .phase-item, .output-item') || targetEl;
+                if (!highlightTarget) return;
+                highlightTarget.classList.remove('nav-flash-target');
+                void highlightTarget.offsetWidth;
+                highlightTarget.classList.add('nav-flash-target');
+                window.setTimeout(() => {
+                    highlightTarget.classList.remove('nav-flash-target');
+                }, 1650);
+            }
+
+            function expandNavigationParents(targetEl) {
+                let parentContent = targetEl?.closest('.accordion-content');
+                while(parentContent) {
+                    const header = parentContent.previousElementSibling;
+                    if(header && header.classList.contains('accordion-header') && parentContent.classList.contains('hidden')) {
+                        openAccordion(header);
+                    }
+                    parentContent = parentContent.parentElement?.closest('.accordion-content');
+                }
+            }
+
+            function waitForNavigationTarget(targetId, callback, timeoutMs = 2400) {
+                const startedAt = performance.now();
+                const step = () => {
+                    const liveTarget = document.getElementById(targetId);
+                    const highlightTarget = liveTarget?.closest('.project-item, .phase-item, .output-item') || liveTarget;
+                    if (!highlightTarget) {
+                        if (performance.now() - startedAt < timeoutMs) requestAnimationFrame(step);
+                        return;
+                    }
+
+                    const rect = highlightTarget.getBoundingClientRect();
+                    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+                    const centerY = (rect.top + rect.bottom) / 2;
+                    const isVisible = rect.bottom > 72 && rect.top < viewportHeight - 72;
+                    const isNearCenter = Math.abs(centerY - (viewportHeight / 2)) <= Math.max(120, viewportHeight * 0.24);
+
+                    if ((isVisible && isNearCenter) || (performance.now() - startedAt >= timeoutMs)) {
+                        callback(liveTarget);
+                        return;
+                    }
+
+                    requestAnimationFrame(step);
+                };
+
+                requestAnimationFrame(step);
+            }
+
             // Highlight & Navigate Logic
             document.addEventListener('click', (e) => {
                 const navBtn = e.target.closest('.navigate-to-source') || e.target.closest('.missed-project-link');
                 if (navBtn) {
                     const targetId = navBtn.dataset.targetId;
                     if (!targetId) return;
-                    
-                    const targetEl = document.getElementById(targetId);
-                    if (targetEl) {
+
+                    const initialTargetEl = document.getElementById(targetId);
+                    if (initialTargetEl) {
+                        const isMissedProjectJump = !!navBtn.closest('.missed-project-link');
                         showView('projects');
-                        
-                        // Expand parents
-                        let parentContent = targetEl.closest('.accordion-content');
-                        while(parentContent) {
-                            const header = parentContent.previousElementSibling;
-                            if(header && header.classList.contains('accordion-header')) {
-                                if (parentContent.classList.contains('hidden')) {
-                                    openAccordion(header);
-                                }
-                            }
-                            parentContent = parentContent.parentElement.closest('.accordion-content');
-                        }
-                        
-                        setTimeout(() => {
-                            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            // Highlight effect
-                            const highlightTarget = targetEl.querySelector('.accordion-header') || targetEl;
-                            const originalBg = highlightTarget.style.backgroundColor;
-                            highlightTarget.style.transition = 'background-color 0.5s ease';
-                            highlightTarget.style.backgroundColor = 'rgba(30, 215, 96, 0.2)'; 
-                            setTimeout(() => {
-                                highlightTarget.style.backgroundColor = originalBg || '';
-                                setTimeout(() => {
-                                    highlightTarget.style.transition = '';
-                                    highlightTarget.style.backgroundColor = '';
-                                }, 500);
-                            }, 1500);
-                        }, 100);
+
+                        requestAnimationFrame(() => {
+                            requestAnimationFrame(() => {
+                                const liveTarget = document.getElementById(targetId);
+                                if (!liveTarget) return;
+
+                                expandNavigationParents(liveTarget);
+                                liveTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                                waitForNavigationTarget(targetId, (readyTarget) => {
+                                    flashNavigationTarget(readyTarget);
+                                    if (isMissedProjectJump) {
+                                        window.setTimeout(() => {
+                                            flashNavigationTarget(document.getElementById(targetId) || readyTarget);
+                                        }, 260);
+                                    }
+                                }, isMissedProjectJump ? 2800 : 2000);
+                            });
+                        });
                     }
                 }
             });
@@ -2647,10 +2950,13 @@
             if (cancelDeleteBtn) cancelDeleteBtn.addEventListener('click', hideDeleteModal);
             if (deleteModalBackdrop) deleteModalBackdrop.addEventListener('click', hideDeleteModal);
 
-            if (confirmDeleteBtn) confirmDeleteBtn.addEventListener('click', () => {
+            if (confirmDeleteBtn) confirmDeleteBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
                 // Custom confirm flow (e.g., schedule actions)
                 if (deleteConfirmCallback) {
-                    try { deleteConfirmCallback(); } catch (e) { console.error(e); }
+                    try { deleteConfirmCallback(); } catch (error) { console.error(error); }
                     hideDeleteModal();
                     return;
                 }
@@ -2852,6 +3158,11 @@
             }
 
             function showView(viewName) {
+                const wasScheduleVisible = scheduleView && !scheduleView.classList.contains('hidden');
+                if (wasScheduleVisible && viewName !== 'schedule') {
+                    window.plannerBridge?.syncSelectedScheduleDay?.();
+                }
+
                 if (viewName === 'schedule') {
                     projectsView.classList.replace('block', 'hidden');
                     scheduleView.classList.replace('hidden', 'block');
@@ -3145,6 +3456,7 @@
             const actionModalBackdrop = document.getElementById('action-modal-backdrop');
 
             let currentEditingScheduleItem = null;
+            let currentActionSourceRef = null;
 
             // --- TIME RANGE MODAL LOGIC ---
             const timeRangeModal = document.getElementById('time-range-modal');
@@ -3274,6 +3586,7 @@
                 actionDialog.classList.remove('scale-100', 'opacity-100');
                 actionDialog.classList.add('scale-95', 'opacity-0');
                 setTimeout(() => actionModal.classList.add('hidden'), 200);
+                if (!currentEditingScheduleItem) currentActionSourceRef = null;
             }
 
             if(cancelActionBtn) cancelActionBtn.addEventListener('click', closeActionModal);
@@ -3282,6 +3595,20 @@
             if(menuAddActions) menuAddActions.addEventListener('click', (e) => {
                 e.stopPropagation();
                 contextMenu.classList.add('hidden');
+
+                const sourceTarget = (typeof getActiveContextTarget === 'function' ? getActiveContextTarget() : null) || longPressTarget || null;
+                if (sourceTarget) {
+                    if (!sourceTarget.id) {
+                        sourceTarget.id = (window.plannerProjectUi?.generateId?.() || window.uid?.(sourceTarget.dataset.level || 'node') || `node-${Date.now()}`);
+                    }
+                    const sourceTextEl = (typeof getProjectTitleElement === 'function' ? getProjectTitleElement(sourceTarget) : null) || sourceTarget.querySelector('.editable-text');
+                    currentActionSourceRef = {
+                        id: sourceTarget.id,
+                        text: sourceTextEl?.innerText?.trim() || 'Unknown Item',
+                    };
+                } else {
+                    currentActionSourceRef = null;
+                }
                 
                 // Mặc định tên action là +action theo yêu cầu
                 actionInput.value = '+action';
@@ -3292,90 +3619,88 @@
             });
 
             // Xử lý khi lưu Add Action (Chuyển qua Schedule)
-            if(saveActionBtn) saveActionBtn.addEventListener('click', () => {
-                const actionText = actionInput.value.trim();
-                const outputsText = outputInput.value.trim();
-                
-                if (!actionText) {
-                    // Nếu người dùng xoá trắng ô action thì focus lại, không cho lưu
-                    actionInput.focus();
-                    return;
-                }
-
-                // Tách các dòng output
-                let outputsHtml = '';
-                if (outputsText) {
-                    const lines = outputsText.split('\n').filter(line => line.trim() !== '');
-                    outputsHtml = lines.map(line => `
-                        <div class="flex items-start gap-3 py-2 group/output hover:bg-white/5 px-2 -mx-2 rounded transition">
-                            <input type="checkbox" class="mt-1 w-4 h-4 accent-brand rounded bg-[#121212] border-[#3e3e3e] cursor-pointer shrink-0">
-                            <span contenteditable="true" class="text-sm text-gray-300 editable-text output-text flex-1">${line}</span>
-                        </div>
-                    `).join('');
-                }
-
-                if (currentEditingScheduleItem) {
-                    // Nếu đang trong chế độ Edit -> Cập nhật mục hiện tại
-                    currentEditingScheduleItem.querySelector('.action-title-text').innerText = actionText;
-                    const contentContainer = currentEditingScheduleItem.querySelector('.schedule-content');
-                    contentContainer.innerHTML = outputsHtml || '<p class="text-xs text-textMuted italic">No outputs added.</p>';
+            if(saveActionBtn) saveActionBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                try {
+                    const actionText = actionInput.value.trim();
+                    const outputsText = outputInput.value.trim();
                     
-                    currentEditingScheduleItem = null;
+                    if (!actionText) {
+                        actionInput.focus();
+                        return;
+                    }
+
+                    const manualOutputs = outputsText
+                        ? outputsText.split('\n').map((line) => line.trim()).filter(Boolean).map((text) => ({ id: uid('manual'), text, done: false }))
+                        : [];
+
+                    saveCurrentScheduleIntoCache();
+
+                    if (currentEditingScheduleItem) {
+                        const entryId = currentEditingScheduleItem.dataset.entryId;
+                        const entries = Array.isArray(scheduleDaysCache[selectedScheduleDate]) ? scheduleDaysCache[selectedScheduleDate] : [];
+                        const targetEntry = entries.find((entry) => entry.id === entryId);
+                        if (targetEntry) {
+                            targetEntry.actionTitle = actionText;
+                            targetEntry.manualOutputs = manualOutputs;
+                            targetEntry.mode = targetEntry.sourceId ? 'linked' : 'custom';
+                        }
+
+                        currentEditingScheduleItem = null;
+                        renderScheduleForSelectedDate();
+                        window.dispatchEvent(new CustomEvent('planner-sync-schedule'));
+                        closeActionModal();
+                        return;
+                    }
+
+                    let sourceId = currentActionSourceRef?.id || '';
+                    let sourceText = currentActionSourceRef?.text || 'Unknown Item';
+                    if (!sourceId) {
+                        const sourceTarget = (typeof getActiveContextTarget === 'function' ? getActiveContextTarget() : null) || longPressTarget || null;
+                        if (sourceTarget) {
+                            if (!sourceTarget.id) {
+                                sourceTarget.id = (window.plannerProjectUi?.generateId?.() || window.uid?.(sourceTarget.dataset.level || 'node') || `node-${Date.now()}`);
+                            }
+                            sourceId = sourceTarget.id;
+                            const sourceTextEl = (typeof getProjectTitleElement === 'function' ? getProjectTitleElement(sourceTarget) : null) || sourceTarget.querySelector('.editable-text');
+                            const liveSourceText = sourceTextEl?.innerText?.trim();
+                            if (liveSourceText) sourceText = liveSourceText;
+                        }
+                    }
+
+                    const entries = Array.isArray(scheduleDaysCache[selectedScheduleDate]) ? scheduleDaysCache[selectedScheduleDate] : [];
+                    entries.push(normalizeScheduleEntry({
+                        id: (window.plannerProjectUi?.generateId?.() || window.uid?.('schedule') || `schedule-${Date.now()}`),
+                        sourceId,
+                        sourceText,
+                        mode: sourceId ? 'linked' : 'custom',
+                        actionTitle: actionText,
+                        done: false,
+                        expanded: true,
+                        childState: {},
+                        manualOutputs,
+                    }));
+                    scheduleDaysCache[selectedScheduleDate] = entries;
+
+                    renderScheduleForSelectedDate();
                     window.dispatchEvent(new CustomEvent('planner-sync-schedule'));
+                    
                     closeActionModal();
-                    return;
+                    updateMissedProjects();
+                    showView('schedule');
+                } catch (error) {
+                    console.error('Failed to save action from modal:', error);
                 }
-
-                // Lấy tên và ID của mục nguồn (Source Item) đang được "add action"
-                let sourceId = '';
-                let sourceText = 'Unknown Item';
-                if (longPressTarget) {
-                    sourceId = longPressTarget.id;
-                    const sourceTextSpan = longPressTarget.querySelector('.editable-text');
-                    if (sourceTextSpan) sourceText = sourceTextSpan.innerText;
-                }
-
-                const scheduleList = document.getElementById('schedule-list');
-                const emptyState = document.getElementById('schedule-empty-state');
-                
-                if(emptyState) emptyState.classList.add('hidden'); // Ẩn trạng thái rỗng
-                
-                // Render cục Block
-                const template = `
-                    <div class="schedule-item border-b border-[#3e3e3e]" data-entry-id="${generateId()}" data-source-id="${sourceId}">
-                        <div class="schedule-header w-full flex items-center justify-between py-4 text-left group cursor-pointer hover:bg-white/5 px-2 -mx-2 rounded transition">
-                            <div class="flex items-center flex-1 mr-4 cursor-grab">
-                                <input type="checkbox" class="schedule-done-checkbox w-5 h-5 accent-brand rounded bg-[#121212] border-[#3e3e3e] cursor-pointer shrink-0 mr-3">
-                                <div class="flex flex-col">
-                                    <span contenteditable="true" class="font-bold text-base text-white editable-text inline-block transition-colors action-title-text">${actionText}</span>
-                                    <button class="navigate-to-source flex items-center text-xs text-textMuted mt-1 hover:text-brand transition text-left" data-target-id="${sourceId}">
-                                        <i class="ph ph-arrow-elbow-down-right mr-1.5 text-brand"></i>
-                                        <span>Support: ${sourceText}</span>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-1 sm:gap-2 shrink-0">
-                                <button class="edit-schedule-btn text-textMuted hover:text-brand transition opacity-0 group-hover:opacity-100 p-1"><i class="ph ph-pencil text-lg"></i></button>
-                                <button class="delete-schedule-btn text-textMuted hover:text-red-500 transition opacity-0 group-hover:opacity-100 p-1"><i class="ph ph-trash text-lg"></i></button>
-                                <i class="ph ph-caret-down text-xl chevron-icon text-textMuted group-hover:text-white transition ml-1"></i>
-                            </div>
-                        </div>
-                        <div class="schedule-content pl-4 sm:pl-11 pb-4 hidden space-y-1 min-h-[10px]">
-                            ${outputsHtml || '<p class="text-xs text-textMuted italic">No outputs added.</p>'}
-                        </div>
-                    </div>
-                `;
-                
-                if(scheduleList) scheduleList.insertAdjacentHTML('beforeend', template);
-                window.dispatchEvent(new CustomEvent('planner-sync-schedule'));
-                
-                closeActionModal();
-                updateMissedProjects();
-                showView('schedule'); // Nhảy qua tab Schedule
             });
 
             // Logic xóa và expand block ở tab Schedule
             const scheduleListElement = document.getElementById('schedule-list');
+            if(scheduleListElement) scheduleListElement.addEventListener('mousedown', (e) => {
+                if (e.target.closest('.schedule-header-actions button')) {
+                    e.stopPropagation();
+                }
+            });
+
             if(scheduleListElement) scheduleListElement.addEventListener('click', (e) => {
                 if (isDragging) return; // Chống click nhầm sau khi thả
                 if (e.target.classList.contains('editable-text') || e.target.type === 'checkbox') return;
@@ -3384,12 +3709,12 @@
                 if(editBtn) {
                     e.stopPropagation();
                     currentEditingScheduleItem = editBtn.closest('.schedule-item');
-                    const actionText = currentEditingScheduleItem.querySelector('.action-title-text').innerText;
-                    const outputElements = currentEditingScheduleItem.querySelectorAll('.schedule-content .output-text');
-                    const outputsText = Array.from(outputElements).map(el => el.innerText).join('\n');
+                    saveCurrentScheduleIntoCache();
+                    const entryId = currentEditingScheduleItem?.dataset.entryId;
+                    const entry = (scheduleDaysCache[selectedScheduleDate] || []).find((item) => item.id === entryId);
 
-                    actionInput.value = actionText;
-                    outputInput.value = outputsText;
+                    actionInput.value = entry?.actionTitle || currentEditingScheduleItem.querySelector('.action-title-text').innerText;
+                    outputInput.value = Array.from(entry?.manualOutputs || []).map((item) => item.text).join('\n');
                     openActionModal();
                     return;
                 }
@@ -3404,55 +3729,74 @@
                         title: 'Delete action?',
                         message: 'Are you sure you want to delete this scheduled action? This cannot be undone.',
                         onConfirm: () => {
-                            item.style.opacity = '0';
-                            item.style.transform = 'scale(0.98)';
-                            item.style.transition = 'all 0.3s';
-                            setTimeout(() => {
-                                item.remove();
-                                // If empty, show Empty State
-                                const listContainer = document.getElementById('schedule-list');
-                                if (listContainer && listContainer.children.length === 0) {
-                                    const emptyState = document.getElementById('schedule-empty-state');
-                                    if (emptyState) emptyState.classList.remove('hidden');
-                                }
-                                window.dispatchEvent(new CustomEvent('planner-sync-schedule'));
-                                updateMissedProjects();
-                            }, 300);
+                            const entryIdToDelete = String(item.dataset.entryId || '').trim();
+                            if (!entryIdToDelete) return;
+
+                            const liveItem = scheduleListElement.querySelector(`.schedule-item[data-entry-id="${CSS.escape(entryIdToDelete)}"]`) || item;
+                            if (liveItem) {
+                                liveItem.remove();
+                            }
+
+                            scheduleDaysCache[selectedScheduleDate] = parseScheduleEntriesFromDom()
+                                .map(normalizeScheduleEntry)
+                                .filter((entry) => entry.id !== entryIdToDelete);
+
+                            plannerState.scheduleDays = cloneDeep(scheduleDaysCache || {});
+                            syncSelectedScheduleDay();
+                            renderScheduleForSelectedDate();
+                            if (typeof schedulePersist === 'function') schedulePersist('delete-action');
                         }
                     });
                     return;
                 }
 
                 // Accordion Toggle cho Schedule
-                const header = e.target.closest('.schedule-header');
-                if (header) {
-                    const content = header.nextElementSibling;
-                    const chevron = header.querySelector('.chevron-icon');
-                    if(content) {
+                const toggleTarget = e.target.closest('.schedule-main-trigger, .schedule-toggle-btn');
+                if (toggleTarget) {
+                    const item = toggleTarget.closest('.schedule-item');
+                    const header = item?.querySelector('.schedule-header');
+                    const content = header?.nextElementSibling;
+                    const chevron = header?.querySelector('.schedule-toggle-btn .schedule-toggle-icon, .schedule-toggle-btn svg');
+                    const toggleBtn = header?.querySelector('.schedule-toggle-btn');
+                    if (content && chevron && toggleBtn) {
                         if (content.classList.contains('hidden')) {
-                            // Mở ra: Hiện content, xoay icon
                             content.classList.remove('hidden');
                             content.classList.add('block');
-                            chevron.classList.add('rotate-180');
+                            chevron.style.transform = 'rotate(180deg)';
+                            toggleBtn.setAttribute('aria-label', 'Collapse action');
                         } else {
-                            // Đóng lại: Ẩn content
                             content.classList.add('hidden');
                             content.classList.remove('block');
-                            chevron.classList.remove('rotate-180');
+                            chevron.style.transform = 'rotate(0deg)';
+                            toggleBtn.setAttribute('aria-label', 'Expand action');
                         }
                     }
                 }
             });
 
             if(scheduleListElement) scheduleListElement.addEventListener('change', (e) => {
-                if (e.target.classList.contains('schedule-done-checkbox')) {
-                    const titleText = e.target.closest('.schedule-header').querySelector('.action-title-text');
-                    if (e.target.checked) {
-                        titleText.classList.replace('text-white', 'text-brand');
-                    } else {
-                        titleText.classList.replace('text-brand', 'text-white');
+                const checkbox = e.target.closest('input[type="checkbox"]');
+                if (!checkbox) return;
+
+                if (checkbox.classList.contains('schedule-done-checkbox')) {
+                    const titleText = checkbox.closest('.schedule-header')?.querySelector('.action-title-text');
+                    if (titleText) {
+                        titleText.classList.toggle('text-brand', checkbox.checked);
+                        titleText.classList.toggle('text-white', !checkbox.checked);
                     }
                 }
+
+                const checklistRow = checkbox.closest('[data-linked-kind="source-child"], [data-linked-kind="manual-output"]');
+                if (checklistRow) {
+                    const rowText = checklistRow.querySelector('.output-text') || checklistRow.querySelector('.flex-1 > span:first-child');
+                    if (rowText) {
+                        rowText.classList.toggle('text-brand', checkbox.checked);
+                        rowText.classList.toggle('text-gray-300', !checkbox.checked);
+                    }
+                }
+
+                saveCurrentScheduleIntoCache();
+                window.dispatchEvent(new CustomEvent('planner-sync-schedule'));
             });
 
             // Save Date Picker
@@ -3718,6 +4062,19 @@
                     }
                 }
             }
+
+            window.plannerProjectUi = {
+                templates,
+                generateId,
+                openAccordion,
+                closeAccordion,
+                updateAll,
+                updateParentStatus,
+                applyDoneUI,
+                applyUndoneUI,
+                updatePendingStatus,
+                syncTimeRangeUI,
+            };
         });
     </script>
 
@@ -3743,6 +4100,22 @@
 
         let selectedScheduleDate = todayString();
         let scheduleDaysCache = {};
+        let plannerState = {
+            projectsTree: [],
+            scheduleDays: {},
+        };
+
+        const __plannerStateBridge = {
+            get selectedScheduleDate() { return selectedScheduleDate; },
+            set selectedScheduleDate(value) { selectedScheduleDate = value; },
+            get scheduleDaysCache() { return scheduleDaysCache; },
+            set scheduleDaysCache(value) { scheduleDaysCache = value || {}; },
+            get plannerState() { return plannerState; },
+            set plannerState(value) { plannerState = value || { projectsTree: [], scheduleDays: {} }; },
+        };
+        Object.defineProperty(window, 'selectedScheduleDate', { configurable: true, get: () => __plannerStateBridge.selectedScheduleDate, set: (value) => { __plannerStateBridge.selectedScheduleDate = value; } });
+        Object.defineProperty(window, 'scheduleDaysCache', { configurable: true, get: () => __plannerStateBridge.scheduleDaysCache, set: (value) => { __plannerStateBridge.scheduleDaysCache = value; } });
+        Object.defineProperty(window, 'plannerState', { configurable: true, get: () => __plannerStateBridge.plannerState, set: (value) => { __plannerStateBridge.plannerState = value; } });
         let currentUser = null;
         let currentWorkspaceId = null;
         let currentProfile = null;
@@ -3783,6 +4156,7 @@
         function uid(prefix = 'id') {
             return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
         }
+        window.uid = uid;
 
         function sleep(ms) {
             return new Promise((resolve) => setTimeout(resolve, ms));
@@ -4053,8 +4427,17 @@
                 else if (el.closest('.project-item') && el.parentElement?.classList.contains('project-item')) group = 'phases';
                 else if (el.closest('.phase-item')) group = 'outputs';
 
+                const draggable = group === 'schedule-actions'
+                    ? '.schedule-item'
+                    : (group === 'phases'
+                        ? '.phase-item'
+                        : (group === 'outputs'
+                            ? '.output-item'
+                            : '.project-item'));
+
                 new Sortable(el, {
                     group,
+                    draggable,
                     animation: 110,
                     filter: '.editable-text, button, input, textarea, .chevron-icon',
                     preventOnFilter: false,
@@ -4080,166 +4463,497 @@
             });
         }
 
-        function parseScheduleEntriesFromDom() {
-            const list = $('schedule-list');
-            if (!list) return [];
-            return Array.from(list.querySelectorAll(':scope > .schedule-item')).map((item) => {
-                if (!item.dataset.entryId) item.dataset.entryId = uid('schedule');
-                const outputs = Array.from(item.querySelectorAll('.schedule-content .output-text')).map((el) => {
-                    const checkbox = el.closest('.group\/output, .flex')?.querySelector('input[type="checkbox"]');
-                    return {
-                        text: el.innerText.trim(),
-                        done: !!checkbox?.checked,
-                    };
-                }).filter((row) => row.text);
 
-                return {
-                    id: item.dataset.entryId,
-                    sourceId: item.dataset.sourceId || '',
-                    sourceText: (item.querySelector('.navigate-to-source span')?.innerText || 'Support: Unknown Item').replace(/^Support:\s*/, ''),
-                    actionTitle: item.querySelector('.action-title-text')?.innerText.trim() || '+action',
-                    done: !!item.querySelector('.schedule-done-checkbox')?.checked,
-                    expanded: !item.querySelector('.schedule-content')?.classList.contains('hidden'),
-                    outputs,
-                };
+function cloneDeep(value) {
+    return JSON.parse(JSON.stringify(value ?? null));
+}
+
+function getLiveProjectUi() {
+    return window.plannerProjectUi || {};
+}
+
+function getProjectTemplate(level) {
+    const templates = getLiveProjectUi().templates || {};
+    return templates[level] || '';
+}
+
+function createElementFromHtml(html) {
+    const template = document.createElement('template');
+    template.innerHTML = String(html || '').trim();
+    return template.content.firstElementChild || null;
+}
+
+function getDirectLevelChildren(container) {
+    return Array.from(container?.children || []).filter((child) => child?.matches?.('[data-level]'));
+}
+
+function getProjectTitleElement(element) {
+    if (!element) return null;
+    if (element.dataset.level === 'output') {
+        return element.querySelector(':scope .editable-text');
+    }
+    return element.querySelector(':scope > .accordion-header .editable-text');
+}
+
+function serializeProjectNodeFromDom(element) {
+    if (!element?.dataset?.level) return null;
+    const level = element.dataset.level;
+    const content = level === 'output' ? null : element.querySelector(':scope > .accordion-content');
+    const title = getProjectTitleElement(element)?.innerText?.trim() || `Untitled ${level}`;
+    return {
+        id: element.id || uid(level),
+        level,
+        title,
+        status: element.dataset.status || '',
+        doneDate: element.dataset.date || '',
+        startDate: element.dataset.startDate || '',
+        endDate: element.dataset.endDate || '',
+        expanded: level === 'output' ? true : !(content?.classList.contains('hidden')),
+        children: content ? getDirectLevelChildren(content).map(serializeProjectNodeFromDom).filter(Boolean) : [],
+    };
+}
+
+function serializeProjectsTreeFromDom() {
+    const roots = [
+        ...Array.from($('active-projects-list')?.children || []),
+        ...Array.from($('pending-projects-list')?.children || []),
+        ...Array.from($('done-projects-list')?.children || []),
+    ].filter((element) => element?.matches?.('.project-item'));
+    return roots.map(serializeProjectNodeFromDom).filter(Boolean);
+}
+
+function findNodeInProjectsTree(sourceId, nodes = plannerState.projectsTree) {
+    if (!sourceId || !Array.isArray(nodes)) return null;
+    for (const node of nodes) {
+        if (node.id === sourceId) return node;
+        const match = findNodeInProjectsTree(sourceId, node.children || []);
+        if (match) return match;
+    }
+    return null;
+}
+
+function resolveSourceTextById(sourceId, fallbackText = 'Unknown Item') {
+    if (!sourceId) return fallbackText || 'Unknown Item';
+    const liveDomNode = document.getElementById(sourceId);
+    const liveText = getProjectTitleElement(liveDomNode)?.innerText?.trim();
+    if (liveText) return liveText;
+    const stateNode = findNodeInProjectsTree(sourceId, plannerState.projectsTree);
+    if (stateNode?.title) return stateNode.title;
+    return fallbackText || 'Unknown Item';
+}
+
+function classifyProjectRoot(node) {
+    if (!node) return 'active';
+    if (node.status === 'done') return 'done';
+    if (node.startDate) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const startDateObj = new Date(`${node.startDate}T00:00:00`);
+        if (!Number.isNaN(startDateObj.getTime()) && startDateObj > today) return 'pending';
+    }
+    return 'active';
+}
+
+function renderProjectNodeElement(node) {
+    const templateHtml = getProjectTemplate(node?.level);
+    const element = createElementFromHtml(templateHtml);
+    if (!element) return null;
+
+    element.id = node.id || uid(node.level || 'node');
+    element.dataset.level = node.level || 'output';
+    if (node.status === 'done') element.dataset.status = 'done';
+    if (node.doneDate) element.dataset.date = node.doneDate;
+    if (node.startDate) element.dataset.startDate = node.startDate;
+    if (node.endDate) element.dataset.endDate = node.endDate;
+    if (node.level !== 'output') {
+        element.dataset.expanded = node.expanded === false ? 'false' : 'true';
+    }
+
+    const titleEl = getProjectTitleElement(element);
+    if (titleEl) titleEl.textContent = node.title || `Untitled ${node.level || 'item'}`;
+
+    if (node.level !== 'output') {
+        const content = element.querySelector(':scope > .accordion-content');
+        (node.children || []).forEach((child) => {
+            const childEl = renderProjectNodeElement(child);
+            if (childEl) content?.appendChild(childEl);
+        });
+    }
+
+    return element;
+}
+
+function applyProjectDomStateAfterRender() {
+    const projectUi = getLiveProjectUi();
+    if (typeof projectUi.updateAll === 'function') {
+        projectUi.updateAll();
+    }
+    document.querySelectorAll('.project-item, .phase-item').forEach((element) => {
+        const header = element.querySelector(':scope > .accordion-header');
+        const shouldExpand = element.dataset.expanded !== 'false';
+        if (!header) return;
+        if (shouldExpand) {
+            projectUi.openAccordion?.(header);
+        } else {
+            projectUi.closeAccordion?.(header);
+        }
+    });
+}
+
+function renderProjectsTreeIntoDom(projectsTree) {
+    const activeList = $('active-projects-list');
+    const pendingList = $('pending-projects-list');
+    const doneList = $('done-projects-list');
+    if (!activeList || !pendingList || !doneList) return;
+
+    activeList.innerHTML = '';
+    pendingList.innerHTML = '';
+    doneList.innerHTML = '';
+
+    (Array.isArray(projectsTree) ? projectsTree : []).forEach((node) => {
+        const nodeEl = renderProjectNodeElement(node);
+        if (!nodeEl) return;
+        const bucket = classifyProjectRoot(node);
+        if (bucket === 'done') {
+            doneList.appendChild(nodeEl);
+        } else if (bucket === 'pending') {
+            pendingList.appendChild(nodeEl);
+        } else {
+            activeList.appendChild(nodeEl);
+        }
+    });
+
+    ensureAllIds();
+    initExtraSortables();
+    plannerState.projectsTree = cloneDeep(Array.isArray(projectsTree) ? projectsTree : []);
+    applyProjectDomStateAfterRender();
+}
+
+function flattenLinkedChecklistRows(sourceNode) {
+    const rows = [];
+    const visit = (nodes) => {
+        (nodes || []).forEach((node) => {
+            rows.push({
+                id: node.id,
+                title: node.title || `Untitled ${node.level || 'item'}`,
+                level: node.level || 'output',
+                status: node.status || '',
             });
+            if (node.children?.length) visit(node.children);
+        });
+    };
+    visit(sourceNode?.children || []);
+    return rows;
+}
+
+function normalizeManualOutputs(rawManualOutputs) {
+    if (!Array.isArray(rawManualOutputs)) return [];
+    return rawManualOutputs
+        .map((row) => ({
+            id: row?.id || uid('manual'),
+            text: String(row?.text || '').trim(),
+            done: !!row?.done,
+        }))
+        .filter((row) => row.text);
+}
+
+function normalizeScheduleEntry(entry = {}) {
+    return {
+        id: entry.id || uid('schedule'),
+        sourceId: entry.sourceId || '',
+        sourceText: entry.sourceText || 'Unknown Item',
+        mode: entry.mode || (entry.sourceId ? 'linked' : 'custom'),
+        actionTitle: entry.actionTitle || '+action',
+        done: !!entry.done,
+        expanded: entry.expanded !== false,
+        childState: entry.childState && typeof entry.childState === 'object' ? entry.childState : {},
+        manualOutputs: normalizeManualOutputs(entry.manualOutputs || (Array.isArray(entry.outputs) ? entry.outputs : [])),
+    };
+}
+
+function refreshScheduledEntrySourceLabels(dateKey = selectedScheduleDate) {
+    const entries = Array.isArray(scheduleDaysCache[dateKey]) ? scheduleDaysCache[dateKey] : [];
+    scheduleDaysCache[dateKey] = entries.map((entry) => {
+        const normalized = normalizeScheduleEntry(entry);
+        const refreshedSourceText = normalized.sourceId
+            ? resolveSourceTextById(normalized.sourceId || '', normalized.sourceText || 'Unknown Item')
+            : (normalized.sourceText || 'Unknown Item');
+        return {
+            ...normalized,
+            sourceText: refreshedSourceText,
+        };
+    });
+}
+
+function refreshAllScheduledSourceLabels() {
+    Object.keys(scheduleDaysCache || {}).forEach((dateKey) => {
+        refreshScheduledEntrySourceLabels(dateKey);
+    });
+    plannerState.scheduleDays = cloneDeep(scheduleDaysCache || {});
+}
+
+function parseScheduleEntriesFromDom() {
+    const list = $('schedule-list');
+    if (!list) return [];
+    return Array.from(list.querySelectorAll(':scope > .schedule-item'))
+        .filter((item) => !item.classList.contains('sortable-ghost') && !item.classList.contains('sortable-chosen') && !item.classList.contains('sortable-drag') && !item.classList.contains('sortable-fallback'))
+        .map((item) => {
+        if (!item.dataset.entryId) item.dataset.entryId = uid('schedule');
+
+        const childState = {};
+        item.querySelectorAll('.schedule-content [data-linked-kind="source-child"]').forEach((row) => {
+            const childId = row.dataset.childId || '';
+            if (!childId) return;
+            childState[childId] = {
+                done: !!row.querySelector('input[type="checkbox"]')?.checked,
+            };
+        });
+
+        let manualRows = Array.from(item.querySelectorAll('.schedule-content [data-linked-kind="manual-output"]'));
+        if (!manualRows.length) {
+            manualRows = Array.from(item.querySelectorAll('.schedule-content .output-text'))
+                .map((el) => el.closest('[data-linked-kind], .group\/output, .flex'))
+                .filter(Boolean)
+                .filter((row) => row.dataset.linkedKind !== 'source-child');
         }
 
-        function buildScheduleEntryHtml(entry) {
-            const outputsHtml = Array.isArray(entry.outputs) && entry.outputs.length > 0
-                ? entry.outputs.map((output) => `
-                    <div class="flex items-start gap-3 py-2 group/output hover:bg-white/5 px-2 -mx-2 rounded transition">
-                        <input type="checkbox" class="mt-1 w-4 h-4 accent-brand rounded bg-[#121212] border-[#3e3e3e] cursor-pointer shrink-0" ${output.done ? 'checked' : ''}>
-                        <span contenteditable="true" class="text-sm text-gray-300 editable-text output-text flex-1">${escapeHtml(output.text)}</span>
-                    </div>
-                `).join('')
-                : '<p class="text-xs text-textMuted italic">No outputs added.</p>';
+        const manualOutputs = manualRows.map((row) => ({
+            id: row.dataset.manualId || uid('manual'),
+            text: row.querySelector('.output-text, [contenteditable="true"]')?.innerText?.trim() || '',
+            done: !!row.querySelector('input[type="checkbox"]')?.checked,
+        })).filter((row) => row.text);
 
-            return `
-                <div class="schedule-item border-b border-[#3e3e3e]" data-entry-id="${escapeHtml(entry.id || uid('schedule'))}" data-source-id="${escapeHtml(entry.sourceId || '')}">
-                    <div class="schedule-header w-full flex items-center justify-between py-4 text-left group cursor-pointer hover:bg-white/5 px-2 -mx-2 rounded transition">
-                        <div class="flex items-center flex-1 mr-4 cursor-grab">
-                            <input type="checkbox" class="schedule-done-checkbox w-5 h-5 accent-brand rounded bg-[#121212] border-[#3e3e3e] cursor-pointer shrink-0 mr-3" ${entry.done ? 'checked' : ''}>
-                            <div class="flex flex-col">
-                                <span contenteditable="true" class="font-bold text-base ${entry.done ? 'text-brand' : 'text-white'} editable-text inline-block transition-colors action-title-text">${escapeHtml(entry.actionTitle || '+action')}</span>
-                                <button class="navigate-to-source flex items-center text-xs text-textMuted mt-1 hover:text-brand transition text-left" data-target-id="${escapeHtml(entry.sourceId || '')}">
-                                    <i class="ph ph-arrow-elbow-down-right mr-1.5 text-brand"></i>
-                                    <span>Support: ${escapeHtml(entry.sourceText || 'Unknown Item')}</span>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-1 sm:gap-2 shrink-0">
-                            <button class="edit-schedule-btn text-textMuted hover:text-brand transition opacity-0 group-hover:opacity-100 p-1"><i class="ph ph-pencil text-lg"></i></button>
-                            <button class="delete-schedule-btn text-textMuted hover:text-red-500 transition opacity-0 group-hover:opacity-100 p-1"><i class="ph ph-trash text-lg"></i></button>
-                            <i class="ph ph-caret-down text-xl chevron-icon ${entry.expanded ? 'rotate-180 text-white' : 'text-textMuted group-hover:text-white'} transition ml-1"></i>
-                        </div>
-                    </div>
-                    <div class="schedule-content pl-4 sm:pl-11 pb-4 ${entry.expanded ? 'block' : 'hidden'} space-y-1 min-h-[10px]">
-                        ${outputsHtml}
+        const sourceId = item.dataset.sourceId || '';
+        const fallbackSourceText = (item.querySelector('.navigate-to-source span')?.innerText || 'Support: Unknown Item').replace(/^Support:\s*/, '');
+
+        return normalizeScheduleEntry({
+            id: item.dataset.entryId,
+            sourceId,
+            sourceText: resolveSourceTextById(sourceId, fallbackSourceText),
+            mode: item.dataset.entryMode || (sourceId ? 'linked' : 'custom'),
+            actionTitle: item.querySelector('.action-title-text')?.innerText.trim() || '+action',
+            done: !!item.querySelector('.schedule-done-checkbox')?.checked,
+            expanded: !item.querySelector('.schedule-content')?.classList.contains('hidden'),
+            childState,
+            manualOutputs,
+        });
+    });
+}
+
+function buildLinkedRowHtml(row, checked) {
+    return `
+        <div class="flex items-start gap-3 py-2 px-2 -mx-2 rounded transition hover:bg-white/5 schedule-linked-row" data-linked-kind="source-child" data-child-id="${escapeHtml(row.id || '')}" data-child-level="${escapeHtml(row.level || 'item')}">
+            <input type="checkbox" class="mt-1 w-4 h-4 accent-brand rounded bg-[#121212] border-[#3e3e3e] cursor-pointer shrink-0" ${checked ? 'checked' : ''}>
+            <div class="flex flex-col flex-1 min-w-0">
+                <span class="text-sm ${checked ? 'text-brand' : 'text-gray-300'} break-words">${escapeHtml(row.title || 'Untitled')}</span>
+                <span class="text-[11px] uppercase tracking-wide text-textMuted">${escapeHtml(row.level || 'item')}</span>
+            </div>
+        </div>
+    `;
+}
+
+function buildManualOutputHtml(output) {
+    return `
+        <div class="flex items-start gap-3 py-2 group/output hover:bg-white/5 px-2 -mx-2 rounded transition" data-linked-kind="manual-output" data-manual-id="${escapeHtml(output.id || uid('manual'))}">
+            <input type="checkbox" class="mt-1 w-4 h-4 accent-brand rounded bg-[#121212] border-[#3e3e3e] cursor-pointer shrink-0" ${output.done ? 'checked' : ''}>
+            <span contenteditable="true" class="text-sm ${output.done ? 'text-brand' : 'text-gray-300'} editable-text output-text flex-1">${escapeHtml(output.text || '')}</span>
+        </div>
+    `;
+}
+
+function scheduleIconSvg(kind, expanded = false) {
+    if (kind === 'edit') {
+        return `<svg viewBox="0 0 256 256" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"><path d="M164.7 91.3l-76 76L56 200l32.7-32.7 76-76"/><path d="M144 40l72 72"/><path d="M184 20l52 52"/></svg>`;
+    }
+    if (kind === 'delete') {
+        return `<svg viewBox="0 0 256 256" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"><path d="M40 64h176"/><path d="M96 64V40h64v24"/><path d="M72 64l8 136h96l8-136"/><path d="M104 104v64"/><path d="M152 104v64"/></svg>`;
+    }
+    return `<svg viewBox="0 0 256 256" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" style="transform:${expanded ? 'rotate(180deg)' : 'rotate(0deg)'}"><path d="M64 96l64 64 64-64"/></svg>`;
+}
+
+function buildScheduleContentHtml(entry, sourceNode) {
+    const normalized = normalizeScheduleEntry(entry);
+    const linkedRows = normalized.mode === 'linked' && sourceNode ? flattenLinkedChecklistRows(sourceNode) : [];
+    const linkedHtml = linkedRows.length > 0
+        ? `
+            <div class="space-y-0.5">
+                <p class="text-[11px] uppercase tracking-wide text-textMuted mb-1">Linked items</p>
+                ${linkedRows.map((row) => {
+                    const childState = normalized.childState?.[row.id];
+                    const checked = typeof childState?.done === 'boolean' ? childState.done : row.status === 'done';
+                    return buildLinkedRowHtml(row, checked);
+                }).join('')}
+            </div>
+        `
+        : '';
+
+    const manualOutputs = normalizeManualOutputs(normalized.manualOutputs);
+    const manualHtml = manualOutputs.length > 0
+        ? `
+            <div class="space-y-0.5 ${linkedRows.length ? 'pt-2' : ''}">
+                ${linkedRows.length ? '<p class="text-[11px] uppercase tracking-wide text-textMuted mb-1">Manual checklist</p>' : ''}
+                ${manualOutputs.map(buildManualOutputHtml).join('')}
+            </div>
+        `
+        : '';
+
+    if (linkedHtml || manualHtml) return `${linkedHtml}${manualHtml}`;
+    if (normalized.mode === 'linked' && normalized.sourceId && !sourceNode) {
+        return '<p class="text-xs text-yellow-300 italic">Linked source no longer exists.</p>';
+    }
+    if (normalized.mode === 'linked' && normalized.sourceId) {
+        return '<p class="text-xs text-textMuted italic">No linked items under this source yet.</p>';
+    }
+    return '<p class="text-xs text-textMuted italic">No outputs added.</p>';
+}
+
+function buildScheduleEntryHtml(entry) {
+    const normalized = normalizeScheduleEntry(entry);
+    const sourceNode = normalized.sourceId ? findNodeInProjectsTree(normalized.sourceId, plannerState.projectsTree) : null;
+    const sourceText = sourceNode?.title || normalized.sourceText || 'Unknown Item';
+    const mode = normalized.mode || (normalized.sourceId ? 'linked' : 'custom');
+
+    return `
+        <div class="schedule-item border-b border-[#3e3e3e]" data-entry-id="${escapeHtml(normalized.id || uid('schedule'))}" data-source-id="${escapeHtml(normalized.sourceId || '')}" data-entry-mode="${escapeHtml(mode)}">
+            <div class="schedule-header w-full text-left">
+                <div class="schedule-main-trigger">
+                    <input type="checkbox" class="schedule-done-checkbox w-5 h-5 accent-brand rounded bg-[#121212] border-[#3e3e3e] cursor-pointer shrink-0 mr-3" ${normalized.done ? 'checked' : ''}>
+                    <div class="schedule-main-trigger-text flex flex-col">
+                        <span contenteditable="true" class="font-bold text-base ${normalized.done ? 'text-brand' : 'text-white'} editable-text inline-block transition-colors action-title-text">${escapeHtml(normalized.actionTitle || '+action')}</span>
+                        <button class="navigate-to-source flex items-center text-xs text-textMuted mt-1 hover:text-brand transition text-left" type="button" data-target-id="${escapeHtml(normalized.sourceId || '')}" ${normalized.sourceId ? '' : 'disabled'}>
+                            <i class="ph ph-arrow-elbow-down-right mr-1.5 text-brand"></i>
+                            <span>Support: ${escapeHtml(sourceText)}</span>
+                        </button>
                     </div>
                 </div>
-            `;
-        }
+                <div class="schedule-header-actions flex items-center shrink-0">
+                    <button class="edit-schedule-btn" type="button" aria-label="Edit action"><i class="ph ph-pencil text-lg"></i></button>
+                    <button class="delete-schedule-btn" type="button" aria-label="Delete action"><i class="ph ph-trash text-lg"></i></button>
+                    <button class="schedule-toggle-btn" type="button" aria-label="${normalized.expanded ? 'Collapse action' : 'Expand action'}"><i class="ph ph-caret-down text-xl schedule-toggle-icon ${normalized.expanded ? 'rotate-180 text-white' : ''}"></i></button>
+                </div>
+            </div>
+            <div class="schedule-content pl-4 sm:pl-11 pb-4 ${normalized.expanded ? 'block' : 'hidden'} space-y-1 min-h-[10px]">
+                ${buildScheduleContentHtml(normalized, sourceNode)}
+            </div>
+        </div>
+    `;
+}
 
-        function renderScheduleForSelectedDate() {
-            const list = $('schedule-list');
-            const emptyState = $('schedule-empty-state');
-            if (!list) return;
-            const entries = scheduleDaysCache[selectedScheduleDate] || [];
-            list.innerHTML = entries.map(buildScheduleEntryHtml).join('');
-            if (emptyState) emptyState.classList.toggle('hidden', entries.length > 0);
-            initExtraSortables();
-            updateMissedProjectsForSelectedDate();
-            updateScheduleDateUi();
-        }
+function renderScheduleForSelectedDate() {
+    const list = $('schedule-list');
+    const emptyState = $('schedule-empty-state');
+    if (!list) return;
+    plannerState.projectsTree = serializeProjectsTreeFromDom();
+    refreshScheduledEntrySourceLabels(selectedScheduleDate);
+    const entries = (scheduleDaysCache[selectedScheduleDate] || []).map(normalizeScheduleEntry);
+    scheduleDaysCache[selectedScheduleDate] = entries;
+    plannerState.scheduleDays = cloneDeep(scheduleDaysCache || {});
+    list.innerHTML = entries.map(buildScheduleEntryHtml).join('');
+    if (emptyState) emptyState.classList.toggle('hidden', entries.length > 0);
+    initExtraSortables();
+    updateMissedProjectsForSelectedDate();
+    updateScheduleDateUi();
+}
 
-        function saveCurrentScheduleIntoCache() {
-            scheduleDaysCache[selectedScheduleDate] = parseScheduleEntriesFromDom();
-        }
+function saveCurrentScheduleIntoCache() {
+    scheduleDaysCache[selectedScheduleDate] = parseScheduleEntriesFromDom().map(normalizeScheduleEntry);
+    plannerState.scheduleDays = cloneDeep(scheduleDaysCache || {});
+}
 
-        function serializeProjectLists() {
-            return {
-                activeHTML: sanitizeSortableHtml($('active-projects-list')?.innerHTML || ''),
-                pendingHTML: sanitizeSortableHtml($('pending-projects-list')?.innerHTML || ''),
-                doneHTML: sanitizeSortableHtml($('done-projects-list')?.innerHTML || ''),
-            };
-        }
+function createSnapshot() {
+    ensureAllIds();
+    saveCurrentScheduleIntoCache();
+    plannerState.projectsTree = serializeProjectsTreeFromDom();
+    plannerState.scheduleDays = cloneDeep(scheduleDaysCache || {});
+    return {
+        schemaVersion: 2,
+        updatedAt: isoNow(),
+        selectedScheduleDate,
+        workspaceName: PROJECT_NAME,
+        projectsTree: cloneDeep(plannerState.projectsTree || []),
+        scheduleDays: cloneDeep(scheduleDaysCache || {}),
+    };
+}
 
-        function createSnapshot() {
+function countProjectNodes(nodes = []) {
+    return (nodes || []).reduce((sum, node) => sum + 1 + countProjectNodes(node.children || []), 0);
+}
+
+function snapshotHasMeaningfulContent(snapshot) {
+    if (!snapshot) return false;
+    const treeCount = countProjectNodes(snapshot.projectsTree || []);
+    const legacyHtml = snapshot.projectLists || {};
+    const legacyText = `${legacyHtml.activeHTML || ''}${legacyHtml.pendingHTML || ''}${legacyHtml.doneHTML || ''}`.replace(/\s+/g, '');
+    const scheduleCount = Object.values(snapshot.scheduleDays || {}).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
+    return treeCount > 0 || legacyText.length > 0 || scheduleCount > 0;
+}
+
+function writeLocalSnapshot(snapshot) {
+    const key = currentUser?.id ? getUserStorageKey(currentUser.id) : getGuestStorageKey();
+    localStorage.setItem(key, JSON.stringify(snapshot));
+}
+
+function getGuestStorageKey() {
+    return `${LOCAL_KEY_PREFIX}:guest`;
+}
+
+function getUserStorageKey(userId) {
+    return `${LOCAL_KEY_PREFIX}:user:${userId}`;
+}
+
+function readLocalSnapshotForUser(userId) {
+    try {
+        const raw = localStorage.getItem(getUserStorageKey(userId));
+        return raw ? JSON.parse(raw) : null;
+    } catch (error) {
+        console.warn('Could not parse user local snapshot', error);
+        return null;
+    }
+}
+
+function readGuestSnapshot() {
+    try {
+        const raw = localStorage.getItem(getGuestStorageKey());
+        return raw ? JSON.parse(raw) : null;
+    } catch (error) {
+        console.warn('Could not parse guest snapshot', error);
+        return null;
+    }
+}
+
+function applySnapshot(snapshot) {
+    if (!snapshot) return;
+    isHydrating = true;
+    try {
+        if (Array.isArray(snapshot.projectsTree)) {
+            renderProjectsTreeIntoDom(snapshot.projectsTree);
+        } else if (snapshot.projectLists) {
+            if ($('active-projects-list')) $('active-projects-list').innerHTML = sanitizeSortableHtml(snapshot.projectLists.activeHTML || '');
+            if ($('pending-projects-list')) $('pending-projects-list').innerHTML = sanitizeSortableHtml(snapshot.projectLists.pendingHTML || '');
+            if ($('done-projects-list')) $('done-projects-list').innerHTML = sanitizeSortableHtml(snapshot.projectLists.doneHTML || '');
             ensureAllIds();
-            saveCurrentScheduleIntoCache();
-            return {
-                schemaVersion: 1,
-                updatedAt: isoNow(),
-                selectedScheduleDate,
-                workspaceName: PROJECT_NAME,
-                projectLists: serializeProjectLists(),
-                scheduleDays: JSON.parse(JSON.stringify(scheduleDaysCache || {})),
-            };
+            initExtraSortables();
+            applyProjectDomStateAfterRender();
+            plannerState.projectsTree = serializeProjectsTreeFromDom();
+        } else {
+            plannerState.projectsTree = [];
+            renderProjectsTreeIntoDom([]);
         }
 
-        function snapshotHasMeaningfulContent(snapshot) {
-            if (!snapshot) return false;
-            const html = snapshot.projectLists || {};
-            const projectText = `${html.activeHTML || ''}${html.pendingHTML || ''}${html.doneHTML || ''}`.replace(/\s+/g, '');
-            const scheduleCount = Object.values(snapshot.scheduleDays || {}).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
-            return projectText.length > 0 || scheduleCount > 0;
-        }
+        scheduleDaysCache = Object.fromEntries(Object.entries(snapshot.scheduleDays || {}).map(([dateKey, entries]) => [
+            dateKey,
+            Array.isArray(entries) ? entries.map(normalizeScheduleEntry) : [],
+        ]));
+        plannerState.scheduleDays = cloneDeep(scheduleDaysCache || {});
+        selectedScheduleDate = snapshot.selectedScheduleDate || todayString();
+        renderScheduleForSelectedDate();
+    } finally {
+        isHydrating = false;
+    }
+}
 
-        function writeLocalSnapshot(snapshot) {
-            const key = currentUser?.id ? getUserStorageKey(currentUser.id) : getGuestStorageKey();
-            localStorage.setItem(key, JSON.stringify(snapshot));
-        }
+function refreshProjectCounters() {
 
-        function getGuestStorageKey() {
-            return `${LOCAL_KEY_PREFIX}:guest`;
-        }
-
-        function getUserStorageKey(userId) {
-            return `${LOCAL_KEY_PREFIX}:user:${userId}`;
-        }
-
-        function readLocalSnapshotForUser(userId) {
-            try {
-                const raw = localStorage.getItem(getUserStorageKey(userId));
-                return raw ? JSON.parse(raw) : null;
-            } catch (error) {
-                console.warn('Could not parse user local snapshot', error);
-                return null;
-            }
-        }
-
-        function readGuestSnapshot() {
-            try {
-                const raw = localStorage.getItem(getGuestStorageKey());
-                return raw ? JSON.parse(raw) : null;
-            } catch (error) {
-                console.warn('Could not parse guest snapshot', error);
-                return null;
-            }
-        }
-
-        function applySnapshot(snapshot) {
-            if (!snapshot) return;
-            isHydrating = true;
-            try {
-                if (snapshot.projectLists) {
-                    if ($('active-projects-list')) $('active-projects-list').innerHTML = sanitizeSortableHtml(snapshot.projectLists.activeHTML || '');
-                    if ($('pending-projects-list')) $('pending-projects-list').innerHTML = sanitizeSortableHtml(snapshot.projectLists.pendingHTML || '');
-                    if ($('done-projects-list')) $('done-projects-list').innerHTML = sanitizeSortableHtml(snapshot.projectLists.doneHTML || '');
-                }
-                scheduleDaysCache = snapshot.scheduleDays || {};
-                selectedScheduleDate = snapshot.selectedScheduleDate || todayString();
-                ensureAllIds();
-                initExtraSortables();
-                refreshProjectCounters();
-                renderScheduleForSelectedDate();
-            } finally {
-                isHydrating = false;
-            }
-        }
-
-        function refreshProjectCounters() {
             document.querySelectorAll('.phase-item').forEach((phase) => {
                 const outputs = phase.querySelectorAll(':scope > .accordion-content > .output-item');
                 const total = outputs.length;
@@ -4385,24 +5099,27 @@
             if (projectError) throw projectError;
             if (scheduleError) throw scheduleError;
 
+            const projectContent = projectRow?.content || {};
             const snapshot = {
-                schemaVersion: 1,
+                schemaVersion: Number(projectContent.schemaVersion || 1),
                 updatedAt: projectRow?.updated_at || null,
                 selectedScheduleDate: todayString(),
                 workspaceName: PROJECT_NAME,
-                projectLists: projectRow?.content?.projectLists || null,
+                projectsTree: Array.isArray(projectContent.projectsTree) ? projectContent.projectsTree : null,
+                projectLists: projectContent.projectLists || null,
                 scheduleDays: {},
             };
 
             (scheduleRows || []).forEach((row) => {
                 const dateKey = row.schedule_date;
-                snapshot.scheduleDays[dateKey] = Array.isArray(row.content?.entries) ? row.content.entries : (Array.isArray(row.content) ? row.content : []);
+                const rawEntries = Array.isArray(row.content?.entries) ? row.content.entries : (Array.isArray(row.content) ? row.content : []);
+                snapshot.scheduleDays[dateKey] = rawEntries.map(normalizeScheduleEntry);
                 if (!snapshot.updatedAt || (row.updated_at && row.updated_at > snapshot.updatedAt)) {
                     snapshot.updatedAt = row.updated_at;
                 }
             });
 
-            if (!snapshot.projectLists) return null;
+            if (!snapshot.projectsTree && !snapshot.projectLists) return null;
             return snapshot;
         }
 
@@ -4572,7 +5289,7 @@
                         .from('planner_project_snapshots')
                         .upsert({
                             workspace_id: currentWorkspaceId,
-                            content: { schemaVersion: snapshot.schemaVersion, projectLists: snapshot.projectLists },
+                            content: { schemaVersion: snapshot.schemaVersion, projectsTree: snapshot.projectsTree },
                             updated_at: isoNow(),
                         }, { onConflict: 'workspace_id' });
                     if (projectError) throw projectError;
@@ -4674,9 +5391,10 @@
 
         function schedulePersist(trigger) {
 
-            if (isHydrating) return;
+            if (isHydrating || isDragging) return;
             clearTimeout(persistTimer);
             persistTimer = setTimeout(() => {
+                refreshAllScheduledSourceLabels();
                 const snapshot = createSnapshot();
                 writeLocalSnapshot(snapshot);
                 if (currentUser) {
@@ -4823,6 +5541,10 @@
             if (isHydrating) return;
             saveCurrentScheduleIntoCache();
             writeLocalSnapshot(createSnapshot());
+            if (currentUser) {
+                cloudDirty = true;
+                renderAccountButton();
+            }
             updateMissedProjectsForSelectedDate();
         }
 
@@ -4866,6 +5588,18 @@
 
         window.addEventListener('planner-sync-schedule', () => {
             syncSelectedScheduleDay();
+        });
+
+        window.addEventListener('planner-projects-changed', () => {
+            if (isHydrating) return;
+            plannerState.projectsTree = serializeProjectsTreeFromDom();
+            refreshAllScheduledSourceLabels();
+            if (!$('schedule-view')?.classList.contains('hidden')) {
+                saveCurrentScheduleIntoCache();
+                renderScheduleForSelectedDate();
+            } else {
+                updateMissedProjectsForSelectedDate();
+            }
         });
 
         async function signUpWithPassword() {
@@ -4931,7 +5665,7 @@
             reader.onload = async () => {
                 try {
                     const parsed = JSON.parse(String(reader.result || '{}'));
-                    if (!parsed || !parsed.projectLists || !parsed.scheduleDays) {
+                    if (!parsed || (!Array.isArray(parsed.projectsTree) && !parsed.projectLists) || !parsed.scheduleDays) {
                         throw new Error('Invalid planner JSON format.');
                     }
                     applySnapshot(parsed);
@@ -5030,14 +5764,32 @@
                 }
             });
 
-            const observerTargets = [
+            const projectObserverTargets = [
                 $('active-projects-list'),
                 $('pending-projects-list'),
                 $('done-projects-list'),
-                $('schedule-list'),
             ].filter(Boolean);
-            const observer = new MutationObserver(() => schedulePersist('mutation'));
-            observerTargets.forEach((target) => observer.observe(target, { childList: true, subtree: true, characterData: true, attributes: true }));
+            const projectObserver = new MutationObserver((mutations) => {
+                if (isDragging) return;
+                const hasProjectMutation = mutations.some((mutation) => {
+                    const baseTarget = mutation.target?.nodeType === 1 ? mutation.target : mutation.target?.parentElement;
+                    return !!baseTarget?.closest?.('#project-list-container');
+                });
+                if (hasProjectMutation) {
+                    window.dispatchEvent(new CustomEvent('planner-projects-changed'));
+                }
+                schedulePersist('mutation');
+            });
+            projectObserverTargets.forEach((target) => projectObserver.observe(target, { childList: true, subtree: true, characterData: true, attributes: true }));
+
+            const scheduleListTarget = $('schedule-list');
+            if (scheduleListTarget) {
+                const scheduleObserver = new MutationObserver(() => {
+                    if (isDragging) return;
+                    schedulePersist('mutation');
+                });
+                scheduleObserver.observe(scheduleListTarget, { childList: true, subtree: true, characterData: true });
+            }
 
             document.addEventListener('visibilitychange', () => {
                 if (document.visibilityState !== 'visible') return;
@@ -5049,11 +5801,22 @@
             });
         }
 
+        window.getLiveProjectUi = getLiveProjectUi;
+        window.uid = uid;
+        window.normalizeScheduleEntry = normalizeScheduleEntry;
+        window.renderScheduleForSelectedDate = renderScheduleForSelectedDate;
+        window.saveCurrentScheduleIntoCache = saveCurrentScheduleIntoCache;
+        window.refreshScheduledEntrySourceLabels = refreshScheduledEntrySourceLabels;
+        window.refreshAllScheduledSourceLabels = refreshAllScheduledSourceLabels;
+        window.createPlannerSnapshot = createSnapshot;
+
         async function boot() {
             ensureAllIds();
             initExtraSortables();
+            plannerState.projectsTree = serializeProjectsTreeFromDom();
             refreshProjectCounters();
-            if (!scheduleDaysCache[selectedScheduleDate]) scheduleDaysCache[selectedScheduleDate] = parseScheduleEntriesFromDom();
+            if (!scheduleDaysCache[selectedScheduleDate]) scheduleDaysCache[selectedScheduleDate] = parseScheduleEntriesFromDom().map(normalizeScheduleEntry);
+            plannerState.scheduleDays = cloneDeep(scheduleDaysCache || {});
             updateMissedProjectsForSelectedDate();
             updateScheduleDateUi();
 
